@@ -41,20 +41,19 @@ export function Hero(props: HeroProps) {
             {t('Open Source')}
           </span>
           <span className='text-muted-foreground'>·</span>
-          <span className='text-primary/80'>{t('AI网关')}</span>
+          <span className='text-primary/80'>{t('Enterprise-Ready')}</span>
         </div>
 
         <h1 className='text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.15] font-bold tracking-tight'>
-          {t('Unified API Gateway for')}
+          {t('One Gateway to')}
           <br />
           <span className='bg-gradient-to-r from-blue-500 via-violet-500 to-purple-600 bg-clip-text text-transparent'>
-            {t('All Your AI Models')}
+            {t('Every AI Model You Need')}
           </span>
         </h1>
         <p className='text-muted-foreground/80 mt-5 max-w-lg text-base leading-relaxed md:text-lg'>
-          {systemName}{' '}
           {t(
-            'is an open-source AI API gateway for self-hosted deployments. Connect multiple upstream services, manage models, keys, quotas, logs, and routing policies in one place.'
+            'A unified API gateway that connects 50+ AI providers. Manage models, keys, quotas, and routing policies — all in one place.'
           )}
         </p>
         <div className='mt-8 flex items-center gap-3'>

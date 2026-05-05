@@ -24,7 +24,7 @@ export function Features(_props: FeaturesProps) {
       icon: <Zap className='size-4' />,
       title: t('Lightning Fast'),
       desc: t(
-        'Optimized network architecture ensures millisecond response times'
+        'Sub-100ms latency with optimized routing and intelligent caching'
       ),
     },
     {
@@ -32,44 +32,44 @@ export function Features(_props: FeaturesProps) {
       icon: <Shield className='size-4' />,
       title: t('Secure & Reliable'),
       desc: t(
-        'Enterprise-grade security with comprehensive permission management'
+        'Enterprise-grade security with role-based access and audit logging'
       ),
     },
     {
       num: '03',
       icon: <Globe className='size-4' />,
       title: t('Global Coverage'),
-      desc: t('Multi-region deployment for stable global access'),
+      desc: t('Multi-region failover for 99.9% uptime worldwide'),
     },
     {
       num: '04',
       icon: <Code className='size-4' />,
       title: t('Developer Friendly'),
-      desc: t('Compatible API routes for common AI application workflows'),
+      desc: t('Drop-in replacement for OpenAI, Anthropic, and Gemini APIs'),
     },
     {
       num: '05',
       icon: <Gauge className='size-4' />,
       title: t('High Performance'),
-      desc: t('Support for high concurrency with automatic load balancing'),
+      desc: t('Smart load balancing with automatic failover and rate limiting'),
     },
     {
       num: '06',
       icon: <DollarSign className='size-4' />,
       title: t('Transparent Billing'),
-      desc: t('Pay-as-you-go with real-time usage monitoring'),
+      desc: t('Real-time cost tracking with budget alerts and team quotas'),
     },
     {
       num: '07',
       icon: <Users className='size-4' />,
       title: t('Team Collaboration'),
-      desc: t('Multi-user management with flexible permission allocation'),
+      desc: t('Granular permissions and shared workspaces for your team'),
     },
     {
       num: '08',
       icon: <HeartHandshake className='size-4' />,
       title: t('Open Source'),
-      desc: t('Community driven, self-hosted, and extensible'),
+      desc: t('Self-hosted, extensible, backed by an active community'),
     },
   ]
 
@@ -82,9 +82,9 @@ export function Features(_props: FeaturesProps) {
             {t('Core Features')}
           </p>
           <h2 className='text-2xl leading-tight font-semibold tracking-tight md:text-3xl'>
-            {t('Built for developers,')}
+            {t('Everything you need to')}
             <br />
-            {t('designed for scale')}
+            {t('ship AI products faster')}
           </h2>
         </AnimateInView>
 

@@ -8,24 +8,24 @@ export function HowItWorks() {
   const steps = [
     {
       num: '1',
-      title: t('Configure'),
+      title: t('Connect Providers'),
       desc: t(
-        'Add your API keys, set up channels and configure access permissions'
+        'Add your upstream API keys and configure model routing in minutes'
       ),
       icon: <Settings className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '2',
-      title: t('Connect'),
+      title: t('Route Requests'),
       desc: t(
-        'Connect through OpenAI, Claude, Gemini, and other compatible API routes'
+        'Send requests through a single unified endpoint — we handle the rest'
       ),
       icon: <Zap className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '3',
-      title: t('Monitor'),
-      desc: t('Track usage, costs and performance with real-time analytics'),
+      title: t('Track & Optimize'),
+      desc: t('Monitor costs, usage patterns, and performance in real time'),
       icon: <BarChart3 className='size-6' strokeWidth={1.5} />,
     },
   ]
@@ -38,7 +38,7 @@ export function HowItWorks() {
             {t('How It Works')}
           </p>
           <h2 className='text-2xl font-bold tracking-tight md:text-3xl'>
-            {t('Three steps to get started')}
+            {t('Up and running in minutes')}
           </h2>
         </AnimateInView>
 
