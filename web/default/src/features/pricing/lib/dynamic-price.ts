@@ -54,7 +54,7 @@ export function getDynamicDisplayGroupRatio(model: PricingModel): number {
   let minRatio = Number.POSITIVE_INFINITY
   for (const group of groups) {
     const ratio = ratios[group]
-    if (ratio !== undefined && ratio < minRatio) {
+    if (ratio !== undefined && ratio > 0 && ratio < minRatio) {
       minRatio = ratio
     }
   }

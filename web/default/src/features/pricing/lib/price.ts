@@ -35,7 +35,7 @@ export function stripTrailingZeros(formatted: string): string {
 }
 
 /**
- * Find minimum group ratio from enabled groups
+ * Find minimum group ratio from enabled groups (excluding zero ratios)
  */
 function getMinGroupRatio(
   enableGroups: string[],
@@ -47,7 +47,7 @@ function getMinGroupRatio(
 
   for (const group of enableGroups) {
     const ratio = groupRatio[group]
-    if (ratio !== undefined && ratio < minRatio) {
+    if (ratio !== undefined && ratio > 0 && ratio < minRatio) {
       minRatio = ratio
     }
   }
