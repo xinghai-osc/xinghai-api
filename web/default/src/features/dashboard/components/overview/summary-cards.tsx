@@ -52,7 +52,7 @@ export function SummaryCards() {
   }))
 
   return (
-    <div className='overflow-hidden rounded-lg border'>
+    <div className='overflow-hidden rounded-xl border bg-card shadow-xs'>
       <StaggerContainer className='divide-border/60 grid grid-cols-3 divide-x'>
         {items.map((it) => (
           <StaggerItem key={it.title} className='px-3 py-3 sm:px-5 sm:py-4'>

@@ -53,12 +53,12 @@ const ACCENT_CLASSES: Record<
 const API_DEMOS: ApiDemoConfig[] = [
   {
     id: 'gpt-chat',
-    label: 'Chat',
+    label: '聊天',
     method: 'POST',
     endpoint: '/v1/chat/completions',
     headers: ['"Authorization: Bearer sk-••••"'],
     request: [
-      '"model": "your-model",',
+      '"model": "deepseek-v4-pro",',
       '"messages": [',
       '  { "role": "user", "content": "..." }',
       ']',
@@ -76,7 +76,7 @@ const API_DEMOS: ApiDemoConfig[] = [
   },
   {
     id: 'responses',
-    label: 'Responses',
+    label: '响应',
     method: 'POST',
     endpoint: '/v1/responses',
     headers: ['"Authorization: Bearer sk-••••"'],
@@ -94,54 +94,7 @@ const API_DEMOS: ApiDemoConfig[] = [
     tokens: 31,
     latency: 168,
     accent: 'amber',
-  },
-  {
-    id: 'claude',
-    label: 'Claude',
-    method: 'POST',
-    endpoint: '/v1/messages',
-    headers: ['"x-api-key: sk-••••"', '"anthropic-version: 2023-06-01"'],
-    request: [
-      '"model": "your-model",',
-      '"max_tokens": 1024,',
-      '"messages": [',
-      '  { "role": "user", "content": "..." }',
-      ']',
-    ],
-    response: [
-      '{',
-      '  "content": [{ "type": "text", "text": <text> }],',
-      '  "usage": { "input_tokens": <in>, "output_tokens": <out> }',
-      '}',
-    ],
-    responseHighlights: ['<text>', '<in>', '<out>'],
-    tokens: 29,
-    latency: 156,
-    accent: 'blue',
-  },
-  {
-    id: 'gemini',
-    label: 'Gemini',
-    method: 'POST',
-    endpoint: '/v1beta/models/{model}:generateContent',
-    headers: ['"x-goog-api-key: sk-••••"'],
-    request: [
-      '"contents": [',
-      '  { "role": "user",',
-      '    "parts": [{ "text": "..." }] }',
-      ']',
-    ],
-    response: [
-      '{',
-      '  "candidates": [{ "content": { "parts": [{ "text": <text> }] } }],',
-      '  "usageMetadata": { "totalTokenCount": <tokens> }',
-      '}',
-    ],
-    responseHighlights: ['<text>', '<tokens>'],
-    tokens: 25,
-    latency: 93,
-    accent: 'violet',
-  },
+  }
 ]
 
 const CYCLE_INTERVAL = 4500

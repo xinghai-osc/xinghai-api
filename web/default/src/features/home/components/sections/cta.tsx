@@ -31,34 +31,32 @@ export function CTA(props: CTAProps) {
       />
 
       <AnimateInView
-        className='mx-auto max-w-2xl text-center'
-        animation='scale-in'
+        className='mx-auto max-w-xl text-center'
+        animation='fade-up'
       >
-        <h2 className='text-2xl leading-tight font-bold tracking-tight md:text-4xl'>
+        <h2 className='text-2xl leading-tight font-semibold tracking-tight md:text-3xl'>
           {t('Ready to simplify')}
           <br />
-          <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
+          <span className='bg-gradient-to-r from-blue-500 via-violet-500 to-purple-600 bg-clip-text text-transparent'>
             {t('your AI integration?')}
           </span>
         </h2>
-        <p className='text-muted-foreground/80 mx-auto mt-5 max-w-md text-sm leading-relaxed md:text-base'>
+        <p className='text-muted-foreground/70 mx-auto mt-4 max-w-md text-sm leading-relaxed md:text-base'>
           {t(
             'Deploy your own gateway and start routing requests through your configured upstream services.'
           )}
         </p>
-        <div className='mt-8 flex items-center justify-center gap-3'>
-          <Button className='group rounded-lg' asChild>
+
+        {/* Gradient divider */}
+        <div className='mx-auto my-8 h-px w-12 bg-gradient-to-r from-blue-500 to-violet-500' />
+
+        {/* Single CTA */}
+        <div>
+          <Button className='group mx-auto rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-8 hover:from-blue-500 hover:to-violet-500' asChild>
             <Link to='/sign-up'>
               {t('Get Started')}
               <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
             </Link>
-          </Button>
-          <Button
-            variant='outline'
-            className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
-            asChild
-          >
-            <Link to='/pricing'>{t('View Pricing')}</Link>
           </Button>
         </div>
       </AnimateInView>

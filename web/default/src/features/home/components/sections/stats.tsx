@@ -95,7 +95,7 @@ export function Stats(_props: StatsProps) {
               key={s.label}
               className='flex flex-col items-center text-center'
             >
-              <span className='text-2xl font-bold tracking-tight md:text-3xl'>
+              <span className='bg-gradient-to-br from-foreground via-foreground to-muted-foreground bg-clip-text text-2xl font-bold tracking-tight text-transparent md:text-3xl'>
                 <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
               </span>
               <span className='text-muted-foreground mt-1.5 text-xs'>

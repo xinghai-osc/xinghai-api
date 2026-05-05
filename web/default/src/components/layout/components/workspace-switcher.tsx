@@ -62,7 +62,7 @@ export function WorkspaceSwitcher({
             ? {
                 ...workspace,
                 name: status?.system_name || defaultName,
-                plan: status?.version || defaultVersion || t('Unknown version'),
+                plan: status?.version || defaultVersion || "V1.0.0",
               }
             : workspace
         )

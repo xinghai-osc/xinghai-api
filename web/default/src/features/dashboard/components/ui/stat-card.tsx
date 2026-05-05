@@ -18,7 +18,7 @@ export function StatCard(props: StatCardProps) {
     <div className='group flex flex-col gap-1'>
       <div className='flex items-start justify-between gap-1'>
         <div className='text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wider uppercase sm:gap-2'>
-          <Icon className='text-muted-foreground/60 size-3.5 shrink-0' />
+          <Icon className='text-muted-foreground/60 group-hover:text-primary size-3.5 shrink-0 transition-colors duration-200' />
           <span className='line-clamp-2 leading-snug'>{props.title}</span>
         </div>
         {props.action && (
@@ -42,7 +42,7 @@ export function StatCard(props: StatCardProps) {
         </>
       ) : (
         <>
-          <div className='text-foreground mt-0.5 font-mono text-base font-bold tracking-tight break-all tabular-nums sm:text-2xl'>
+          <div className='text-foreground mt-0.5 font-mono text-base font-bold tracking-tight break-all tabular-nums transition-colors duration-200 group-hover:text-primary sm:text-2xl'>
             {props.value}
           </div>
           <p className='text-muted-foreground/60 hidden text-xs md:block'>

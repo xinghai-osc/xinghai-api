@@ -48,10 +48,16 @@ export function HowItWorks() {
               key={step.num}
               delay={i * 150}
               animation='fade-up'
-              className='relative flex flex-col items-center text-center'
+              className='group relative flex flex-col items-center text-center'
             >
+              {i < steps.length - 1 && (
+                <div
+                  aria-hidden
+                  className='absolute top-8 left-[calc(50%+2.5rem)] hidden h-px w-[calc(100%-5rem)] border-t border-dashed border-border/60 md:block'
+                />
+              )}
               <div className='relative mb-6'>
-                <div className='text-muted-foreground border-border/50 bg-muted/30 flex size-16 items-center justify-center rounded-2xl border transition-colors'>
+                <div className='text-muted-foreground border-border/50 bg-muted/30 group-hover:border-primary/30 group-hover:bg-primary/5 group-hover:text-primary flex size-16 items-center justify-center rounded-2xl border transition-all duration-300'>
                   {step.icon}
                 </div>
                 <div className='bg-foreground text-background absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full text-xs font-bold'>
