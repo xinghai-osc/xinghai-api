@@ -75,7 +75,7 @@ export const GroupRatioForm = memo(function GroupRatioForm({
 
       <Form {...form}>
         {editMode === 'visual' ? (
-          <div className='space-y-6'>
+          <form onSubmit={form.handleSubmit(onSave)} className='space-y-6'>
             <GroupRatioVisualEditor
               groupRatio={form.watch('GroupRatio')}
               topupGroupRatio={form.watch('TopupGroupRatio')}
@@ -119,10 +119,10 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               )}
             />
 
-            <Button onClick={form.handleSubmit(onSave)} disabled={isSaving}>
+            <Button type='submit' disabled={isSaving}>
               {isSaving ? t('Saving...') : t('Save group ratios')}
             </Button>
-          </div>
+          </form>
         ) : (
           <form onSubmit={form.handleSubmit(onSave)} className='space-y-6'>
             <FormField

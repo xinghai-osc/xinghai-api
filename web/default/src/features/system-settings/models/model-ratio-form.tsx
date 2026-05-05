@@ -82,7 +82,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
 
       <Form {...form}>
         {editMode === 'visual' ? (
-          <div className='space-y-6'>
+          <form onSubmit={form.handleSubmit(onSave)} className='space-y-6'>
             <ModelRatioVisualEditor
               modelPrice={form.watch('ModelPrice')}
               modelRatio={form.watch('ModelRatio')}
@@ -131,7 +131,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
             />
 
             <div className='flex flex-wrap gap-4'>
-              <Button onClick={form.handleSubmit(onSave)} disabled={isSaving}>
+              <Button type='submit' disabled={isSaving}>
                 {isSaving ? t('Saving...') : t('Save model ratios')}
               </Button>
               <Button
@@ -143,7 +143,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
                 {t('Reset ratios')}
               </Button>
             </div>
-          </div>
+          </form>
         ) : (
           <form onSubmit={form.handleSubmit(onSave)} className='space-y-6'>
             <FormField
