@@ -40,27 +40,6 @@ import { API_KEY_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
 import { apiKeySchema } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
-function getServerAddress(): string {
-  try {
-    const raw = localStorage.getItem('status')
-    if (raw) {
-      const status = JSON.parse(raw)
-      if (status.server_address) return status.server_address as string
-    }
-  } catch {
-    /* empty */
-  }
-  return window.location.origin
-}
-
-function encodeConnectionString(key: string, url: string): string {
-  return JSON.stringify({
-    _type: 'newapi_channel_conn',
-    key,
-    url,
-  })
-}
-
 type DataTableRowActionsProps<TData> = {
   row: Row<TData>
 }
@@ -206,15 +185,9 @@ export function DataTableRowActions<TData>({
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={async () => {
-              const realKey = await resolveRealKey(apiKey.id)
-              if (!realKey) return
-              const connStr = encodeConnectionString(
-                realKey,
-                getServerAddress()
-              )
-              const ok = await copyToClipboard(connStr)
-              if (ok) toast.success(t('Copied'))
+            onClick={() => {
+              setCurrentRow(apiKey)
+              setOpen('copy-connection')
             }}
           >
             {t('Copy Connection Info')}
