@@ -31,7 +31,7 @@ jobs:
 
     permissions:
       packages: write
-      contents: read
+      contents: write
       id-token: write
 
     steps:
@@ -71,7 +71,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: calciumion/new-api
+          images: xinghai-osc/xinghai-api
 
       - name: Build & push
         id: build
@@ -81,25 +81,37 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            calciumion/new-api:${{ env.TAG }}-${{ matrix.arch }}
-            calciumion/new-api:latest-${{ matrix.arch }}
+            xinghai-osc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }}
+            xinghai-osc/xinghai-api:latest-${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: mode=max
           sbom: true
 
+      - name: Export image as tar
+        run: |
+          docker pull xinghai-osc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }}
+          docker save xinghai-osc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }} | gzip > xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar.gz
+
+      - name: Upload tar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}
+          path: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar.gz
+          retention-days: 90
+
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
 
       - name: Sign image with cosign
-        run: cosign sign --yes calciumion/new-api@${{ steps.build.outputs.digest }}
+        run: cosign sign --yes xinghai-osc/xinghai-api@${{ steps.build.outputs.digest }}
 
       - name: Image summary
         run: |
           echo "### Docker Image Digest (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "calciumion/new-api:${TAG}-${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+          echo "xinghai-osc/xinghai-api:${TAG}-${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
@@ -122,20 +134,34 @@ jobs:
       - name: Create & push manifest (version)
         run: |
           docker buildx imagetools create \
-            -t calciumion/new-api:${TAG} \
-            calciumion/new-api:${TAG}-amd64 \
-            calciumion/new-api:${TAG}-arm64
+            -t xinghai-osc/xinghai-api:${TAG} \
+            xinghai-osc/xinghai-api:${TAG}-amd64 \
+            xinghai-osc/xinghai-api:${TAG}-arm64
 
       - name: Create & push manifest (latest)
         run: |
           docker buildx imagetools create \
-            -t calciumion/new-api:latest \
-            calciumion/new-api:latest-amd64 \
-            calciumion/new-api:latest-arm64
+            -t xinghai-osc/xinghai-api:latest \
+            xinghai-osc/xinghai-api:latest-amd64 \
+            xinghai-osc/xinghai-api:latest-arm64
 
       - name: Manifest summary
         run: |
           echo "### Multi-arch Manifest" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          docker buildx imagetools inspect calciumion/new-api:${TAG} >> $GITHUB_STEP_SUMMARY
+          docker buildx imagetools inspect xinghai-osc/xinghai-api:${TAG} >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Download tar artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: xinghai-api-${{ env.TAG }}-*
+          path: ./tar-files
+          merge-multiple: true
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: ./tar-files/*.tar.gz
+          fail_on_unmatched_files: false
