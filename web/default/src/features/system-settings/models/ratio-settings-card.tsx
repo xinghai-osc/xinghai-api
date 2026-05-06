@@ -20,6 +20,18 @@ import {
   validateJsonString,
 } from './utils'
 
+function groupDefaultsEqual(a: GroupFormValues, b: GroupFormValues): boolean {
+  return (
+    a.GroupRatio === b.GroupRatio &&
+    a.TopupGroupRatio === b.TopupGroupRatio &&
+    a.UserUsableGroups === b.UserUsableGroups &&
+    a.GroupGroupRatio === b.GroupGroupRatio &&
+    a.AutoGroups === b.AutoGroups &&
+    a.DefaultUseAutoGroup === b.DefaultUseAutoGroup &&
+    a.GroupSpecialUsableGroup === b.GroupSpecialUsableGroup
+  )
+}
+
 const modelSchema = z.object({
   ModelPrice: z.string().superRefine((value, ctx) => {
     const result = validateJsonString(value)
@@ -276,65 +288,38 @@ export function RatioSettingsCard({
     },
   })
 
-  useEffect(() => {
-    modelNormalizedDefaults.current = {
-      ModelPrice: normalizeJsonString(modelDefaults.ModelPrice),
-      ModelRatio: normalizeJsonString(modelDefaults.ModelRatio),
-      CacheRatio: normalizeJsonString(modelDefaults.CacheRatio),
-      CreateCacheRatio: normalizeJsonString(modelDefaults.CreateCacheRatio),
-      CompletionRatio: normalizeJsonString(modelDefaults.CompletionRatio),
-      ImageRatio: normalizeJsonString(modelDefaults.ImageRatio),
-      AudioRatio: normalizeJsonString(modelDefaults.AudioRatio),
-      AudioCompletionRatio: normalizeJsonString(
-        modelDefaults.AudioCompletionRatio
-      ),
-      ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
-      BillingMode: normalizeJsonString(modelDefaults.BillingMode),
-      BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
-    }
-
-    modelForm.reset({
-      ...modelDefaults,
-      ModelPrice: formatJsonForTextarea(modelDefaults.ModelPrice),
-      ModelRatio: formatJsonForTextarea(modelDefaults.ModelRatio),
-      CacheRatio: formatJsonForTextarea(modelDefaults.CacheRatio),
-      CreateCacheRatio: formatJsonForTextarea(modelDefaults.CreateCacheRatio),
-      CompletionRatio: formatJsonForTextarea(modelDefaults.CompletionRatio),
-      ImageRatio: formatJsonForTextarea(modelDefaults.ImageRatio),
-      AudioRatio: formatJsonForTextarea(modelDefaults.AudioRatio),
-      AudioCompletionRatio: formatJsonForTextarea(
-        modelDefaults.AudioCompletionRatio
-      ),
-      BillingMode: formatJsonForTextarea(modelDefaults.BillingMode),
-      BillingExpr: formatJsonForTextarea(modelDefaults.BillingExpr),
-    })
-  }, [modelDefaults, modelForm])
+  const prevGroupDefaultsRef = useRef(groupDefaults)
 
   useEffect(() => {
-    groupNormalizedDefaults.current = {
-      GroupRatio: normalizeJsonString(groupDefaults.GroupRatio),
-      TopupGroupRatio: normalizeJsonString(groupDefaults.TopupGroupRatio),
-      UserUsableGroups: normalizeJsonString(groupDefaults.UserUsableGroups),
-      GroupGroupRatio: normalizeJsonString(groupDefaults.GroupGroupRatio),
-      AutoGroups: normalizeJsonString(groupDefaults.AutoGroups),
-      DefaultUseAutoGroup: groupDefaults.DefaultUseAutoGroup,
-      GroupSpecialUsableGroup: normalizeJsonString(
-        groupDefaults.GroupSpecialUsableGroup
-      ),
-    }
+    if (!groupDefaultsEqual(prevGroupDefaultsRef.current, groupDefaults)) {
+      prevGroupDefaultsRef.current = groupDefaults
 
-    groupForm.reset({
-      ...groupDefaults,
-      GroupRatio: formatJsonForTextarea(groupDefaults.GroupRatio),
-      TopupGroupRatio: formatJsonForTextarea(groupDefaults.TopupGroupRatio),
-      UserUsableGroups: formatJsonForTextarea(groupDefaults.UserUsableGroups),
-      GroupGroupRatio: formatJsonForTextarea(groupDefaults.GroupGroupRatio),
-      AutoGroups: formatJsonForTextarea(groupDefaults.AutoGroups),
-      GroupSpecialUsableGroup: formatJsonForTextarea(
-        groupDefaults.GroupSpecialUsableGroup
-      ),
-    })
-  }, [groupDefaults, groupForm])
+      groupNormalizedDefaults.current = {
+        GroupRatio: normalizeJsonString(groupDefaults.GroupRatio),
+        TopupGroupRatio: normalizeJsonString(groupDefaults.TopupGroupRatio),
+        UserUsableGroups: normalizeJsonString(groupDefaults.UserUsableGroups),
+        GroupGroupRatio: normalizeJsonString(groupDefaults.GroupGroupRatio),
+        AutoGroups: normalizeJsonString(groupDefaults.AutoGroups),
+        DefaultUseAutoGroup: groupDefaults.DefaultUseAutoGroup,
+        GroupSpecialUsableGroup: normalizeJsonString(
+          groupDefaults.GroupSpecialUsableGroup
+        ),
+      }
+
+      groupForm.reset({
+        ...groupDefaults,
+        GroupRatio: formatJsonForTextarea(groupDefaults.GroupRatio),
+        TopupGroupRatio: formatJsonForTextarea(groupDefaults.TopupGroupRatio),
+        UserUsableGroups: formatJsonForTextarea(groupDefaults.UserUsableGroups),
+        GroupGroupRatio: formatJsonForTextarea(groupDefaults.GroupGroupRatio),
+        AutoGroups: formatJsonForTextarea(groupDefaults.AutoGroups),
+        GroupSpecialUsableGroup: formatJsonForTextarea(
+          groupDefaults.GroupSpecialUsableGroup
+        ),
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupDefaults])
 
   const saveModelRatios = useCallback(
     async (values: ModelFormValues) => {

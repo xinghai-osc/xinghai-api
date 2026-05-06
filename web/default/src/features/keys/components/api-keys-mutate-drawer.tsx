@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
@@ -181,7 +181,6 @@ export function ApiKeysMutateDrawer({
           toast.error(result.message || t(ERROR_MESSAGES.UPDATE_FAILED))
         }
       } else {
-        // Create mode - handle batch creation
         const count = data.tokenCount || 1
         let successCount = 0
 
@@ -217,6 +216,10 @@ export function ApiKeysMutateDrawer({
       setIsSubmitting(false)
     }
   }
+
+  const onInvalid = useCallback(() => {
+    toast.error(t('Please fix the form errors before submitting'))
+  }, [t])
 
   const handleSetExpiry = (months: number, days: number, hours: number) => {
     if (months === 0 && days === 0 && hours === 0) {
@@ -270,7 +273,7 @@ export function ApiKeysMutateDrawer({
         <Form {...form}>
           <form
             id='api-key-form'
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
             className='min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4'
           >
             <ApiKeyFormSection

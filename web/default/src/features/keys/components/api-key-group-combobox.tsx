@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -101,11 +101,11 @@ export function ApiKeyGroupCombobox({
     })
   }, [options, searchValue])
 
-  const handleSelect = (selectedValue: string) => {
+  const handleSelect = useCallback((selectedValue: string) => {
     onValueChange(selectedValue)
     setOpen(false)
     setSearchValue('')
-  }
+  }, [onValueChange])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
