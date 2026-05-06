@@ -46,17 +46,17 @@ export function CTA(props: CTAProps) {
             'Deploy your own gateway and start routing requests through your configured upstream services.'
           )}
         </p>
-
-        {/* Gradient divider */}
-        <div className='mx-auto my-8 h-px w-12 bg-gradient-to-r from-blue-500 to-violet-500' />
-
-        {/* Single CTA */}
-        <div>
-          <Button className='group mx-auto rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-8 hover:from-blue-500 hover:to-violet-500' asChild>
-            <Link to='/sign-up'>
-              {t('Get Started')}
-              <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
-            </Link>
+        <div className='mt-8 flex items-center justify-center gap-3'>
+          <Button className='group rounded-lg' render={<Link to='/sign-up' />}>
+            {t('Get Started')}
+            <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
+          </Button>
+          <Button
+            variant='outline'
+            className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
+            render={<Link to='/pricing' />}
+          >
+            {t('View Pricing')}
           </Button>
         </div>
       </AnimateInView>
