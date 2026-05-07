@@ -37,7 +37,7 @@ function getServerAddress(): string {
   } catch {
     /* empty */
   }
-  return window.location.origin
+  return typeof window !== 'undefined' ? window.location.origin : ''
 }
 
 interface CopyConnectionDialogProps {
