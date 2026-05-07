@@ -284,9 +284,46 @@ func SendEmailVerification(c *gin.Context) {
 	code := common.GenerateVerificationCode(6)
 	common.RegisterVerificationCodeWithKey(email, code, common.EmailVerificationPurpose)
 	subject := fmt.Sprintf("%s邮箱验证邮件", common.SystemName)
-	content := fmt.Sprintf("<p>您好，你正在进行%s邮箱验证。</p>"+
-		"<p>您的验证码为: <strong>%s</strong></p>"+
-		"<p>验证码 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, code, common.VerificationValidMinutes)
+	content := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱验证</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .container { max-width: 480px; margin: 40px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #6366f1 0%%, #8b5cf6 100%%); padding: 32px 24px; text-align: center; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; }
+        .body { padding: 32px 24px; color: #3f3f46; font-size: 15px; line-height: 1.6; }
+        .body p { margin: 0 0 16px; }
+        .code-box { background: #fafafa; border: 1px dashed #d4d4d8; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }
+        .code-box .code { font-size: 32px; font-weight: 700; color: #6366f1; letter-spacing: 4px; font-family: "SF Mono", Monaco, monospace; }
+        .code-box .hint { font-size: 12px; color: #a1a1aa; margin-top: 8px; }
+        .footer { background: #fafafa; padding: 20px 24px; text-align: center; font-size: 12px; color: #a1a1aa; }
+        .footer a { color: #8b5cf6; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>%s</h1>
+        </div>
+        <div class="body">
+            <p>您好，您正在进行邮箱验证。</p>
+            <p>请使用以下验证码完成验证：</p>
+            <div class="code-box">
+                <div class="code">%s</div>
+                <div class="hint">验证码 %d 分钟内有效</div>
+            </div>
+            <p>如果这不是您本人操作，请忽略此邮件。</p>
+        </div>
+        <div class="footer">
+            <p>此邮件由 %s 自动发送，请勿直接回复。</p>
+        </div>
+    </div>
+</body>
+</html>`, common.SystemName, code, common.VerificationValidMinutes, common.SystemName)
 	err := common.SendEmail(subject, email, content)
 	if err != nil {
 		common.ApiError(c, err)
@@ -313,10 +350,44 @@ func SendPasswordResetEmail(c *gin.Context) {
 		common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
 		link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", system_setting.ServerAddress, email, code)
 		subject := fmt.Sprintf("%s密码重置", common.SystemName)
-		content := fmt.Sprintf("<p>您好，你正在进行%s密码重置。</p>"+
-			"<p>点击 <a href='%s'>此处</a> 进行密码重置。</p>"+
-			"<p>如果链接无法点击，请尝试点击下面的链接或将其复制到浏览器中打开：<br> %s </p>"+
-			"<p>重置链接 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, link, link, common.VerificationValidMinutes)
+		content := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码重置</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .container { max-width: 480px; margin: 40px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #f59e0b 0%%, #ef4444 100%%); padding: 32px 24px; text-align: center; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; }
+        .body { padding: 32px 24px; color: #3f3f46; font-size: 15px; line-height: 1.6; }
+        .body p { margin: 0 0 16px; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #f59e0b 0%%, #ef4444 100%%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; margin: 12px 0; }
+        .link-box { background: #fafafa; border: 1px dashed #d4d4d8; border-radius: 8px; padding: 12px; word-break: break-all; font-size: 13px; color: #71717a; margin: 12px 0; }
+        .footer { background: #fafafa; padding: 20px 24px; text-align: center; font-size: 12px; color: #a1a1aa; }
+        .footer a { color: #ef4444; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>%s</h1>
+        </div>
+        <div class="body">
+            <p>您好，您正在进行密码重置。</p>
+            <p>点击下方按钮重置密码：</p>
+            <p style="text-align:center;"><a href="%s" class="btn">重置密码</a></p>
+            <p>如果按钮无法点击，请复制以下链接到浏览器中打开：</p>
+            <div class="link-box">%s</div>
+            <p>重置链接 %d 分钟内有效。如果这不是您本人操作，请忽略此邮件。</p>
+        </div>
+        <div class="footer">
+            <p>此邮件由 %s 自动发送，请勿直接回复。</p>
+        </div>
+    </div>
+</body>
+</html>`, common.SystemName, link, link, common.VerificationValidMinutes, common.SystemName)
 		err := common.SendEmail(subject, email, content)
 		if err != nil {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("failed to send password reset email to %s: %s", email, err.Error()))
