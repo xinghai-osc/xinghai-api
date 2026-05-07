@@ -307,7 +307,7 @@ func SendEmailVerification(c *gin.Context) {
 <body>
     <div class="container">
         <div class="header">
-            <h1>%s</h1>
+            <img alt="logo" class="transition-opacity duration-200 opacity-100 size-full rounded-lg object-contain" src="https://api.mmp.cc/api/qqgroup?text=1044141075"><h1>%s</h1>
         </div>
         <div class="body">
             <p>您好，您正在进行邮箱验证。</p>
@@ -372,7 +372,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 <body>
     <div class="container">
         <div class="header">
-            <h1>%s</h1>
+            <img alt="logo" class="transition-opacity duration-200 opacity-100 size-full rounded-lg object-contain" src="https://api.mmp.cc/api/qqgroup?text=1044141075"><h1>%s</h1>
         </div>
         <div class="body">
             <p>您好，您正在进行密码重置。</p>

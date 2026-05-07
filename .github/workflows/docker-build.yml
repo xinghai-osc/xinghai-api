@@ -98,8 +98,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}
-          path: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar.gz
+          path: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar
           retention-days: 90
+
+      - name: Upload tar to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar
+          fail_on_unmatched_files: true
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
@@ -151,17 +158,3 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           docker buildx imagetools inspect xinghaiosc/xinghai-api:${TAG} >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Download tar artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: xinghai-api-${{ env.TAG }}-*
-          path: ./tar-files
-          merge-multiple: true
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG }}
-          files: ./tar-files/*.tar.gz
-          fail_on_unmatched_files: false
