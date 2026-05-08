@@ -2,9 +2,9 @@
 
 ![new-api](/web/default/public/logo.png)
 
-# New API
+# Xinghai API
 
-🍥 **Passerelle de modèles étendus de nouvelle génération et système de gestion d'actifs d'IA**
+**Une fourche de New API - Passerelle de modèles étendus de nouvelle génération et système de gestion d'actifs d'IA**
 
 <p align="center">
   <a href="./README.zh_CN.md">简体中文</a> |

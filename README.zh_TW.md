@@ -2,9 +2,9 @@
 
 ![new-api](/web/default/public/logo.png)
 
-# New API
+# Xinghai API
 
-🍥 **新一代大模型網關與AI資產管理系統**
+ **新一代大模型網關與AI資產管理系統 - 基於 New API 的分支**
 
 <p align="center">
   繁體中文 |

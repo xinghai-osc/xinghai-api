@@ -2,9 +2,9 @@
 
 ![new-api](/web/default/public/logo.png)
 
-# New API
+# Xinghai API
 
-🍥 **Next-Generation Large Model Gateway and AI Asset Management System**
+ **A fork of New API - Next-Generation Large Model Gateway and AI Asset Management System**
 
 <p align="center">
   <a href="./README.md">中文</a> | 
