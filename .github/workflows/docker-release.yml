@@ -59,7 +59,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: false
           load: true
-          tags: new-api:${{ env.VERSION }}-${{ matrix.arch }}
+          tags: xinghai-api:${{ env.VERSION }}-${{ matrix.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
@@ -67,26 +67,26 @@ jobs:
 
       - name: Export Docker Image to Tar
         run: |
-          docker save new-api:${{ env.VERSION }}-${{ matrix.arch }} -o new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.tar
+          docker save xinghai-api:${{ env.VERSION }}-${{ matrix.arch }} -o xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.tar
 
       - name: Compress to ZIP
         run: |
-          zip -9 new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.tar
-          rm new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.tar
-          ls -lh new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip
+          zip -9 xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.tar
+          rm xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.tar
+          ls -lh xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip
 
       - name: Generate SHA256 Checksum
         run: |
-          sha256sum new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip > new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
-          cat new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
+          sha256sum xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip > xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
+          cat xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           files: |
-            new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip
-            new-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
+            xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip
+            xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
           tag_name: ${{ env.VERSION }}
           draft: false
           prerelease: ${{ contains(env.VERSION, 'alpha') || contains(env.VERSION, 'beta') || contains(env.VERSION, 'rc') }}
