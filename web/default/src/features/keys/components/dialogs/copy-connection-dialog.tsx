@@ -169,7 +169,7 @@ export function CopyConnectionDialog({
               placeholder={
                 isLoading ? t('Loading...') : t('Select a format to generate')
               }
-              className="min-h-[120px] font-mono text-xs"
+              className="min-h-[120px] font-mono text-xs break-all whitespace-pre-wrap"
             />
           </div>
 
