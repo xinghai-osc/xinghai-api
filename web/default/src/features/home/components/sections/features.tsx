@@ -15,113 +15,139 @@ interface FeaturesProps {
   className?: string
 }
 
+const featureIcons = {
+  Zap: <Zap className='size-5' />,
+  Shield: <Shield className='size-5' />,
+  Globe: <Globe className='size-5' />,
+  Code: <Code className='size-5' />,
+  Gauge: <Gauge className='size-5' />,
+  DollarSign: <DollarSign className='size-5' />,
+  Users: <Users className='size-5' />,
+  HeartHandshake: <HeartHandshake className='size-5' />,
+} as const
+
+const featureKeys = ['Zap', 'Shield', 'Globe', 'Code', 'Gauge', 'DollarSign', 'Users', 'HeartHandshake'] as const
+
 export function Features(_props: FeaturesProps) {
   const { t } = useTranslation()
 
   const features = [
     {
-      num: '01',
-      icon: <Zap className='size-4' />,
+      key: 'lightning',
+      iconKey: 'Zap',
       title: t('Lightning Fast'),
       desc: t(
         'Sub-100ms latency with optimized routing and intelligent caching'
       ),
+      gradient: 'from-amber-500/20 to-orange-500/20',
+      iconColor: 'text-amber-500',
+      borderColor: 'hover:border-amber-500/40',
     },
     {
-      num: '02',
-      icon: <Shield className='size-4' />,
+      key: 'secure',
+      iconKey: 'Shield',
       title: t('Secure & Reliable'),
       desc: t(
         'Enterprise-grade security with role-based access and audit logging'
       ),
+      gradient: 'from-emerald-500/20 to-green-500/20',
+      iconColor: 'text-emerald-500',
+      borderColor: 'hover:border-emerald-500/40',
     },
     {
-      num: '03',
-      icon: <Globe className='size-4' />,
+      key: 'global',
+      iconKey: 'Globe',
       title: t('Global Coverage'),
       desc: t('Multi-region failover for 99.9% uptime worldwide'),
+      gradient: 'from-blue-500/20 to-cyan-500/20',
+      iconColor: 'text-blue-500',
+      borderColor: 'hover:border-blue-500/40',
     },
     {
-      num: '04',
-      icon: <Code className='size-4' />,
+      key: 'developer',
+      iconKey: 'Code',
       title: t('Developer Friendly'),
       desc: t('Drop-in replacement for OpenAI, Anthropic, and Gemini APIs'),
+      gradient: 'from-violet-500/20 to-purple-500/20',
+      iconColor: 'text-violet-500',
+      borderColor: 'hover:border-violet-500/40',
     },
     {
-      num: '05',
-      icon: <Gauge className='size-4' />,
+      key: 'performance',
+      iconKey: 'Gauge',
       title: t('High Performance'),
       desc: t('Smart load balancing with automatic failover and rate limiting'),
+      gradient: 'from-red-500/20 to-pink-500/20',
+      iconColor: 'text-red-500',
+      borderColor: 'hover:border-red-500/40',
     },
     {
-      num: '06',
-      icon: <DollarSign className='size-4' />,
+      key: 'billing',
+      iconKey: 'DollarSign',
       title: t('Transparent Billing'),
       desc: t('Real-time cost tracking with budget alerts and team quotas'),
+      gradient: 'from-green-500/20 to-teal-500/20',
+      iconColor: 'text-green-500',
+      borderColor: 'hover:border-green-500/40',
     },
     {
-      num: '07',
-      icon: <Users className='size-4' />,
+      key: 'team',
+      iconKey: 'Users',
       title: t('Team Collaboration'),
       desc: t('Granular permissions and shared workspaces for your team'),
+      gradient: 'from-indigo-500/20 to-blue-500/20',
+      iconColor: 'text-indigo-500',
+      borderColor: 'hover:border-indigo-500/40',
     },
     {
-      num: '08',
-      icon: <HeartHandshake className='size-4' />,
+      key: 'opensource',
+      iconKey: 'HeartHandshake',
       title: t('Open Source'),
       desc: t('Self-hosted, extensible, backed by an active community'),
+      gradient: 'from-rose-500/20 to-pink-500/20',
+      iconColor: 'text-rose-500',
+      borderColor: 'hover:border-rose-500/40',
     },
   ]
 
   return (
     <section className='relative z-10 px-6 py-24 md:py-32'>
-      <div className='mx-auto max-w-2xl'>
-        {/* Section header */}
-        <AnimateInView>
+      <div className='mx-auto max-w-5xl'>
+        <AnimateInView className='mb-16 text-center md:mb-20'>
           <p className='text-muted-foreground mb-3 text-xs font-medium tracking-[0.2em] uppercase'>
             {t('Core Features')}
           </p>
-          <h2 className='text-2xl leading-tight font-semibold tracking-tight md:text-3xl'>
-            {t('Everything you need to')}
-            <br />
-            {t('ship AI products faster')}
+          <h2 className='text-3xl leading-tight font-bold tracking-tight md:text-4xl'>
+            {t('Everything you need to ship AI products faster')}
           </h2>
+          <div className='mx-auto mt-6 h-1 w-16 rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-purple-500' />
         </AnimateInView>
 
-        {/* Gradient divider */}
-        <div className='my-8 h-px w-12 bg-gradient-to-r from-blue-500 to-violet-500' />
-
-        {/* Editorial list */}
-        <div className='divide-border/50 divide-y'>
+        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
           {features.map((f, i) => (
             <AnimateInView
-              key={f.num}
-              delay={i * 50}
-              className='group flex items-start gap-5 py-6 md:py-7'
+              key={f.key}
+              delay={i * 60}
+              animation='fade-up'
+              className='group relative rounded-xl border border-border/60 bg-card/40 p-5 backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-card/80 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5'
             >
-              {/* Number */}
-              <span className='text-muted-foreground/50 shrink-0 pt-0.5 font-mono text-xs tabular-nums'>
-                {f.num}
-              </span>
+              <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${f.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
 
-              {/* Content */}
-              <div className='min-w-0 flex-1'>
-                <div className='mb-2 flex items-center gap-2.5'>
-                  <span className='text-muted-foreground/60'>{f.icon}</span>
-                  <h3 className='text-sm font-semibold' style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-                    {f.title}
-                  </h3>
+              <div className='relative'>
+                <div className={`mb-4 inline-flex rounded-lg ${f.iconColor} bg-current/10 p-2.5`}>
+                  {featureIcons[f.iconKey as keyof typeof featureIcons]}
                 </div>
-                <p className='text-muted-foreground/70 text-sm leading-relaxed'>
+
+                <h3 className='mb-2 text-sm font-semibold'>{f.title}</h3>
+                <p className='text-muted-foreground text-xs leading-relaxed'>
                   {f.desc}
                 </p>
               </div>
+
+              <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent ${f.borderColor.replace('hover:', '')} via-primary/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
             </AnimateInView>
           ))}
         </div>
-
-        {/* Bottom divider */}
-        <div className='mt-8 h-px w-8 bg-primary/40' />
       </div>
     </section>
   )

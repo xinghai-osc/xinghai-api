@@ -74,32 +74,59 @@ interface StatItem {
   suffix: string
   label: string
   decimals?: number
+  description?: string
 }
 
 export function Stats(_props: StatsProps) {
   const { t } = useTranslation()
 
   const stats: StatItem[] = [
-    { end: 50, suffix: '+', label: t('upstream providers') },
-    { end: 500, suffix: '+', label: t('AI models supported') },
-    { end: 50, suffix: '+', label: t('API-compatible endpoints') },
-    { end: 10, suffix: 'K+', label: t('active deployments') },
+    {
+      end: 50,
+      suffix: '+',
+      label: t('upstream providers'),
+      description: t('Global AI providers'),
+    },
+    {
+      end: 500,
+      suffix: '+',
+      label: t('AI models supported'),
+      description: t('Across all providers'),
+    },
+    {
+      end: 50,
+      suffix: '+',
+      label: t('API-compatible endpoints'),
+      description: t('OpenAI, Anthropic, Gemini compatible'),
+    },
+    {
+      end: 10,
+      suffix: 'K+',
+      label: t('active deployments'),
+      description: t('Worldwide'),
+    },
   ]
 
   return (
-    <div className='border-border/40 bg-muted/10 relative z-10 border-y'>
-      <div className='mx-auto max-w-6xl px-6 py-10 md:py-12'>
-        <div className='grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12'>
-          {stats.map((s) => (
+    <div className='border-border/40 relative z-10 border-y bg-gradient-to-b from-muted/30 to-transparent'>
+      <div className='mx-auto max-w-6xl px-6 py-16 md:py-20'>
+        <div className='grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8'>
+          {stats.map((s, index) => (
             <div
               key={s.label}
-              className='flex flex-col items-center text-center'
+              className='group relative flex flex-col items-center text-center'
             >
-              <span className='bg-gradient-to-br from-foreground via-foreground to-muted-foreground bg-clip-text text-2xl font-bold tracking-tight text-transparent md:text-3xl'>
+              {index > 0 && (
+                <div className='absolute left-0 top-1/2 hidden h-12 w-px -translate-y-1/2 bg-gradient-to-b from-transparent via-border to-transparent md:block' style={{ marginLeft: '-2rem' }} />
+              )}
+
+              <div className='mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-md group-hover:shadow-primary/20'>
                 <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
-              </span>
-              <span className='text-muted-foreground mt-1.5 text-xs'>
-                {s.label}
+              </div>
+
+              <span className='text-sm font-semibold'>{s.label}</span>
+              <span className='text-muted-foreground mt-0.5 text-xs'>
+                {s.description}
               </span>
             </div>
           ))}
