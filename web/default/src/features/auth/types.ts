@@ -21,6 +21,7 @@ export interface RegisterPayload {
   verification_code?: string
   aff?: string
   turnstile?: string
+  geetest?: string
 }
 
 export interface PasswordResetPayload {
@@ -94,6 +95,8 @@ export interface SystemStatus {
     WeChatAccountQRCodeImageURL?: string
     turnstile_check?: boolean
     turnstile_site_key?: string
+    geetest_enabled?: boolean
+    geetest_captcha_id?: string
     email_verification?: boolean
     self_use_mode_enabled?: boolean
     display_in_currency?: boolean

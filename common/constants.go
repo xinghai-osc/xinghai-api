@@ -117,6 +117,12 @@ var WeChatAccountQRCodeImageURL = ""
 var TurnstileSiteKey = ""
 var TurnstileSecretKey = ""
 
+var GeetestEnabled = false
+var GeetestCaptchaID = ""
+var GeetestCaptchaKey = ""
+var GeetestValidateURL = "https://gcaptcha4.geetest.com/validate"
+var GeetestVersion = 4
+
 var TelegramBotToken = ""
 var TelegramBotName = ""
 
