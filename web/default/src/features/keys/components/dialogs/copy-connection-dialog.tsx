@@ -67,10 +67,14 @@ export function CopyConnectionDialog({
           setConnectionText('')
           return
         }
+        const models = currentRow.model_limits_enabled && currentRow.model_limits
+          ? currentRow.model_limits.split(',').filter(Boolean)
+          : []
         const text = formatConnectionInfo({
           key: realKey,
           serverAddress: getServerAddress(),
           format: selectedFormat,
+          models,
         })
         setConnectionText(text)
       } catch {
@@ -143,7 +147,7 @@ export function CopyConnectionDialog({
               onValueChange={(v) => handleFormatChange(v as ConnectionFormat)}
             >
               <SelectTrigger id="format-select" className="w-full">
-                <SelectValue placeholder={t('Select format')} />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {CONNECTION_FORMATS.map((fmt) => (

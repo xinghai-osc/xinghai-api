@@ -31,19 +31,20 @@ export interface FormatConnectionParams {
   key: string
   serverAddress: string
   format: ConnectionFormat
+  models?: string[]
 }
 
 /**
  * Format connection info based on selected format
  */
 export function formatConnectionInfo(params: FormatConnectionParams): string {
-  const { key, serverAddress, format } = params
+  const { key, serverAddress, format, models } = params
 
   switch (format) {
     case 'generic':
       return formatGenericConnection(key, serverAddress)
     case 'opencode':
-      return formatOpenCodeConnection(key, serverAddress)
+      return formatOpenCodeConnection(key, serverAddress, models)
     case 'cherrystudio':
       return formatCherryStudioConnection(key, serverAddress)
     default:
@@ -68,19 +69,40 @@ function formatGenericConnection(_key: string, serverAddress: string): string {
  * OpenCode format: platform-specific connection string
  * Uses a structured JSON with OpenCode metadata
  */
-function formatOpenCodeConnection(key: string, serverAddress: string): string {
+function formatOpenCodeConnection(
+  key: string,
+  serverAddress: string,
+  models?: string[]
+): string {
   const baseUrl =
     serverAddress ||
     (typeof window !== 'undefined' ? window.location.origin : '')
-  const payload = {
-    type: 'opencode_connection',
-    version: '1.0',
-    api_key: key,
-    base_url: `${baseUrl}/v1`,
-    endpoint: `${baseUrl}/v1/chat/completions`,
-    provider: 'new-api',
-    created_at: new Date().toISOString(),
+  const cleanBase = baseUrl.replace(/\/$/, '')
+
+  const modelsConfig: Record<string, { name: string }> = {}
+  if (models && models.length > 0) {
+    for (const model of models) {
+      modelsConfig[model] = {
+        name: `${model}(proxy)`,
+      }
+    }
   }
+
+  const payload = {
+    $schema: 'https://opencode.ai/config.json',
+    provider: {
+      'new-api': {
+        npm: '@ai-sdk/openai',
+        name: 'new-api',
+        options: {
+          baseURL: `${cleanBase}/v1`,
+          apiKey: key,
+        },
+        models: modelsConfig,
+      },
+    },
+  }
+
   return JSON.stringify(payload, null, 2)
 }
 
