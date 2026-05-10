@@ -201,12 +201,34 @@ func FetchUpstreamRatios(c *gin.Context) {
 	var upstreams []dto.UpstreamDTO
 
 	if len(req.Upstreams) > 0 {
+		channelIdsToFetch := make([]int, 0)
+		for _, u := range req.Upstreams {
+			if u.ID > 0 {
+				channelIdsToFetch = append(channelIdsToFetch, u.ID)
+			}
+		}
+		channelModelMappings := make(map[int]string)
+		if len(channelIdsToFetch) > 0 {
+			dbChannels, err := model.GetChannelsByIds(channelIdsToFetch)
+			if err != nil {
+				logger.LogError(c.Request.Context(), "failed to query channels for model mapping: "+err.Error())
+			} else {
+				for _, ch := range dbChannels {
+					channelModelMappings[ch.Id] = ch.GetModelMapping()
+				}
+			}
+		}
 		for _, u := range req.Upstreams {
 			if strings.HasPrefix(u.BaseURL, "http") {
 				if u.Endpoint == "" {
 					u.Endpoint = defaultEndpoint
 				}
 				u.BaseURL = strings.TrimRight(u.BaseURL, "/")
+				if u.ID > 0 {
+					if mm, exists := channelModelMappings[u.ID]; exists && mm != "" {
+						u.ModelMapping = mm
+					}
+				}
 				upstreams = append(upstreams, u)
 			}
 		}
