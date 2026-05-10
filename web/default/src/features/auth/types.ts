@@ -26,6 +26,7 @@ export interface LoginPayload {
   username: string
   password: string
   turnstile?: string
+  geetest?: string
 }
 
 export interface TwoFAPayload {

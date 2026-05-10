@@ -46,13 +46,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
+import { Geetest } from '@/components/geetest'
 import { register, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { registerFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
 import { useEmailVerification } from '@/features/auth/hooks/use-email-verification'
-import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
+import { useCaptcha } from '@/features/auth/hooks/use-captcha'
 import { getAffiliateCode } from '@/features/auth/lib/storage'
 
 export function SignUpForm({
@@ -70,12 +71,15 @@ export function SignUpForm({
 
   const { status } = useStatus()
   const {
-    isTurnstileEnabled,
+    captchaType,
+    isCaptchaEnabled,
+    captchaToken,
+    setCaptchaToken,
+    validateCaptcha,
+    onVerifyGeetest,
     turnstileSiteKey,
-    turnstileToken,
-    setTurnstileToken,
-    validateTurnstile,
-  } = useTurnstile()
+    geetestCaptchaId,
+  } = useCaptcha()
   const { redirectToLogin, handleLoginSuccess } = useAuthRedirect()
   const {
     isSending: isSendingCode,
@@ -83,8 +87,9 @@ export function SignUpForm({
     isActive,
     sendCode,
   } = useEmailVerification({
-    turnstileToken,
-    validateTurnstile,
+    captchaToken,
+    captchaType,
+    validateCaptcha,
   })
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
@@ -150,14 +155,29 @@ export function SignUpForm({
 
     setIsLoading(true)
     try {
-      const res = await register({
+      const registerData: {
+        username: string
+        password: string
+        email?: string
+        verification_code?: string
+        aff?: string
+        turnstile?: string
+        geetest?: string
+      } = {
         username: data.username,
         password: data.password,
         email: data.email || undefined,
         verification_code: verificationCode || undefined,
         aff: getAffiliateCode(),
-        turnstile: turnstileToken,
-      })
+      }
+
+      if (captchaType === 'turnstile') {
+        registerData.turnstile = captchaToken
+      } else if (captchaType === 'geetest') {
+        registerData.geetest = captchaToken
+      }
+
+      const res = await register(registerData)
 
       if (res?.success) {
         toast.success(t('Account created! Please sign in'))
@@ -318,12 +338,22 @@ export function SignUpForm({
               </Button>
             </div>
 
-            {/* Turnstile */}
-            {isTurnstileEnabled && (
+            {/* Captcha */}
+            {isCaptchaEnabled && captchaType === 'turnstile' && (
               <div className='mt-2'>
                 <Turnstile
                   siteKey={turnstileSiteKey}
-                  onVerify={setTurnstileToken}
+                  onVerify={setCaptchaToken}
+                />
+              </div>
+            )}
+            {isCaptchaEnabled && captchaType === 'geetest' && (
+              <div className='mt-2'>
+                <Geetest
+                  captchaId={geetestCaptchaId}
+                  onVerify={onVerifyGeetest}
+                  product='bind'
+                  version={4}
                 />
               </div>
             )}

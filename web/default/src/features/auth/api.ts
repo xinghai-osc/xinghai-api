@@ -36,13 +36,19 @@ import type {
 
 // User login with username and password
 export async function login(payload: LoginPayload) {
-  const turnstile = payload.turnstile ?? ''
+  const params: Record<string, string> = {}
+  if (payload.geetest) {
+    params.geetest = payload.geetest
+  } else {
+    params.turnstile = payload.turnstile ?? ''
+  }
   const res = await api.post<LoginResponse>(
-    `/api/user/login?turnstile=${turnstile}`,
+    '/api/user/login',
     {
       username: payload.username,
       password: payload.password,
-    }
+    },
+    { params }
   )
   return res.data
 }
@@ -66,11 +72,16 @@ export async function logout(): Promise<ApiResponse> {
 // Send password reset email
 export async function sendPasswordResetEmail(
   email: string,
-  turnstile?: string
+  captchaToken?: string,
+  captchaType?: 'turnstile' | 'geetest'
 ): Promise<ApiResponse> {
-  const res = await api.get('/api/reset_password', {
-    params: { email, turnstile },
-  })
+  const params: Record<string, string> = { email }
+  if (captchaType === 'geetest' && captchaToken) {
+    params.geetest = captchaToken
+  } else {
+    params.turnstile = captchaToken ?? ''
+  }
+  const res = await api.get('/api/reset_password', { params })
   return res.data
 }
 
@@ -105,20 +116,29 @@ export async function wechatLoginByCode(code: string): Promise<ApiResponse> {
 
 // User registration
 export async function register(payload: RegisterPayload): Promise<ApiResponse> {
-  const res = await api.post(`/api/user/register`, payload, {
-    params: { turnstile: payload.turnstile ?? '' },
-  })
+  const params: Record<string, string> = {}
+  if (payload.geetest) {
+    params.geetest = payload.geetest
+  } else {
+    params.turnstile = payload.turnstile ?? ''
+  }
+  const res = await api.post('/api/user/register', payload, { params })
   return res.data
 }
 
 // Send email verification code
 export async function sendEmailVerification(
   email: string,
-  turnstile?: string
+  captchaToken?: string,
+  captchaType?: 'turnstile' | 'geetest'
 ): Promise<ApiResponse> {
-  const res = await api.get('/api/verification', {
-    params: { email, turnstile },
-  })
+  const params: Record<string, string> = { email }
+  if (captchaType === 'geetest' && captchaToken) {
+    params.geetest = captchaToken
+  } else {
+    params.turnstile = captchaToken ?? ''
+  }
+  const res = await api.get('/api/verification', { params })
   return res.data
 }
 

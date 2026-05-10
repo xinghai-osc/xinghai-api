@@ -52,12 +52,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
+import { Geetest } from '@/components/geetest'
 import { login, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
-import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
+import { useCaptcha } from '@/features/auth/hooks/use-captcha'
 import { beginPasskeyLogin, finishPasskeyLogin } from '@/features/auth/passkey'
 import type { AuthFormProps } from '@/features/auth/types'
 
@@ -82,12 +83,15 @@ export function UserAuthForm({
     status?.passkey_login ?? status?.data?.passkey_login
   )
   const {
-    isTurnstileEnabled,
+    captchaType,
+    isCaptchaEnabled,
+    captchaToken,
+    setCaptchaToken,
+    validateCaptcha,
+    onVerifyGeetest,
     turnstileSiteKey,
-    turnstileToken,
-    setTurnstileToken,
-    validateTurnstile,
-  } = useTurnstile()
+    geetestCaptchaId,
+  } = useCaptcha()
   const { handleLoginSuccess, redirectTo2FA } = useAuthRedirect()
 
   const hasUserAgreement = Boolean(status?.user_agreement_enabled)
@@ -141,15 +145,27 @@ export function UserAuthForm({
       return
     }
 
-    if (!validateTurnstile()) return
+    if (!validateCaptcha()) return
 
     setIsLoading(true)
     try {
-      const res = await login({
+      const loginData: {
+        username: string
+        password: string
+        turnstile?: string
+        geetest?: string
+      } = {
         username: data.username,
         password: data.password,
-        turnstile: turnstileToken,
-      })
+      }
+
+      if (captchaType === 'turnstile') {
+        loginData.turnstile = captchaToken
+      } else if (captchaType === 'geetest') {
+        loginData.geetest = captchaToken
+      }
+
+      const res = await login(loginData)
 
       if (res.success) {
         if (res.data?.require_2fa) {
@@ -331,12 +347,22 @@ export function UserAuthForm({
           {t('Sign in')}
         </Button>
 
-        {/* Turnstile */}
-        {isTurnstileEnabled && (
+        {/* Captcha */}
+        {isCaptchaEnabled && captchaType === 'turnstile' && (
           <div className='mt-2'>
             <Turnstile
               siteKey={turnstileSiteKey}
-              onVerify={setTurnstileToken}
+              onVerify={setCaptchaToken}
+            />
+          </div>
+        )}
+        {isCaptchaEnabled && captchaType === 'geetest' && (
+          <div className='mt-2'>
+            <Geetest
+              captchaId={geetestCaptchaId}
+              onVerify={onVerifyGeetest}
+              product='bind'
+              version={4}
             />
           </div>
         )}
