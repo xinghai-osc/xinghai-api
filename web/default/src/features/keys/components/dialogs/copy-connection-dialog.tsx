@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
+import { getUserModels } from '@/lib/api'
 import {
   CONNECTION_FORMATS,
   formatConnectionInfo,
@@ -67,9 +68,13 @@ export function CopyConnectionDialog({
           setConnectionText('')
           return
         }
-        const models = currentRow.model_limits_enabled && currentRow.model_limits
-          ? currentRow.model_limits.split(',').filter(Boolean)
-          : []
+        let models: string[] = []
+        if (currentRow.model_limits_enabled && currentRow.model_limits) {
+          models = currentRow.model_limits.split(',').filter(Boolean)
+        } else {
+          const res = await getUserModels()
+          models = res.data || []
+        }
         const text = formatConnectionInfo({
           key: realKey,
           serverAddress: getServerAddress(),
