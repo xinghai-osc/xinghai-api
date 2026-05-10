@@ -131,6 +131,53 @@ func normalizeSyncValue(field string, value any) any {
 	return value
 }
 
+func buildReverseModelMapping(modelMappingJSON string) map[string]string {
+	if modelMappingJSON == "" || modelMappingJSON == "{}" {
+		return nil
+	}
+	var modelMap map[string]string
+	if err := common.UnmarshalJsonStr(modelMappingJSON, &modelMap); err != nil {
+		return nil
+	}
+	reverseMap := make(map[string]string)
+	for localModel, upstreamModel := range modelMap {
+		if upstreamModel != "" {
+			reverseMap[upstreamModel] = localModel
+		}
+	}
+	if len(reverseMap) == 0 {
+		return nil
+	}
+	return reverseMap
+}
+
+func applyModelMappingToData(data map[string]any, reverseMapping map[string]string) {
+	if reverseMapping == nil || len(reverseMapping) == 0 {
+		return
+	}
+	for _, field := range pricingSyncFields {
+		fieldMap := valueMap(data[field])
+		if fieldMap == nil {
+			continue
+		}
+		newFieldMap := make(map[string]any)
+		for modelName, value := range fieldMap {
+			targetName := modelName
+			if localName, exists := reverseMapping[modelName]; exists {
+				targetName = localName
+			}
+			if existingValue, exists := newFieldMap[targetName]; exists {
+				if !valuesEqual(existingValue, value) {
+					newFieldMap[modelName] = value
+					continue
+				}
+			}
+			newFieldMap[targetName] = value
+		}
+		data[field] = newFieldMap
+	}
+}
+
 func getLocalPricingSyncData() map[string]any {
 	data := billing_setting.GetPricingSyncData(map[string]any(ratio_setting.GetExposedData()))
 	data["image_ratio"] = ratio_setting.GetImageRatioCopy()
@@ -177,10 +224,11 @@ func FetchUpstreamRatios(c *gin.Context) {
 		for _, ch := range dbChannels {
 			if base := ch.GetBaseURL(); strings.HasPrefix(base, "http") {
 				upstreams = append(upstreams, dto.UpstreamDTO{
-					ID:       ch.Id,
-					Name:     ch.Name,
-					BaseURL:  strings.TrimRight(base, "/"),
-					Endpoint: "",
+					ID:           ch.Id,
+					Name:         ch.Name,
+					BaseURL:      strings.TrimRight(base, "/"),
+					Endpoint:     "",
+					ModelMapping: ch.GetModelMapping(),
 				})
 			}
 		}
@@ -224,6 +272,8 @@ func FetchUpstreamRatios(c *gin.Context) {
 
 			sem <- struct{}{}
 			defer func() { <-sem }()
+
+			reverseMapping := buildReverseModelMapping(chItem.ModelMapping)
 
 			isOpenRouter := chItem.Endpoint == "openrouter"
 
@@ -322,6 +372,7 @@ func FetchUpstreamRatios(c *gin.Context) {
 					ch <- upstreamResult{Name: uniqueName, Err: err.Error()}
 					return
 				}
+				applyModelMappingToData(converted, reverseMapping)
 				ch <- upstreamResult{Name: uniqueName, Data: converted}
 				return
 			}
@@ -334,6 +385,7 @@ func FetchUpstreamRatios(c *gin.Context) {
 					ch <- upstreamResult{Name: uniqueName, Err: err.Error()}
 					return
 				}
+				applyModelMappingToData(converted, reverseMapping)
 				ch <- upstreamResult{Name: uniqueName, Data: converted}
 				return
 			}
@@ -372,6 +424,7 @@ func FetchUpstreamRatios(c *gin.Context) {
 					}
 				}
 				if isType1 {
+					applyModelMappingToData(type1Data, reverseMapping)
 					ch <- upstreamResult{Name: uniqueName, Data: type1Data}
 					return
 				}
@@ -488,6 +541,7 @@ func FetchUpstreamRatios(c *gin.Context) {
 				converted[billing_setting.BillingExprField] = valueMap(billingExprMap)
 			}
 
+			applyModelMappingToData(converted, reverseMapping)
 			ch <- upstreamResult{Name: uniqueName, Data: converted}
 		}(chn)
 	}

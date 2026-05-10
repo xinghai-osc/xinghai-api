@@ -1,10 +1,11 @@
 package dto
 
 type UpstreamDTO struct {
-	ID       int    `json:"id,omitempty"`
-	Name     string `json:"name" binding:"required"`
-	BaseURL  string `json:"base_url" binding:"required"`
-	Endpoint string `json:"endpoint"`
+	ID           int    `json:"id,omitempty"`
+	Name         string `json:"name" binding:"required"`
+	BaseURL      string `json:"base_url" binding:"required"`
+	Endpoint     string `json:"endpoint"`
+	ModelMapping string `json:"model_mapping"`
 }
 
 type UpstreamRequest struct {
