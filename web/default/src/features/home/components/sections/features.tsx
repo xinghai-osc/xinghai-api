@@ -44,8 +44,6 @@ const featureIcons = {
   HeartHandshake: <HeartHandshake className='size-5' />,
 } as const
 
-const featureKeys = ['Zap', 'Shield', 'Globe', 'Code', 'Gauge', 'DollarSign', 'Users', 'HeartHandshake'] as const
-
 export function Features(_props: FeaturesProps) {
   const { t } = useTranslation()
 
