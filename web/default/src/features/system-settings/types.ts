@@ -373,6 +373,16 @@ export type TestResult = {
   error?: string
 }
 
+export type TestEmailRequest = {
+  email: string
+  type: 'verification' | 'reset' | 'quota' | 'channel'
+}
+
+export type TestEmailResponse = {
+  success: boolean
+  message: string
+}
+
 export type UpstreamRatiosResponse = {
   success: boolean
   message: string

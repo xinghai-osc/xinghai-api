@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import * as React from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -32,9 +33,17 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { SettingsSection } from '../components/settings-section'
 import { useResetForm } from '../hooks/use-reset-form'
 import { useUpdateOption } from '../hooks/use-update-option'
+import { useTestEmail } from '../hooks/use-test-email'
 
 const createEmailSchema = (t: (key: string) => string) =>
   z.object({
@@ -61,11 +70,19 @@ type EmailSettingsSectionProps = {
   defaultValues: EmailFormValues
 }
 
+const testEmailTypes = [
+  { value: 'verification', label: 'Email Verification' },
+  { value: 'reset', label: 'Password Reset' },
+  { value: 'quota', label: 'Quota Warning' },
+  { value: 'channel', label: 'Channel Status' },
+] as const
+
 export function EmailSettingsSection({
   defaultValues,
 }: EmailSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
+  const testEmail = useTestEmail()
   const emailSchema = createEmailSchema(t)
 
   const form = useForm<EmailFormValues>({
@@ -74,6 +91,10 @@ export function EmailSettingsSection({
   })
 
   useResetForm(form, defaultValues)
+
+  const [testEmailType, setTestEmailType] =
+    React.useState<(typeof testEmailTypes)[number]['value']>('verification')
+  const [testEmailAddress, setTestEmailAddress] = React.useState('')
 
   const onSubmit = async (values: EmailFormValues) => {
     const sanitized = {
@@ -313,6 +334,60 @@ export function EmailSettingsSection({
           </Button>
         </form>
       </Form>
+
+      <div className='mt-8 border-t pt-6'>
+        <h3 className='mb-2 text-lg font-medium'>{t('Send Test Email')}</h3>
+        <p className='mb-4 text-sm text-muted-foreground'>
+          {t('Send a test email to verify your SMTP configuration')}
+        </p>
+        <div className='flex flex-col gap-4 sm:flex-row sm:items-end'>
+          <div className='flex-1 space-y-2'>
+            <label className='text-sm font-medium'>{t('Test Email Type')}</label>
+            <Select
+              value={testEmailType}
+              onValueChange={(value) =>
+                setTestEmailType(value as (typeof testEmailTypes)[number]['value'])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('Select email type')} />
+              </SelectTrigger>
+              <SelectContent>
+                {testEmailTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {t(type.label)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='flex-[2] space-y-2'>
+            <label className='text-sm font-medium'>{t('Recipient Email')}</label>
+            <Input
+              type='email'
+              placeholder={t('Enter recipient email address')}
+              value={testEmailAddress}
+              onChange={(e) => setTestEmailAddress(e.target.value)}
+            />
+          </div>
+          <Button
+            variant='outline'
+            disabled={
+              testEmail.isPending ||
+              !testEmailAddress ||
+              !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmailAddress)
+            }
+            onClick={() =>
+              testEmail.mutate({
+                email: testEmailAddress,
+                type: testEmailType,
+              })
+            }
+          >
+            {testEmail.isPending ? t('Sending...') : t('Send Test')}
+          </Button>
+        </div>
+      </div>
     </SettingsSection>
   )
 }

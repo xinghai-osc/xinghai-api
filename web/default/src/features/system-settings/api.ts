@@ -21,6 +21,8 @@ import type {
   DeleteLogsResponse,
   FetchUpstreamRatiosRequest,
   SystemOptionsResponse,
+  TestEmailRequest,
+  TestEmailResponse,
   UpdateOptionRequest,
   UpdateOptionResponse,
   UpstreamChannelsResponse,
@@ -63,5 +65,10 @@ export async function fetchUpstreamRatios(request: FetchUpstreamRatiosRequest) {
     '/api/ratio_sync/fetch',
     request
   )
+  return res.data
+}
+
+export async function sendTestEmail(request: TestEmailRequest) {
+  const res = await api.post<TestEmailResponse>('/api/email/test', request)
   return res.data
 }
