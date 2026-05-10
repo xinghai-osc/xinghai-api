@@ -293,35 +293,65 @@ func SendEmailVerification(c *gin.Context) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>邮箱验证</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        .container { max-width: 480px; margin: 40px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #6366f1 0%%, #8b5cf6 100%%); padding: 32px 24px; text-align: center; }
-        .header h1 { color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; }
-        .body { padding: 32px 24px; color: #3f3f46; font-size: 15px; line-height: 1.6; }
+        body { margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        .wrapper { width: 100%%; padding: 40px 20px; box-sizing: border-box; }
+        .container { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 40px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid #f1f5f9; }
+        .header { background: linear-gradient(135deg, #4f46e5 0%%, #7c3aed 100%%); padding: 40px 32px; text-align: center; position: relative; }
+        .header::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 40px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") no-repeat bottom; background-size: cover; }
+        .header .icon { width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; backdrop-filter: blur(8px); }
+        .header .icon svg { width: 28px; height: 28px; fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+        .header p { color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px; }
+        .body { padding: 40px 32px; color: #334155; font-size: 15px; line-height: 1.7; }
         .body p { margin: 0 0 16px; }
-        .code-box { background: #fafafa; border: 1px dashed #d4d4d8; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }
-        .code-box .code { font-size: 32px; font-weight: 700; color: #6366f1; letter-spacing: 4px; font-family: "SF Mono", Monaco, monospace; }
-        .code-box .hint { font-size: 12px; color: #a1a1aa; margin-top: 8px; }
-        .footer { background: #fafafa; padding: 20px 24px; text-align: center; font-size: 12px; color: #a1a1aa; }
-        .footer a { color: #8b5cf6; text-decoration: none; }
+        .greeting { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
+        .code-wrapper { background: linear-gradient(135deg, #f8fafc 0%%, #f1f5f9 100%%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; text-align: center; margin: 24px 0; position: relative; }
+        .code-wrapper::before { content: 'VERIFICATION CODE'; position: absolute; top: -10px; left: 50%%; transform: translateX(-50%%); background: #ffffff; padding: 0 12px; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; }
+        .code { font-size: 36px; font-weight: 800; color: #4f46e5; letter-spacing: 6px; font-family: "SF Mono", Monaco, "Cascadia Code", monospace; line-height: 1; }
+        .hint { font-size: 13px; color: #64748b; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 24px 0; }
+        .security-notice { background: #fefce8; border: 1px solid #fef08a; border-radius: 10px; padding: 16px 20px; font-size: 13px; color: #854d0e; display: flex; align-items: flex-start; gap: 10px; }
+        .security-notice svg { width: 18px; height: 18px; fill: none; stroke: #ca8a04; stroke-width: 2; flex-shrink: 0; margin-top: 1px; }
+        .footer { background: #f8fafc; padding: 24px 32px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+        .footer p { margin: 0; }
+        .footer .brand { font-weight: 600; color: #64748b; }
+        @media (max-width: 480px) {
+            .wrapper { padding: 20px 12px; }
+            .header { padding: 32px 24px; }
+            .body { padding: 32px 24px; }
+            .code { font-size: 28px; letter-spacing: 4px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <img alt="logo" class="transition-opacity duration-200 opacity-100 size-full rounded-lg object-contain" src="https://api.mmp.cc/api/qqgroup?text=1044141075"><h1>%s</h1>
-        </div>
-        <div class="body">
-            <p>您好，您正在进行邮箱验证。</p>
-            <p>请使用以下验证码完成验证：</p>
-            <div class="code-box">
-                <div class="code">%s</div>
-                <div class="hint">验证码 %d 分钟内有效</div>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="icon">
+                    <svg viewBox="0 0 24 24"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path><path d="M18 8V6a4 4 0 0 0-4-4 4 4 0 0 0-4 4v2"></path></svg>
+                </div>
+                <h1>%s</h1>
+                <p>邮箱验证</p>
             </div>
-            <p>如果这不是您本人操作，请忽略此邮件。</p>
-        </div>
-        <div class="footer">
-            <p>此邮件由 %s 自动发送，请勿直接回复。</p>
+            <div class="body">
+                <p class="greeting">您好！</p>
+                <p>感谢您使用我们的服务。您正在进行邮箱验证操作，请使用以下验证码完成验证：</p>
+                <div class="code-wrapper">
+                    <div class="code">%s</div>
+                    <div class="hint">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        验证码在 %d 分钟内有效
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="security-notice">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>如果这不是您本人操作，请忽略此邮件。请勿将验证码透露给任何人。</span>
+                </div>
+            </div>
+            <div class="footer">
+                <p>此邮件由 <span class="brand">%s</span> 自动发送，请勿直接回复。</p>
+            </div>
         </div>
     </div>
 </body>
@@ -359,33 +389,67 @@ func SendPasswordResetEmail(c *gin.Context) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>密码重置</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        .container { max-width: 480px; margin: 40px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #f59e0b 0%%, #ef4444 100%%); padding: 32px 24px; text-align: center; }
-        .header h1 { color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; }
-        .body { padding: 32px 24px; color: #3f3f46; font-size: 15px; line-height: 1.6; }
+        body { margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        .wrapper { width: 100%%; padding: 40px 20px; box-sizing: border-box; }
+        .container { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 40px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid #f1f5f9; }
+        .header { background: linear-gradient(135deg, #f59e0b 0%%, #ef4444 100%%); padding: 40px 32px; text-align: center; position: relative; }
+        .header::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 40px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") no-repeat bottom; background-size: cover; }
+        .header .icon { width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; backdrop-filter: blur(8px); }
+        .header .icon svg { width: 28px; height: 28px; fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+        .header p { color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px; }
+        .body { padding: 40px 32px; color: #334155; font-size: 15px; line-height: 1.7; }
         .body p { margin: 0 0 16px; }
-        .btn { display: inline-block; background: linear-gradient(135deg, #f59e0b 0%%, #ef4444 100%%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; margin: 12px 0; }
-        .link-box { background: #fafafa; border: 1px dashed #d4d4d8; border-radius: 8px; padding: 12px; word-break: break-all; font-size: 13px; color: #71717a; margin: 12px 0; }
-        .footer { background: #fafafa; padding: 20px 24px; text-align: center; font-size: 12px; color: #a1a1aa; }
-        .footer a { color: #ef4444; text-decoration: none; }
+        .greeting { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
+        .btn-wrapper { text-align: center; margin: 28px 0; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #f59e0b 0%%, #ef4444 100%%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 14px rgba(239,68,68,0.35); transition: transform 0.2s, box-shadow 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239,68,68,0.45); }
+        .link-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+        .link-section .label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .link-box { background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px 12px; word-break: break-all; font-size: 12px; color: #475569; font-family: "SF Mono", Monaco, monospace; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 24px 0; }
+        .security-notice { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 16px 20px; font-size: 13px; color: #991b1b; display: flex; align-items: flex-start; gap: 10px; }
+        .security-notice svg { width: 18px; height: 18px; fill: none; stroke: #dc2626; stroke-width: 2; flex-shrink: 0; margin-top: 1px; }
+        .footer { background: #f8fafc; padding: 24px 32px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+        .footer p { margin: 0; }
+        .footer .brand { font-weight: 600; color: #64748b; }
+        @media (max-width: 480px) {
+            .wrapper { padding: 20px 12px; }
+            .header { padding: 32px 24px; }
+            .body { padding: 32px 24px; }
+            .btn { padding: 14px 28px; font-size: 14px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <img alt="logo" class="transition-opacity duration-200 opacity-100 size-full rounded-lg object-contain" src="https://api.mmp.cc/api/qqgroup?text=1044141075"><h1>%s</h1>
-        </div>
-        <div class="body">
-            <p>您好，您正在进行密码重置。</p>
-            <p>点击下方按钮重置密码：</p>
-            <p style="text-align:center;"><a href="%s" class="btn">重置密码</a></p>
-            <p>如果按钮无法点击，请复制以下链接到浏览器中打开：</p>
-            <div class="link-box">%s</div>
-            <p>重置链接 %d 分钟内有效。如果这不是您本人操作，请忽略此邮件。</p>
-        </div>
-        <div class="footer">
-            <p>此邮件由 %s 自动发送，请勿直接回复。</p>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <h1>%s</h1>
+                <p>密码重置</p>
+            </div>
+            <div class="body">
+                <p class="greeting">您好！</p>
+                <p>我们收到了您的密码重置请求。点击下方按钮即可重置您的密码：</p>
+                <div class="btn-wrapper">
+                    <a href="%s" class="btn">重置密码</a>
+                </div>
+                <div class="link-section">
+                    <div class="label">或复制链接到浏览器</div>
+                    <div class="link-box">%s</div>
+                </div>
+                <div class="divider"></div>
+                <div class="security-notice">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>重置链接在 %d 分钟内有效。如果这不是您本人操作，请忽略此邮件，您的账户仍然安全。</span>
+                </div>
+            </div>
+            <div class="footer">
+                <p>此邮件由 <span class="brand">%s</span> 自动发送，请勿直接回复。</p>
+            </div>
         </div>
     </div>
 </body>
