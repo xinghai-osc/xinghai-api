@@ -20,7 +20,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useSystemConfig } from '@/hooks/use-system-config'
 import { Button } from '@/components/ui/button'
 import { HeroTerminalDemo } from '../hero-terminal-demo'
 
@@ -158,7 +157,6 @@ function ParticleField() {
 
 export function Hero(props: HeroProps) {
   const { t } = useTranslation()
-  useSystemConfig()
 
   return (
     <section className='relative z-10 flex flex-col items-center overflow-hidden px-6 pt-28 pb-16 md:pt-36 md:pb-24'>
@@ -232,11 +230,11 @@ export function Hero(props: HeroProps) {
             {t('Every AI Model You Need')}
           </span>
         </h1>
-
-        <p className='text-muted-foreground/80 mt-6 max-w-xl text-base leading-relaxed md:text-lg'>
-          {t(
-            'A unified API gateway that connects 50+ AI providers. Manage models, keys, quotas, and routing policies — all in one place.'
-          )}
+        <p
+          className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-lg text-base leading-relaxed opacity-0 md:text-lg'
+          style={{ animationDelay: '80ms' }}
+        >
+          {t('Power AI applications, manage digital assets, connect the Future')}
         </p>
 
         <div className='mt-10 flex flex-col gap-4 sm:flex-row sm:items-center'>
