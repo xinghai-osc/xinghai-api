@@ -59,6 +59,44 @@ func ClearChannelAffinityCache(c *gin.Context) {
 	})
 }
 
+func DeleteChannelAffinityCacheByKey(c *gin.Context) {
+	ruleName := strings.TrimSpace(c.Query("rule_name"))
+	usingGroup := strings.TrimSpace(c.Query("using_group"))
+	keyFp := strings.TrimSpace(c.Query("key_fp"))
+
+	if ruleName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "missing param: rule_name",
+		})
+		return
+	}
+	if keyFp == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "missing param: key_fp",
+		})
+		return
+	}
+
+	deleted, err := service.DeleteChannelAffinityByKey(ruleName, usingGroup, keyFp)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"deleted": deleted,
+		},
+	})
+}
+
 func GetChannelAffinityUsageCacheStats(c *gin.Context) {
 	ruleName := strings.TrimSpace(c.Query("rule_name"))
 	usingGroup := strings.TrimSpace(c.Query("using_group"))

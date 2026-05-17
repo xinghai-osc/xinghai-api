@@ -245,6 +245,109 @@ func ClearChannelAffinityCacheByRuleName(ruleName string) (int, error) {
 	return deleted, nil
 }
 
+func DeleteChannelAffinityByKey(ruleName, usingGroup, keyFp string) (int, error) {
+	ruleName = strings.TrimSpace(ruleName)
+	keyFp = strings.TrimSpace(keyFp)
+	if ruleName == "" || keyFp == "" {
+		return 0, fmt.Errorf("rule_name and key_fp are required")
+	}
+
+	setting := operation_setting.GetChannelAffinitySetting()
+	if setting == nil {
+		return 0, fmt.Errorf("channel_affinity_setting not initialized")
+	}
+
+	var matchedRule *operation_setting.ChannelAffinityRule
+	for i := range setting.Rules {
+		if strings.TrimSpace(setting.Rules[i].Name) == ruleName {
+			matchedRule = &setting.Rules[i]
+			break
+		}
+	}
+	if matchedRule == nil {
+		return 0, fmt.Errorf("unknown rule name")
+	}
+	if !matchedRule.IncludeRuleName {
+		return 0, fmt.Errorf("rule does not include rule_name in cache key, cannot delete by key")
+	}
+
+	cache := getChannelAffinityCache()
+	keys, err := cache.Keys()
+	if err != nil {
+		return 0, fmt.Errorf("failed to list cache keys: %w", err)
+	}
+
+	prefix := channelAffinityCacheNamespace + ":" + ruleName + ":"
+
+	toDelete := make([]string, 0)
+	for _, k := range keys {
+		if !strings.HasPrefix(k, prefix) {
+			continue
+		}
+
+		rest := k[len(prefix):]
+		if rest == "" {
+			continue
+		}
+
+		matched := false
+		numPrefixParts := 0
+		if matchedRule.IncludeModelName {
+			numPrefixParts++
+		}
+		if matchedRule.IncludeUsingGroup {
+			numPrefixParts++
+		}
+
+		for n := numPrefixParts; n >= 0; n-- {
+			if n == 0 {
+				if affinityFingerprint(rest) == keyFp {
+					matched = true
+				}
+				break
+			}
+			parts := strings.SplitN(rest, ":", n+1)
+			if len(parts) < n+1 {
+				continue
+			}
+			affinityValue := parts[n]
+			if affinityFingerprint(affinityValue) != keyFp {
+				continue
+			}
+
+			if matchedRule.IncludeUsingGroup && usingGroup != "" {
+				groupIdx := -1
+				if matchedRule.IncludeModelName {
+					groupIdx = 1
+				} else {
+					groupIdx = 0
+				}
+				if groupIdx >= 0 && groupIdx < n && parts[groupIdx] != usingGroup {
+					continue
+				}
+			}
+
+			matched = true
+			break
+		}
+
+		if matched {
+			toDelete = append(toDelete, k)
+		}
+	}
+
+	if len(toDelete) == 0 {
+		return 0, nil
+	}
+
+	_, err = cache.DeleteMany(toDelete)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete cache entries: %w", err)
+	}
+
+	return len(toDelete), nil
+}
+
 func matchAnyRegexCached(patterns []string, s string) bool {
 	if len(patterns) == 0 || s == "" {
 		return false

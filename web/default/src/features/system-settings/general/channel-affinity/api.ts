@@ -61,3 +61,14 @@ export async function getAffinityUsageCache(params: {
   } as Record<string, unknown>)
   return res.data
 }
+
+export async function deleteAffinityCache(params: {
+  rule_name: string
+  using_group: string
+  key_fp: string
+}): Promise<{ success: boolean; message?: string; data?: { deleted: number } }> {
+  const res = await api.delete('/api/option/channel_affinity_cache/key', {
+    params,
+  })
+  return res.data
+}
