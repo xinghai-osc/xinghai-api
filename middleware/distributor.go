@@ -103,10 +103,9 @@ func Distribute() func(c *gin.Context) {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil {
 						if preferred.Status != common.ChannelStatusEnabled {
-							if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
-								abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorAffinityChannelDisabled))
-								return
-							}
+							// 亲和性渠道被禁用，不直接报错，继续选择其他渠道
+							// 覆盖 SkipRetry 标记，因为渠道禁用不等于请求失败，后续重试不应被亲和性规则阻止
+							c.Set("channel_affinity_skip_retry", false)
 						} else if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
 							autoGroups := service.GetUserAutoGroup(userGroup)

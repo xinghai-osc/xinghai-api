@@ -398,6 +398,77 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeSeconds, common.GetContextKeyBool(c, constant.ContextKeyIsStream), userGroup, other)
 	}
 
+	// 将请求失败的记录也保存到使用日志中，方便用户查看所有请求记录（包括失败的）
+	if common.LogConsumeEnabled {
+		recordFailedRequestToConsumeLog(c, channelError, err)
+	}
+}
+
+// recordFailedRequestToConsumeLog 将失败的请求记录到使用日志中
+func recordFailedRequestToConsumeLog(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
+	defer func() {
+		if r := recover(); r != nil {
+			common.SysError(fmt.Sprintf("recordFailedRequestToConsumeLog panic: %v", r))
+		}
+	}()
+
+	userId := c.GetInt("id")
+	if userId == 0 {
+		return
+	}
+
+	tokenName := c.GetString("token_name")
+	modelName := c.GetString("original_model")
+	tokenId := c.GetInt("token_id")
+	userGroup := c.GetString("group")
+	channelId := channelError.ChannelId
+
+	startTime := common.GetContextKeyTime(c, constant.ContextKeyRequestStartTime)
+	if startTime.IsZero() {
+		startTime = time.Now()
+	}
+	useTimeSeconds := int(time.Since(startTime).Seconds())
+
+	// 构建错误内容
+	content := fmt.Sprintf("请求失败: %s", err.MaskSensitiveErrorWithStatusCode())
+
+	// 构建其他信息
+	other := make(map[string]interface{})
+	if c.Request != nil && c.Request.URL != nil {
+		other["request_path"] = c.Request.URL.Path
+	}
+	other["error_type"] = err.GetErrorType()
+	other["error_code"] = err.GetErrorCode()
+	other["status_code"] = err.StatusCode
+	other["is_failed_request"] = true
+	other["channel_name"] = c.GetString("channel_name")
+	other["channel_type"] = c.GetInt("channel_type")
+
+	adminInfo := make(map[string]interface{})
+	adminInfo["use_channel"] = c.GetStringSlice("use_channel")
+	isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)
+	if isMultiKey {
+		adminInfo["is_multi_key"] = true
+		adminInfo["multi_key_index"] = common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
+	}
+	service.AppendChannelAffinityAdminInfo(c, adminInfo)
+	other["admin_info"] = adminInfo
+
+	// 记录到使用日志，quota为0表示没有实际扣费
+	model.RecordConsumeLog(c, userId, model.RecordConsumeLogParams{
+		ChannelId:        channelId,
+		PromptTokens:     0,
+		CompletionTokens: 0,
+		ModelName:        modelName,
+		TokenName:        tokenName,
+		Quota:            0,
+		Content:          content,
+		TokenId:          tokenId,
+		UseTimeSeconds:   useTimeSeconds,
+		IsStream:         common.GetContextKeyBool(c, constant.ContextKeyIsStream),
+		Group:            userGroup,
+		Other:            other,
+	})
 }
 
 func RelayMidjourney(c *gin.Context) {
