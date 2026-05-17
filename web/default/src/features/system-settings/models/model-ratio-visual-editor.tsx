@@ -34,12 +34,18 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { useQuery } from '@tanstack/react-query'
 import { useMediaQuery } from '@/hooks'
-import { Copy, Pencil, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Table,
   TableBody,
@@ -59,6 +65,7 @@ import {
   combineBillingExpr,
   splitBillingExprAndRequestRules,
 } from '@/features/pricing/lib/billing-expr'
+import { getUnpricedModels } from '../api'
 import { safeJsonParse } from '../utils/json-parser'
 import {
   ModelPricingEditorPanel,
@@ -214,6 +221,12 @@ export const ModelRatioVisualEditor = memo(
     const [sheetOpen, setSheetOpen] = useState(false)
     const [editorOpen, setEditorOpen] = useState(false)
     const [editData, setEditData] = useState<ModelRatioData | null>(null)
+    const [unpricedOpen, setUnpricedOpen] = useState(false)
+    const { data: unpricedModelsData } = useQuery({
+      queryKey: ['unpriced-models'],
+      queryFn: getUnpricedModels,
+      staleTime: 30 * 1000,
+    })
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [globalFilter, setGlobalFilter] = useState('')
@@ -413,6 +426,39 @@ export const ModelRatioVisualEditor = memo(
           } as Record<'per-token' | 'per-request' | 'tiered_expr', number>
         ),
       [models]
+    )
+
+    const configuredModelNames = useMemo(
+      () => new Set(models.map((m) => m.name)),
+      [models]
+    )
+
+    const unpricedModels = useMemo(() => {
+      const raw = unpricedModelsData?.data
+      if (!Array.isArray(raw)) return []
+      return raw.filter((name) => !configuredModelNames.has(name))
+    }, [unpricedModelsData, configuredModelNames])
+
+    const handleAddUnpricedModel = useCallback(
+      (name: string) => {
+        setEditData({
+          name,
+          price: '',
+          ratio: '',
+          cacheRatio: '',
+          createCacheRatio: '',
+          completionRatio: '',
+          imageRatio: '',
+          audioRatio: '',
+          audioCompletionRatio: '',
+          billingMode: 'per-token',
+          billingExpr: '',
+          requestRuleExpr: '',
+        })
+        setEditorOpen(true)
+        if (isMobile) setSheetOpen(true)
+      },
+      [isMobile]
     )
 
     const handleEdit = useCallback(
@@ -912,6 +958,41 @@ export const ModelRatioVisualEditor = memo(
                 </Button>
               }
             />
+
+            {unpricedModels.length > 0 && (
+              <Collapsible
+                open={unpricedOpen}
+                onOpenChange={setUnpricedOpen}
+              >
+                <div className='rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'>
+                  <CollapsibleTrigger className='flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-amber-800 hover:bg-amber-100/50 dark:text-amber-200 dark:hover:bg-amber-900/30'>
+                    <AlertTriangle className='h-4 w-4 shrink-0' />
+                    <span>
+                      {t('Unpriced models')} ({unpricedModels.length})
+                    </span>
+                    <span className='text-muted-foreground ml-1 text-xs font-normal'>
+                      {t('These enabled models have no price configured')}
+                    </span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className='flex flex-wrap gap-1.5 border-t border-amber-200 px-4 py-3 dark:border-amber-900'>
+                      {unpricedModels.map((name) => (
+                        <Button
+                          key={name}
+                          variant='outline'
+                          size='sm'
+                          className='h-7 text-xs'
+                          onClick={() => handleAddUnpricedModel(name)}
+                        >
+                          <Plus className='mr-0.5 h-3 w-3' />
+                          {name}
+                        </Button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
 
             {table.getRowModel().rows.length === 0 ? (
               <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center'>

@@ -76,6 +76,21 @@ func GetPricing(c *gin.Context) {
 	})
 }
 
+func GetUnpricedModels(c *gin.Context) {
+	enabledModels := model.GetEnabledModels()
+	unpricedModels := make([]string, 0)
+	for _, modelName := range enabledModels {
+		_, _, exist := ratio_setting.GetModelRatioOrPrice(modelName)
+		if !exist {
+			unpricedModels = append(unpricedModels, modelName)
+		}
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    unpricedModels,
+	})
+}
+
 func ResetModelRatio(c *gin.Context) {
 	defaultStr := ratio_setting.DefaultModelRatio2JSONString()
 	err := model.UpdateOption("ModelRatio", defaultStr)

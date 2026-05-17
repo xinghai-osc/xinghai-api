@@ -62,6 +62,13 @@ export async function resetModelRatios() {
   return res.data
 }
 
+export async function getUnpricedModels() {
+  const res = await api.get<{ success: boolean; data: string[] }>(
+    '/api/option/unpriced_models'
+  )
+  return res.data
+}
+
 export async function getUpstreamChannels() {
   const res = await api.get<UpstreamChannelsResponse>(
     '/api/ratio_sync/channels'
