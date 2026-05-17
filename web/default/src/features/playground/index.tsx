@@ -78,13 +78,15 @@ export function Playground() {
   useEffect(() => {
     if (!groupsData) return
 
-    setGroups(groupsData)
+    const { groups: groupList, userGroup } = groupsData
+    setGroups(groupList)
 
-    const hasCurrentGroup = groupsData.some((g) => g.value === config.group)
-    if (!hasCurrentGroup && groupsData.length > 0) {
+    const hasCurrentGroup = groupList.some((g) => g.value === config.group)
+    if (!hasCurrentGroup && groupList.length > 0) {
       const fallback =
-        groupsData.find((g) => g.value === 'default')?.value ??
-        groupsData[0].value
+        groupList.find((g) => g.value === userGroup)?.value ??
+        groupList.find((g) => g.value === 'default')?.value ??
+        groupList[0].value
       updateConfig('group', fallback)
     }
   }, [groupsData, setGroups, config.group, updateConfig])
