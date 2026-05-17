@@ -23,10 +23,10 @@ git pull origin main || {
 }
 echo ""
 
-# 2. 构建 Docker 镜像
-echo "🔨 构建 Docker 镜像..."
-docker-compose build --no-cache || {
-    echo -e "${RED}错误: Docker 构建失败${NC}"
+# 2. 拉取并更新 Docker 镜像
+echo "🔄 拉取 Docker 镜像..."
+docker-compose pull || {
+    echo -e "${RED}错误: Docker 镜像拉取失败${NC}"
     exit 1
 }
 echo ""

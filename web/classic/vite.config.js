@@ -25,16 +25,17 @@ import { codeInspectorPlugin } from 'code-inspector-plugin';
 const { vitePluginSemi } = pkg;
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
   plugins: [
-    codeInspectorPlugin({
-      bundler: 'vite',
-    }),
+    command === 'serve' &&
+      codeInspectorPlugin({
+        bundler: 'vite',
+      }),
     {
       name: 'treat-js-files-as-jsx',
       async transform(code, id) {
@@ -56,7 +57,6 @@ export default defineConfig({
     }),
   ],
   optimizeDeps: {
-    force: true,
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
@@ -104,4 +104,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
