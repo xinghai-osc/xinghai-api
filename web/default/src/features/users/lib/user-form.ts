@@ -31,7 +31,7 @@ export const userFormSchema = z.object({
   password: z.string().optional(),
   role: z.number().optional(),
   quota_dollars: z.number().min(0).optional(),
-  group: z.string().optional(),
+  group: z.array(z.string()).optional(),
   remark: z.string().optional(),
 })
 
@@ -47,7 +47,7 @@ export const USER_FORM_DEFAULT_VALUES: UserFormValues = {
   password: '',
   role: 1, // Default to common user
   quota_dollars: 0,
-  group: DEFAULT_GROUP,
+  group: [DEFAULT_GROUP],
   remark: '',
 }
 
@@ -73,7 +73,8 @@ export function transformFormDataToPayload(
     payload.role = data.role || 1 // Default to common user
   } else {
     // For update: quota is adjusted atomically via /api/user/manage, not sent here
-    payload.group = data.group
+    payload.group = data.group?.join(',')
+    payload.user_groups = data.group
     payload.remark = data.remark || undefined
     payload.id = userId
   }
@@ -85,13 +86,19 @@ export function transformFormDataToPayload(
  * Transform user data to form defaults
  */
 export function transformUserToFormDefaults(user: User): UserFormValues {
+  const userGroups = user.user_groups?.length
+    ? user.user_groups
+    : user.group
+      ? user.group.split(/[，,;；\s]+/).filter(Boolean)
+      : [DEFAULT_GROUP]
+
   return {
     username: user.username,
     display_name: user.display_name,
     password: '',
     role: user.role,
     quota_dollars: quotaUnitsToDollars(user.quota),
-    group: user.group || DEFAULT_GROUP,
+    group: userGroups,
     remark: user.remark || '',
   }
 }

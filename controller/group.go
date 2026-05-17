@@ -45,9 +45,10 @@ func GetUserGroups(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"message":   "",
-		"data":      usableGroups,
-		"user_group": userGroup,
+		"success":     true,
+		"message":     "",
+		"data":        usableGroups,
+		"user_group":  service.GetPrimaryUserGroup(userGroup),
+		"user_groups": service.SplitUserGroups(userGroup),
 	})
 }

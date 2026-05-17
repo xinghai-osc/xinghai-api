@@ -578,6 +578,11 @@ func UpdateUser(c *gin.Context) {
 	if updatedUser.Password == "$I_LOVE_U" {
 		updatedUser.Password = "" // rollback to what it should be
 	}
+	updatedUser.Group = service.JoinUserGroups(append([]string{updatedUser.Group}, updatedUser.UserGroups...))
+	if updatedUser.Group == "" {
+		updatedUser.Group = "default"
+	}
+	updatedUser.UserGroups = service.SplitUserGroups(updatedUser.Group)
 	updatePassword := updatedUser.Password != ""
 	if err := updatedUser.Edit(updatePassword); err != nil {
 		common.ApiError(c, err)

@@ -55,6 +55,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { MultiSelect } from '@/components/multi-select'
 import { createUser, updateUser, getUser, getGroups } from '../api'
 import { BINDING_FIELDS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
 import {
@@ -305,32 +306,23 @@ export function UsersMutateDrawer({
                     name='group'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Group')}</FormLabel>
-                        <Select
-                          items={[
-                            ...groups.map((group) => ({
+                        <FormLabel>{t('Groups')}</FormLabel>
+                        <FormControl>
+                          <MultiSelect
+                            options={groups.map((group) => ({
                               value: group,
                               label: group,
-                            })),
-                          ]}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('Select a group')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent alignItemWithTrigger={false}>
-                            <SelectGroup>
-                              {groups.map((group) => (
-                                <SelectItem key={group} value={group}>
-                                  {group}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                            }))}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder={t('Select groups')}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            'Users can access the union of selectable groups and special groups from all selected user groups.'
+                          )}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -226,11 +226,26 @@ export function useUsersColumns(): ColumnDef<User>[] {
         <DataTableColumnHeader column={column} title={t('Group')} />
       ),
       cell: ({ row }) => {
-        const group = row.getValue('group') as string
-        return <GroupBadge group={group} />
+        const user = row.original
+        const groups = user.user_groups?.length
+          ? user.user_groups
+          : String(row.getValue('group') || '')
+              .split(/[，,;；\s]+/)
+              .filter(Boolean)
+        return (
+          <div className='flex flex-wrap gap-1'>
+            {groups.map((group) => (
+              <GroupBadge key={group} group={group} />
+            ))}
+          </div>
+        )
       },
       filterFn: (row, id, value) => {
-        const group = String(row.getValue(id) || t('User Group')).toLowerCase()
+        const user = row.original
+        const group = (user.user_groups?.length
+          ? user.user_groups.join(',')
+          : String(row.getValue(id) || t('User Group'))
+        ).toLowerCase()
         const searchValue = String(value).toLowerCase()
         return group.includes(searchValue)
       },

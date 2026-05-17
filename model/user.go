@@ -40,7 +40,8 @@ type User struct {
 	Quota            int            `json:"quota" gorm:"type:int;default:0"`
 	UsedQuota        int            `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
 	RequestCount     int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
-	Group            string         `json:"group" gorm:"type:varchar(64);default:'default'"`
+	Group            string         `json:"group" gorm:"type:varchar(255);default:'default'"`
+	UserGroups       []string       `json:"user_groups" gorm:"-:all"`
 	AffCode          string         `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
 	AffCount         int            `json:"aff_count" gorm:"type:int;default:0;column:aff_count"`
 	AffQuota         int            `json:"aff_quota" gorm:"type:int;default:0;column:aff_quota"`           // 邀请剩余额度
@@ -53,6 +54,35 @@ type User struct {
 	StripeCustomer   string         `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
 	CreatedAt        int64          `json:"created_at" gorm:"autoCreateTime;column:created_at"`
 	LastLoginAt      int64          `json:"last_login_at" gorm:"default:0;column:last_login_at"`
+}
+
+func (user *User) FillUserGroups() {
+	user.UserGroups = splitUserGroups(user.Group)
+}
+
+func FillUsersGroups(users []*User) {
+	for _, user := range users {
+		if user != nil {
+			user.FillUserGroups()
+		}
+	}
+}
+
+func splitUserGroups(userGroup string) []string {
+	parts := strings.FieldsFunc(userGroup, func(r rune) bool {
+		return r == ',' || r == '，' || r == ';' || r == '；' || r == '\n' || r == '\t' || r == ' '
+	})
+	groups := make([]string, 0, len(parts))
+	seen := make(map[string]bool)
+	for _, part := range parts {
+		group := strings.TrimSpace(part)
+		if group == "" || seen[group] {
+			continue
+		}
+		seen[group] = true
+		groups = append(groups, group)
+	}
+	return groups
 }
 
 func (user *User) ToBaseUser() *UserBase {
@@ -222,7 +252,16 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 		return nil, 0, err
 	}
 
+	FillUsersGroups(users)
 	return users, total, nil
+}
+
+func userGroupSearchCondition() string {
+	return commonGroupCol + " = ? OR " + commonGroupCol + " LIKE ? OR " + commonGroupCol + " LIKE ? OR " + commonGroupCol + " LIKE ?"
+}
+
+func userGroupSearchArgs(group string) []interface{} {
+	return []interface{}{group, group + ",%", "%," + group + ",%", "%," + group}
 }
 
 func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, int64, error) {
@@ -253,8 +292,8 @@ func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, 
 		// 如果是数字，同时搜索ID和其他字段
 		likeCondition = "id = ? OR " + likeCondition
 		if group != "" {
-			query = query.Where("("+likeCondition+") AND "+commonGroupCol+" = ?",
-				keywordInt, "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", group)
+			args := append([]interface{}{keywordInt, "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%"}, userGroupSearchArgs(group)...)
+			query = query.Where("("+likeCondition+") AND ("+userGroupSearchCondition()+")", args...)
 		} else {
 			query = query.Where(likeCondition,
 				keywordInt, "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
@@ -262,8 +301,8 @@ func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, 
 	} else {
 		// 非数字关键字，只搜索字符串字段
 		if group != "" {
-			query = query.Where("("+likeCondition+") AND "+commonGroupCol+" = ?",
-				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", group)
+			args := append([]interface{}{"%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%"}, userGroupSearchArgs(group)...)
+			query = query.Where("("+likeCondition+") AND ("+userGroupSearchCondition()+")", args...)
 		} else {
 			query = query.Where(likeCondition,
 				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
@@ -289,6 +328,7 @@ func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, 
 		return nil, 0, err
 	}
 
+	FillUsersGroups(users)
 	return users, total, nil
 }
 
@@ -303,6 +343,7 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 	} else {
 		err = DB.Omit("password").First(&user, "id = ?", id).Error
 	}
+	user.FillUserGroups()
 	return &user, err
 }
 
