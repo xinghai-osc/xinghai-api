@@ -31,6 +31,8 @@ func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *model.Channel
 		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
+		allowedApiTypes := service.AllowedApiTypesForRequestPath(c.Request.URL.Path)
+		deniedApiTypes := service.DeniedApiTypesForRequestPath(c.Request.URL.Path)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, i18n.T(c, i18n.MsgDistributorInvalidRequest, map[string]any{"Error": err.Error()}))
@@ -49,6 +51,10 @@ func Distribute() func(c *gin.Context) {
 			}
 			if channel.Status != common.ChannelStatusEnabled {
 				abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorChannelDisabled))
+				return
+			}
+			if !service.IsChannelMatchedForApiTypes(channel, allowedApiTypes, deniedApiTypes) {
+				abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorInvalidChannelId))
 				return
 			}
 		} else {
@@ -103,8 +109,8 @@ func Distribute() func(c *gin.Context) {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil {
 						if preferred.Status != common.ChannelStatusEnabled {
-							// 亲和性渠道被禁用，不直接报错，继续选择其他渠道
-							// 覆盖 SkipRetry 标记，因为渠道禁用不等于请求失败，后续重试不应被亲和性规则阻止
+							c.Set("channel_affinity_skip_retry", false)
+						} else if !service.IsChannelMatchedForApiTypes(preferred, allowedApiTypes, deniedApiTypes) {
 							c.Set("channel_affinity_skip_retry", false)
 						} else if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
@@ -128,10 +134,12 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:        c,
-						ModelName:  modelRequest.Model,
-						TokenGroup: usingGroup,
-						Retry:      common.GetPointer(0),
+						Ctx:             c,
+						ModelName:       modelRequest.Model,
+						TokenGroup:      usingGroup,
+						Retry:           common.GetPointer(0),
+						AllowedApiTypes: allowedApiTypes,
+						DeniedApiTypes:  deniedApiTypes,
 					})
 					if err != nil {
 						showGroup := usingGroup

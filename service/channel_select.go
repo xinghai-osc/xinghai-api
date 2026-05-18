@@ -2,21 +2,26 @@ package service
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting"
+	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
 )
 
 type RetryParam struct {
-	Ctx          *gin.Context
-	TokenGroup   string
-	ModelName    string
-	Retry        *int
-	resetNextTry bool
+	Ctx              *gin.Context
+	TokenGroup       string
+	ModelName        string
+	Retry           *int
+	RelayFormat     types.RelayFormat
+	AllowedApiTypes map[int]bool
+	DeniedApiTypes  map[int]bool
+	resetNextTry    bool
 }
 
 func (p *RetryParam) GetRetry() int {
@@ -115,7 +120,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			}
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityRetry: %d", autoGroup, priorityRetry)
 
-			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityRetry)
+			channel, _ = model.GetRandomSatisfiedChannelWithCondition(autoGroup, param.ModelName, priorityRetry, param.channelSatisfied)
 			if channel == nil {
 				// Current group has no available channel for this model, try next group
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
@@ -153,10 +158,79 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			break
 		}
 	} else {
-		channel, err = model.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, param.GetRetry())
+		channel, err = model.GetRandomSatisfiedChannelWithCondition(param.TokenGroup, param.ModelName, param.GetRetry(), param.channelSatisfied)
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}
 	}
 	return channel, selectGroup, nil
+}
+
+func (p *RetryParam) channelSatisfied(channel *model.Channel) bool {
+	if p == nil || channel == nil {
+		return true
+	}
+	apiType, _ := common.ChannelType2APIType(channel.Type)
+	if len(p.AllowedApiTypes) > 0 {
+		return p.AllowedApiTypes[apiType]
+	}
+	if len(p.DeniedApiTypes) > 0 {
+		return !p.DeniedApiTypes[apiType]
+	}
+	return true
+}
+
+func AllowedApiTypesForRelayFormat(relayFormat types.RelayFormat) map[int]bool {
+	switch relayFormat {
+	case types.RelayFormatClaude:
+		return map[int]bool{constant.APITypeAnthropic: true, constant.APITypeMoonshot: true}
+	case types.RelayFormatGemini:
+		return map[int]bool{constant.APITypeGemini: true}
+	default:
+		return nil
+	}
+}
+
+func DeniedApiTypesForRelayFormat(relayFormat types.RelayFormat) map[int]bool {
+	switch relayFormat {
+	case types.RelayFormatOpenAI, types.RelayFormatOpenAIResponses, types.RelayFormatOpenAIResponsesCompaction, types.RelayFormatOpenAIAudio, types.RelayFormatOpenAIImage, types.RelayFormatOpenAIRealtime, types.RelayFormatEmbedding:
+		return map[int]bool{constant.APITypeAnthropic: true, constant.APITypeGemini: true, constant.APITypeMoonshot: true}
+	default:
+		return nil
+	}
+}
+
+func AllowedApiTypesForRequestPath(path string) map[int]bool {
+	if strings.HasPrefix(path, "/v1/messages") {
+		return AllowedApiTypesForRelayFormat(types.RelayFormatClaude)
+	}
+	if strings.HasPrefix(path, "/v1beta/models/") || strings.HasPrefix(path, "/v1/models/") || strings.HasPrefix(path, "/v1/engines/") {
+		return AllowedApiTypesForRelayFormat(types.RelayFormatGemini)
+	}
+	return nil
+}
+
+func DeniedApiTypesForRequestPath(path string) map[int]bool {
+	if strings.HasPrefix(path, "/v1/") && !strings.HasPrefix(path, "/v1/messages") && !strings.HasPrefix(path, "/v1/models/") && !strings.HasPrefix(path, "/v1/engines/") {
+		return DeniedApiTypesForRelayFormat(types.RelayFormatOpenAI)
+	}
+	return nil
+}
+
+func IsChannelAllowedForApiTypes(channel *model.Channel, allowedApiTypes map[int]bool) bool {
+	return IsChannelMatchedForApiTypes(channel, allowedApiTypes, nil)
+}
+
+func IsChannelMatchedForApiTypes(channel *model.Channel, allowedApiTypes map[int]bool, deniedApiTypes map[int]bool) bool {
+	if channel == nil {
+		return true
+	}
+	apiType, _ := common.ChannelType2APIType(channel.Type)
+	if len(allowedApiTypes) > 0 {
+		return allowedApiTypes[apiType]
+	}
+	if len(deniedApiTypes) > 0 {
+		return !deniedApiTypes[apiType]
+	}
+	return true
 }

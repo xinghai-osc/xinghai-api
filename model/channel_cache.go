@@ -94,21 +94,25 @@ func SyncChannelCache(frequency int) {
 }
 
 func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+	return GetRandomSatisfiedChannelWithCondition(group, model, retry, nil)
+}
+
+func GetRandomSatisfiedChannelWithCondition(group string, model string, retry int, condition func(*Channel) bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, retry)
+		return GetChannelWithCondition(group, model, retry, condition)
 	}
 
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
 
 	// First, try to find channels with the exact model name.
-	channels := group2model2channels[group][model]
+	channels := filterChannelsByCondition(group2model2channels[group][model], condition)
 
 	// If no channels found, try to find channels with the normalized model name.
 	if len(channels) == 0 {
 		normalizedModel := ratio_setting.FormatMatchingModelName(model)
-		channels = group2model2channels[group][normalizedModel]
+		channels = filterChannelsByCondition(group2model2channels[group][normalizedModel], condition)
 	}
 
 	if len(channels) == 0 {
@@ -188,6 +192,20 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	}
 	// return null if no channel is not found
 	return nil, errors.New("channel not found")
+}
+
+func filterChannelsByCondition(channelIds []int, condition func(*Channel) bool) []int {
+	if len(channelIds) == 0 || condition == nil {
+		return channelIds
+	}
+	filtered := make([]int, 0, len(channelIds))
+	for _, channelId := range channelIds {
+		channel, ok := channelsIDM[channelId]
+		if ok && condition(channel) {
+			filtered = append(filtered, channelId)
+		}
+	}
+	return filtered
 }
 
 func CacheGetChannel(id int) (*Channel, error) {
