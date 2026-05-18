@@ -711,6 +711,25 @@ func GetAllUserSubscriptions(userId int) ([]SubscriptionSummary, error) {
 	return buildSubscriptionSummaries(subs), nil
 }
 
+func HasActiveUserSubscriptionForGroup(userId int, usingGroup string) (bool, error) {
+	if userId <= 0 {
+		return false, errors.New("invalid userId")
+	}
+	now := common.GetTimestamp()
+	var subs []UserSubscription
+	if err := DB.Where("user_id = ? AND status = ? AND end_time > ?", userId, "active", now).
+		Select("id", "upgrade_group").
+		Find(&subs).Error; err != nil {
+		return false, err
+	}
+	for _, sub := range subs {
+		if subscriptionMatchesUsingGroup(sub, usingGroup) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func buildSubscriptionSummaries(subs []UserSubscription) []SubscriptionSummary {
 	if len(subs) == 0 {
 		return []SubscriptionSummary{}
@@ -817,6 +836,15 @@ type SubscriptionPreConsumeResult struct {
 	AmountTotal        int64
 	AmountUsedBefore   int64
 	AmountUsedAfter    int64
+}
+
+func subscriptionMatchesUsingGroup(sub UserSubscription, usingGroup string) bool {
+	usingGroup = strings.TrimSpace(usingGroup)
+	upgradeGroup := strings.TrimSpace(sub.UpgradeGroup)
+	if usingGroup == "" || usingGroup == "auto" {
+		return false
+	}
+	return upgradeGroup != "" && upgradeGroup == usingGroup
 }
 
 // ExpireDueSubscriptions marks expired subscriptions and handles group downgrade.
@@ -966,8 +994,7 @@ func maybeResetUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, pl
 	return tx.Save(sub).Error
 }
 
-// PreConsumeUserSubscription pre-consumes from any active subscription total quota.
-func PreConsumeUserSubscription(requestId string, userId int, modelName string, quotaType int, amount int64) (*SubscriptionPreConsumeResult, error) {
+func PreConsumeUserSubscription(requestId string, userId int, modelName string, quotaType int, amount int64, usingGroup ...string) (*SubscriptionPreConsumeResult, error) {
 	if userId <= 0 {
 		return nil, errors.New("invalid userId")
 	}
@@ -978,6 +1005,10 @@ func PreConsumeUserSubscription(requestId string, userId int, modelName string, 
 		return nil, errors.New("amount must be > 0")
 	}
 	now := GetDBTimestamp()
+	selectedGroup := ""
+	if len(usingGroup) > 0 {
+		selectedGroup = strings.TrimSpace(usingGroup[0])
+	}
 
 	returnValue := &SubscriptionPreConsumeResult{}
 
@@ -1015,6 +1046,9 @@ func PreConsumeUserSubscription(requestId string, userId int, modelName string, 
 		}
 		for _, candidate := range subs {
 			sub := candidate
+			if !subscriptionMatchesUsingGroup(sub, selectedGroup) {
+				continue
+			}
 			plan, err := getSubscriptionPlanByIdTx(tx, sub.PlanId)
 			if err != nil {
 				return err

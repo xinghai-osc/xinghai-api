@@ -346,6 +346,14 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 
 	pref := common.NormalizeBillingPreference(relayInfo.UserSetting.BillingPreference)
 
+	hasSubscriptionForGroup := func() (bool, *types.NewAPIError) {
+		hasSubForGroup, err := model.HasActiveUserSubscriptionForGroup(relayInfo.UserId, relayInfo.UsingGroup)
+		if err != nil {
+			return false, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+		}
+		return hasSubForGroup, nil
+	}
+
 	// 钱包路径需要先检查用户额度
 	tryWallet := func() (*BillingSession, *types.NewAPIError) {
 		userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
@@ -384,10 +392,11 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		session := &BillingSession{
 			relayInfo: relayInfo,
 			funding: &SubscriptionFunding{
-				requestId: relayInfo.RequestId,
-				userId:    relayInfo.UserId,
-				modelName: relayInfo.OriginModelName,
-				amount:    subConsume,
+				requestId:  relayInfo.RequestId,
+				userId:     relayInfo.UserId,
+				modelName:  relayInfo.OriginModelName,
+				usingGroup: relayInfo.UsingGroup,
+				amount:     subConsume,
 			},
 		}
 		// 必须传 subConsume 而非 preConsumedQuota，保证 SubscriptionFunding.amount、
@@ -400,6 +409,16 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 
 	switch pref {
 	case "subscription_only":
+		hasSubForGroup, apiErr := hasSubscriptionForGroup()
+		if apiErr != nil {
+			return nil, apiErr
+		}
+		if !hasSubForGroup {
+			return nil, types.NewErrorWithStatusCode(
+				fmt.Errorf("当前分组 %s 未配置可用订阅", relayInfo.UsingGroup),
+				types.ErrorCodeInsufficientUserQuota, http.StatusForbidden,
+				types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+		}
 		return trySubscription()
 	case "wallet_only":
 		return tryWallet()
@@ -407,7 +426,13 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		session, err := tryWallet()
 		if err != nil {
 			if err.GetErrorCode() == types.ErrorCodeInsufficientUserQuota {
-				return trySubscription()
+				hasSubForGroup, apiErr := hasSubscriptionForGroup()
+				if apiErr != nil {
+					return nil, apiErr
+				}
+				if hasSubForGroup {
+					return trySubscription()
+				}
 			}
 			return nil, err
 		}
@@ -415,11 +440,11 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 	case "subscription_first":
 		fallthrough
 	default:
-		hasSub, subCheckErr := model.HasActiveUserSubscription(relayInfo.UserId)
-		if subCheckErr != nil {
-			return nil, types.NewError(subCheckErr, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+		hasSubForGroup, apiErr := hasSubscriptionForGroup()
+		if apiErr != nil {
+			return nil, apiErr
 		}
-		if !hasSub {
+		if !hasSubForGroup {
 			return tryWallet()
 		}
 		session, apiErr := trySubscription()

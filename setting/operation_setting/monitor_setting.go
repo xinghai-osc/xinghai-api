@@ -3,6 +3,7 @@ package operation_setting
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/QuantumNous/new-api/setting/config"
 )
@@ -10,6 +11,7 @@ import (
 type MonitorSetting struct {
 	AutoTestChannelEnabled bool    `json:"auto_test_channel_enabled"`
 	AutoTestChannelMinutes float64 `json:"auto_test_channel_minutes"`
+	AutoTestChannelIds     string  `json:"auto_test_channel_ids"`
 }
 
 // 默认配置
@@ -32,4 +34,20 @@ func GetMonitorSetting() *MonitorSetting {
 		}
 	}
 	return &monitorSetting
+}
+
+func ParseAutoTestChannelIds(value string) map[int]bool {
+	channelIDs := make(map[int]bool)
+	for _, item := range strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == '\n' || r == '\r' || r == '\t' || r == ' '
+	}) {
+		channelID, err := strconv.Atoi(strings.TrimSpace(item))
+		if err == nil && channelID > 0 {
+			channelIDs[channelID] = true
+		}
+	}
+	if len(channelIDs) == 0 {
+		return nil
+	}
+	return channelIDs
 }
