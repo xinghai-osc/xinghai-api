@@ -18,14 +18,21 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { getUserModels, getUserGroups } from './api'
 import { PlaygroundChat } from './components/playground-chat'
+import { PlaygroundImageGenerator } from './components/playground-image-generator'
 import { PlaygroundInput } from './components/playground-input'
 import { usePlaygroundState, useChatHandler } from './hooks'
 import { createUserMessage, createLoadingAssistantMessage } from './lib'
 import type { Message as MessageType } from './types'
 
-export function Playground() {
+interface PlaygroundProps {
+  initialTab?: 'chat' | 'image'
+}
+
+export function Playground(props: PlaygroundProps) {
+  const { t } = useTranslation()
   const {
     config,
     parameterEnabled,
@@ -47,6 +54,9 @@ export function Playground() {
   // Edit dialog state
   const [editingMessageKey, setEditingMessageKey] = useState<string | null>(
     null
+  )
+  const [activeTab, setActiveTab] = useState<'chat' | 'image'>(
+    props.initialTab ?? 'chat'
   )
 
   // Load models
@@ -166,39 +176,80 @@ export function Playground() {
   }
 
   return (
-    <div className='relative flex size-full flex-col overflow-hidden'>
-      {/* Full-width scroll container: scrolling works even over side whitespace */}
-      <div className='flex flex-1 flex-col overflow-hidden'>
-        <PlaygroundChat
-          messages={messages}
-          onCopyMessage={handleCopyMessage}
-          onRegenerateMessage={handleRegenerateMessage}
-          onEditMessage={handleEditMessage}
-          onDeleteMessage={handleDeleteMessage}
-          isGenerating={isGenerating}
-          editingKey={editingMessageKey}
-          onCancelEdit={handleEditOpenChange}
-          onSaveEdit={(newContent) => applyEdit(newContent, false)}
-          onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
-        />
+    <div className='relative size-full overflow-hidden'>
+      <div className='absolute top-4 left-1/2 z-10 -translate-x-1/2'>
+        <div className='bg-muted inline-flex h-8 w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground'>
+          <button
+            className={`inline-flex h-[calc(100%-1px)] items-center justify-center rounded-md px-3 text-sm font-medium transition-all ${
+              activeTab === 'chat'
+                ? 'bg-background text-foreground'
+                : 'hover:text-foreground'
+            }`}
+            onClick={() => setActiveTab('chat')}
+            type='button'
+          >
+            {t('Chat')}
+          </button>
+          <button
+            className={`inline-flex h-[calc(100%-1px)] items-center justify-center rounded-md px-3 text-sm font-medium transition-all ${
+              activeTab === 'image'
+                ? 'bg-background text-foreground'
+                : 'hover:text-foreground'
+            }`}
+            onClick={() => setActiveTab('image')}
+            type='button'
+          >
+            {t('Image')}
+          </button>
+        </div>
       </div>
 
-      {/* Input area: center content and constrain to the same container width */}
-      <div className='mx-auto w-full max-w-4xl'>
-        <PlaygroundInput
-          disabled={isGenerating}
-          groups={groups}
-          groupValue={config.group}
-          isGenerating={isGenerating}
-          isModelLoading={isLoadingModels}
-          modelValue={config.model}
-          models={models}
-          onGroupChange={(value) => updateConfig('group', value)}
-          onModelChange={(value) => updateConfig('model', value)}
-          onStop={stopGeneration}
-          onSubmit={handleSendMessage}
-        />
-      </div>
+      {activeTab === 'chat' ? (
+        <div className='relative flex size-full flex-col overflow-hidden'>
+          <div className='flex flex-1 flex-col overflow-hidden'>
+            <PlaygroundChat
+              messages={messages}
+              onCopyMessage={handleCopyMessage}
+              onRegenerateMessage={handleRegenerateMessage}
+              onEditMessage={handleEditMessage}
+              onDeleteMessage={handleDeleteMessage}
+              isGenerating={isGenerating}
+              editingKey={editingMessageKey}
+              onCancelEdit={handleEditOpenChange}
+              onSaveEdit={(newContent) => applyEdit(newContent, false)}
+              onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
+            />
+          </div>
+
+          <div className='mx-auto w-full max-w-4xl'>
+            <PlaygroundInput
+              disabled={isGenerating}
+              groups={groups}
+              groupValue={config.group}
+              isGenerating={isGenerating}
+              isModelLoading={isLoadingModels}
+              modelValue={config.model}
+              models={models}
+              onGroupChange={(value) => updateConfig('group', value)}
+              onModelChange={(value) => updateConfig('model', value)}
+              onStop={stopGeneration}
+              onSubmit={handleSendMessage}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className='size-full overflow-hidden pt-14'>
+          <PlaygroundImageGenerator
+            groups={groups}
+            groupValue={config.group}
+            isModelLoading={isLoadingModels}
+            modelValue={config.model}
+            models={models}
+            onGroupChange={(value) => updateConfig('group', value)}
+            onModelChange={(value) => updateConfig('model', value)}
+          />
+        </div>
+      )}
     </div>
   )
 }
