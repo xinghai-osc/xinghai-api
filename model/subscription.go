@@ -841,10 +841,13 @@ type SubscriptionPreConsumeResult struct {
 func subscriptionMatchesUsingGroup(sub UserSubscription, usingGroup string) bool {
 	usingGroup = strings.TrimSpace(usingGroup)
 	upgradeGroup := strings.TrimSpace(sub.UpgradeGroup)
+	if upgradeGroup == "" {
+		return true
+	}
 	if usingGroup == "" || usingGroup == "auto" {
 		return false
 	}
-	return upgradeGroup != "" && upgradeGroup == usingGroup
+	return upgradeGroup == usingGroup
 }
 
 // ExpireDueSubscriptions marks expired subscriptions and handles group downgrade.
