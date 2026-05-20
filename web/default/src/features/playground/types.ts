@@ -116,6 +116,8 @@ export interface ImageGenerationRequest {
   background?: string
   output_format?: string
   response_format?: string
+  image?: string
+  images?: string[]
 }
 
 export interface ImageData {
