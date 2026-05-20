@@ -59,6 +59,7 @@ export function useSidebarData(): SidebarData {
           {
             title: t('Playground'),
             url: '/playground',
+            exact: true,
             icon: FlaskConical,
           },
           {

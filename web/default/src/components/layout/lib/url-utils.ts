@@ -102,6 +102,8 @@ export function checkIsActive(
   const itemUrlWithoutQuery = itemUrl.split('?')[0]
   const itemUrlHasQuery = itemUrl.includes('?')
 
+  if (item.exact) return false
+
   // If both URLs have the same base path
   if (hrefWithoutQuery === itemUrlWithoutQuery) {
     // If item.url has no query params, pathname match is enough (current URL may have query params)
