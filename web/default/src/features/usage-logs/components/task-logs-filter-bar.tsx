@@ -95,7 +95,11 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
             ...(searchParams.filter ? { taskId: searchParams.filter } : {}),
           }
 
-    setFilters(next)
+    const frame = window.requestAnimationFrame(() => {
+      setFilters(next)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [
     props.logCategory,
     searchParams.startTime,

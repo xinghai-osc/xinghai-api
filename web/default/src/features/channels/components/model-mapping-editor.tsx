@@ -71,9 +71,13 @@ export function ModelMappingEditor({
       internalUpdateRef.current = false
       return
     }
-    setJsonValue(value)
-    const newRows = parseJsonToRows(value)
-    setRows(newRows)
+
+    const frame = window.requestAnimationFrame(() => {
+      setJsonValue(value)
+      setRows(parseJsonToRows(value))
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [value, parseJsonToRows])
 
   const convertRowsToJson = (updatedRows: MappingRow[]): string => {

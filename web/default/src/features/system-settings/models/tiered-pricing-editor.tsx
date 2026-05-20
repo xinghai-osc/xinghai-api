@@ -367,9 +367,13 @@ function DraftNumberInput({
   const [focused, setFocused] = useState(false)
 
   useEffect(() => {
-    if (!focused) {
+    if (focused) return
+
+    const frame = window.requestAnimationFrame(() => {
       setDraft(formatNumberDraft(value))
-    }
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [focused, value])
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -594,7 +598,13 @@ function VisualTierCard({
   const [mediaOpen, setMediaOpen] = useState(hasMediaPricing)
 
   useEffect(() => {
-    if (hasMediaPricing) setMediaOpen(true)
+    if (!hasMediaPricing) return
+
+    const frame = window.requestAnimationFrame(() => {
+      setMediaOpen(true)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [hasMediaPricing])
 
   const renderPriceVariable = (

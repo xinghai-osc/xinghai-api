@@ -91,14 +91,21 @@ export function CommonLogsFilterBar<TData>(
     if (searchParams.upstreamRequestId)
       next.upstreamRequestId = searchParams.upstreamRequestId
 
-    if (Object.keys(next).length > 0) {
-      setFilters((prev) => ({ ...prev, ...next }))
-    }
-
     const typeArr = searchParams.type
-    if (Array.isArray(typeArr) && typeArr.length === 1) {
-      setLogType(typeArr[0])
-    }
+    const nextLogType =
+      Array.isArray(typeArr) && typeArr.length === 1 ? typeArr[0] : undefined
+
+    const frame = window.requestAnimationFrame(() => {
+      if (Object.keys(next).length > 0) {
+        setFilters((prev) => ({ ...prev, ...next }))
+      }
+
+      if (nextLogType) {
+        setLogType(nextLogType)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [
     searchParams.startTime,
     searchParams.endTime,

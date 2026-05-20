@@ -771,12 +771,16 @@ function GroupPricingTable({
       groupRatio,
       userUsableGroups
     )
-    setRows((currentRows) => {
-      if (groupPricingSignature(currentRows) === incomingSignature) {
-        return currentRows
-      }
-      return buildGroupPricingRows(groupRatio, userUsableGroups)
+    const frame = window.requestAnimationFrame(() => {
+      setRows((currentRows) => {
+        if (groupPricingSignature(currentRows) === incomingSignature) {
+          return currentRows
+        }
+        return buildGroupPricingRows(groupRatio, userUsableGroups)
+      })
     })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [groupRatio, userUsableGroups])
 
   const emitRows = useCallback(
@@ -998,14 +1002,18 @@ function SimpleGroupDialog({
   const title = type === 'groupRatio' ? t('group ratio') : t('top-up ratio')
 
   useEffect(() => {
-    if (!open) {
-      setName('')
-      setValue('')
-      return
-    }
+    const frame = window.requestAnimationFrame(() => {
+      if (!open) {
+        setName('')
+        setValue('')
+        return
+      }
 
-    setName(editData?.name ?? '')
-    setValue(editData?.value ?? '')
+      setName(editData?.name ?? '')
+      setValue(editData?.value ?? '')
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [editData, open])
 
   const handleSave = () => {
@@ -1086,14 +1094,18 @@ function GroupOverrideDialog({
   const [ratio, setRatio] = useState('')
 
   useEffect(() => {
-    if (!open) {
-      setTargetGroup('')
-      setRatio('')
-      return
-    }
+    const frame = window.requestAnimationFrame(() => {
+      if (!open) {
+        setTargetGroup('')
+        setRatio('')
+        return
+      }
 
-    setTargetGroup(editData?.targetGroup ?? '')
-    setRatio(editData ? String(editData.ratio) : '')
+      setTargetGroup(editData?.targetGroup ?? '')
+      setRatio(editData ? String(editData.ratio) : '')
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [editData, open])
 
   const handleSave = () => {

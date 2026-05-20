@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -72,14 +72,8 @@ function FloatingOrb({
 
 function ParticleField() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -142,9 +136,7 @@ function ParticleField() {
       cancelAnimationFrame(animationId)
       window.removeEventListener('resize', resize)
     }
-  }, [mounted])
-
-  if (!mounted) return null
+  }, [])
 
   return (
     <canvas

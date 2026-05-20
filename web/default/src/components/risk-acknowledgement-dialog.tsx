@@ -90,15 +90,18 @@ export function RiskAcknowledgementDialog({
   const normalizedRequiredTextParts = useMemo<
     NormalizedRequiredTextPart[]
   >(() => {
-    let inputIndex = 0
-    return requiredTextParts.map((part) => {
-      if (part.type === 'input') {
-        const normalizedPart = { ...part, inputIndex }
-        inputIndex += 1
-        return normalizedPart
-      }
-      return part
-    })
+    return requiredTextParts.reduce<NormalizedRequiredTextPart[]>(
+      (normalizedParts, part) => {
+        if (part.type === 'input') {
+          return [
+            ...normalizedParts,
+            { ...part, inputIndex: normalizedParts.filter((item) => item.type === 'input').length },
+          ]
+        }
+        return [...normalizedParts, part]
+      },
+      []
+    )
   }, [requiredTextParts])
 
   const requiredTextInputCount = useMemo(
@@ -114,9 +117,14 @@ export function RiskAcknowledgementDialog({
 
   useEffect(() => {
     if (!open) return
-    setCheckedItems(Array(checklist.length).fill(false))
-    setTypedText('')
-    setTypedTextParts(Array(requiredTextInputCount).fill(''))
+
+    const frame = window.requestAnimationFrame(() => {
+      setCheckedItems(Array(checklist.length).fill(false))
+      setTypedText('')
+      setTypedTextParts(Array(requiredTextInputCount).fill(''))
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [open, checklist.length, requiredTextInputCount])
 
   const allChecked = useMemo(() => {
