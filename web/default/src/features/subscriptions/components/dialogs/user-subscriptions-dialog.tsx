@@ -22,6 +22,15 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -50,6 +59,7 @@ import {
   getAdminPlans,
   getUserSubscriptions,
   createUserSubscription,
+  updateUserSubscriptionPeriod,
   invalidateUserSubscription,
   deleteUserSubscription,
 } from '../../api'
@@ -96,6 +106,19 @@ function SubscriptionStatusBadge(props: {
   )
 }
 
+const timestampToDateTimeInput = (timestamp?: number) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp * 1000)
+  const offset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}
+
+const dateTimeInputToTimestamp = (value: string) => {
+  if (!value) return 0
+  const timestamp = Math.floor(new Date(value).getTime() / 1000)
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
 export function UserSubscriptionsDialog(props: Props) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
@@ -103,6 +126,11 @@ export function UserSubscriptionsDialog(props: Props) {
   const [plans, setPlans] = useState<PlanRecord[]>([])
   const [subs, setSubs] = useState<UserSubscriptionRecord[]>([])
   const [selectedPlanId, setSelectedPlanId] = useState<string>('')
+  const [editingSub, setEditingSub] = useState<
+    UserSubscriptionRecord['subscription'] | null
+  >(null)
+  const [periodForm, setPeriodForm] = useState({ start: '', end: '' })
+  const [updatingPeriod, setUpdatingPeriod] = useState(false)
   const [confirmAction, setConfirmAction] = useState<{
     type: 'invalidate' | 'delete'
     subId: number
@@ -160,6 +188,41 @@ export function UserSubscriptionsDialog(props: Props) {
       toast.error(t('Request failed'))
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openPeriodEditor = (sub: UserSubscriptionRecord['subscription']) => {
+    setEditingSub(sub)
+    setPeriodForm({
+      start: timestampToDateTimeInput(sub.start_time),
+      end: timestampToDateTimeInput(sub.end_time),
+    })
+  }
+
+  const handleUpdatePeriod = async () => {
+    if (!editingSub) return
+    const startTime = dateTimeInputToTimestamp(periodForm.start)
+    const endTime = dateTimeInputToTimestamp(periodForm.end)
+    if (!startTime || !endTime || endTime <= startTime) {
+      toast.error(t('Invalid subscription period'))
+      return
+    }
+    setUpdatingPeriod(true)
+    try {
+      const res = await updateUserSubscriptionPeriod(editingSub.id, {
+        start_time: startTime,
+        end_time: endTime,
+      })
+      if (res.success) {
+        toast.success(t('Updated successfully'))
+        setEditingSub(null)
+        await loadData()
+        props.onSuccess?.()
+      }
+    } catch {
+      toast.error(t('Request failed'))
+    } finally {
+      setUpdatingPeriod(false)
     }
   }
 
@@ -312,6 +375,13 @@ export function UserSubscriptionsDialog(props: Props) {
                               <Button
                                 size='sm'
                                 variant='outline'
+                                onClick={() => openPeriodEditor(sub)}
+                              >
+                                {t('Edit time')}
+                              </Button>
+                              <Button
+                                size='sm'
+                                variant='outline'
                                 disabled={!isActive}
                                 onClick={() =>
                                   setConfirmAction({
@@ -346,6 +416,50 @@ export function UserSubscriptionsDialog(props: Props) {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog
+        open={!!editingSub}
+        onOpenChange={(v) => !v && setEditingSub(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('Edit subscription time')}</DialogTitle>
+            <DialogDescription>
+              {t('Modify the start and end time of this user subscription.')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Start time')}</label>
+              <Input
+                type='datetime-local'
+                value={periodForm.start}
+                onChange={(e) =>
+                  setPeriodForm((prev) => ({ ...prev, start: e.target.value }))
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('End time')}</label>
+              <Input
+                type='datetime-local'
+                value={periodForm.end}
+                onChange={(e) =>
+                  setPeriodForm((prev) => ({ ...prev, end: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setEditingSub(null)}>
+              {t('Cancel')}
+            </Button>
+            <Button onClick={handleUpdatePeriod} disabled={updatingPeriod}>
+              {t('Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {confirmAction && (
         <ConfirmDialog

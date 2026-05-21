@@ -342,6 +342,11 @@ type AdminCreateUserSubscriptionRequest struct {
 	PlanId int `json:"plan_id"`
 }
 
+type AdminUpdateUserSubscriptionPeriodRequest struct {
+	StartTime int64 `json:"start_time"`
+	EndTime   int64 `json:"end_time"`
+}
+
 // AdminCreateUserSubscription creates a new user subscription from a plan (no payment).
 func AdminCreateUserSubscription(c *gin.Context) {
 	if !requirePaymentCompliance(c) {
@@ -365,6 +370,28 @@ func AdminCreateUserSubscription(c *gin.Context) {
 	}
 	if msg != "" {
 		common.ApiSuccess(c, gin.H{"message": msg})
+		return
+	}
+	common.ApiSuccess(c, nil)
+}
+
+func AdminUpdateUserSubscriptionPeriod(c *gin.Context) {
+	subId, _ := strconv.Atoi(c.Param("id"))
+	if subId <= 0 {
+		common.ApiErrorMsg(c, "无效的订阅ID")
+		return
+	}
+	var req AdminUpdateUserSubscriptionPeriodRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiErrorMsg(c, "参数错误")
+		return
+	}
+	if req.StartTime <= 0 || req.EndTime <= 0 || req.EndTime <= req.StartTime {
+		common.ApiErrorMsg(c, "订阅时间范围无效")
+		return
+	}
+	if err := model.AdminUpdateUserSubscriptionPeriod(subId, req.StartTime, req.EndTime); err != nil {
+		common.ApiError(c, err)
 		return
 	}
 	common.ApiSuccess(c, nil)

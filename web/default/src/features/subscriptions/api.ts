@@ -23,6 +23,7 @@ import type {
   PlanPayload,
   UserSubscriptionRecord,
   CreateUserSubscriptionRequest,
+  UpdateUserSubscriptionPeriodRequest,
   SubscriptionPayResponse,
   SubscriptionPayRequest,
   SelfSubscriptionData,
@@ -81,6 +82,17 @@ export async function createUserSubscription(
 ): Promise<ApiResponse<{ message?: string }>> {
   const res = await api.post(
     `/api/subscription/admin/users/${userId}/subscriptions`,
+    data
+  )
+  return res.data
+}
+
+export async function updateUserSubscriptionPeriod(
+  subId: number,
+  data: UpdateUserSubscriptionPeriodRequest
+): Promise<ApiResponse> {
+  const res = await api.put(
+    `/api/subscription/admin/user_subscriptions/${subId}/period`,
     data
   )
   return res.data

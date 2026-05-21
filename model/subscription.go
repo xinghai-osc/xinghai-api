@@ -711,6 +711,35 @@ func GetAllUserSubscriptions(userId int) ([]SubscriptionSummary, error) {
 	return buildSubscriptionSummaries(subs), nil
 }
 
+func AdminUpdateUserSubscriptionPeriod(userSubscriptionId int, startTime int64, endTime int64) error {
+	if userSubscriptionId <= 0 {
+		return errors.New("invalid userSubscriptionId")
+	}
+	if startTime <= 0 || endTime <= 0 {
+		return errors.New("start_time and end_time must be greater than 0")
+	}
+	if endTime <= startTime {
+		return errors.New("end_time must be greater than start_time")
+	}
+	now := common.GetTimestamp()
+	return DB.Transaction(func(tx *gorm.DB) error {
+		var sub UserSubscription
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("id = ?", userSubscriptionId).First(&sub).Error; err != nil {
+			return err
+		}
+		updates := map[string]interface{}{
+			"start_time": startTime,
+			"end_time":   endTime,
+			"updated_at": now,
+		}
+		if sub.Status == "expired" {
+			updates["status"] = "active"
+		}
+		return tx.Model(&sub).Updates(updates).Error
+	})
+}
+
 func HasActiveUserSubscriptionForGroup(userId int, usingGroup string) (bool, error) {
 	if userId <= 0 {
 		return false, errors.New("invalid userId")

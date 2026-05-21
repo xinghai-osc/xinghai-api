@@ -104,6 +104,11 @@ export interface CreateUserSubscriptionRequest {
   plan_id: number
 }
 
+export interface UpdateUserSubscriptionPeriodRequest {
+  start_time: number
+  end_time: number
+}
+
 // ============================================================================
 // Self Subscription Data (user-facing)
 // ============================================================================
