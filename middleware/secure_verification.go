@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -32,7 +34,12 @@ func SecureVerificationRequired() gin.HandlerFunc {
 			return
 		}
 
-		// 检查 session 中的验证时间戳
+		role := c.GetInt("role")
+		if role >= common.RoleAdminUser {
+			c.Next()
+			return
+		}
+
 		session := sessions.Default(c)
 		verifiedAtRaw := session.Get(SecureVerificationSessionKey)
 

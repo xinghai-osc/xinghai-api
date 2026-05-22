@@ -65,9 +65,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 检查是否启用2FA
-	if model.IsTwoFAEnabled(user.Id) {
-		// 设置pending session，等待2FA验证
+	if model.IsTwoFAEnabled(user.Id) && user.Role < common.RoleAdminUser {
 		session := sessions.Default(c)
 		session.Set("pending_username", user.Username)
 		session.Set("pending_user_id", user.Id)
