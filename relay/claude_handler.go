@@ -104,6 +104,10 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 		info.UpstreamModelName = request.Model
 	}
 
+	if request.StripAnthropicBillingHeaderFromSystem() {
+		logger.LogDebug(c, "stripped x-anthropic-billing-header from Claude system prompt")
+	}
+
 	if info.ChannelSetting.SystemPrompt != "" {
 		if request.System == nil {
 			request.SetStringSystem(info.ChannelSetting.SystemPrompt)

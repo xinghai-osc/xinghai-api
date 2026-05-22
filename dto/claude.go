@@ -483,6 +483,74 @@ func (c *ClaudeRequest) ParseSystem() []ClaudeMediaMessage {
 	return mediaContent
 }
 
+func (c *ClaudeRequest) StripAnthropicBillingHeaderFromSystem() bool {
+	if c.System == nil {
+		return false
+	}
+	if c.IsStringSystem() {
+		cleaned, changed := stripAnthropicBillingHeaderLines(c.GetStringSystem())
+		if !changed {
+			return false
+		}
+		if strings.TrimSpace(cleaned) == "" {
+			c.System = nil
+		} else {
+			c.SetStringSystem(cleaned)
+		}
+		return true
+	}
+
+	systems := c.ParseSystem()
+	if len(systems) == 0 {
+		return false
+	}
+	cleanedSystems := make([]ClaudeMediaMessage, 0, len(systems))
+	changed := false
+	for _, system := range systems {
+		if system.Text == nil {
+			cleanedSystems = append(cleanedSystems, system)
+			continue
+		}
+		cleaned, textChanged := stripAnthropicBillingHeaderLines(*system.Text)
+		if !textChanged {
+			cleanedSystems = append(cleanedSystems, system)
+			continue
+		}
+		changed = true
+		if strings.TrimSpace(cleaned) == "" {
+			continue
+		}
+		system.SetText(cleaned)
+		cleanedSystems = append(cleanedSystems, system)
+	}
+	if !changed {
+		return false
+	}
+	if len(cleanedSystems) == 0 {
+		c.System = nil
+	} else {
+		c.System = cleanedSystems
+	}
+	return true
+}
+
+func stripAnthropicBillingHeaderLines(text string) (string, bool) {
+	lines := strings.Split(text, "\n")
+	cleaned := make([]string, 0, len(lines))
+	changed := false
+	for _, line := range lines {
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(line)), "x-anthropic-billing-header:") {
+			changed = true
+			continue
+		}
+		cleaned = append(cleaned, line)
+	}
+	if !changed {
+		return text, false
+	}
+	return strings.TrimSpace(strings.Join(cleaned, "\n")), true
+}
+
 type ClaudeErrorWithStatusCode struct {
 	Error      types.ClaudeError `json:"error"`
 	StatusCode int               `json:"status_code"`

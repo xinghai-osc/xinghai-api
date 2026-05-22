@@ -3,6 +3,7 @@ package helper
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"strings"
 
@@ -238,12 +239,35 @@ func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest
 	if textRequest.Model == "" {
 		return nil, errors.New("field model is required")
 	}
+	if textRequest.StripAnthropicBillingHeaderFromSystem() {
+		if err = updateClaudeRequestBodyStorage(c, textRequest); err != nil {
+			return nil, err
+		}
+	}
 
 	//if textRequest.Stream {
 	//	relayInfo.IsStream = true
 	//}
 
 	return textRequest, nil
+}
+
+func updateClaudeRequestBodyStorage(c *gin.Context, textRequest *dto.ClaudeRequest) error {
+	jsonData, err := common.Marshal(textRequest)
+	if err != nil {
+		return err
+	}
+	storage, err := common.CreateBodyStorage(jsonData)
+	if err != nil {
+		return err
+	}
+	oldStorage, _ := common.GetBodyStorage(c)
+	c.Set(common.KeyBodyStorage, storage)
+	c.Request.Body = io.NopCloser(storage)
+	if oldStorage != nil && oldStorage != storage {
+		_ = oldStorage.Close()
+	}
+	return nil
 }
 
 func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*dto.GeneralOpenAIRequest, error) {
