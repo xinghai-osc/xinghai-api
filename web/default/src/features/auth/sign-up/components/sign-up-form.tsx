@@ -153,6 +153,8 @@ export function SignUpForm({
       }
     }
 
+    if (!validateCaptcha()) return
+
     setIsLoading(true)
     try {
       const registerData: {
@@ -338,7 +340,6 @@ export function SignUpForm({
               </Button>
             </div>
 
-            {/* Captcha */}
             {isCaptchaEnabled && captchaType === 'turnstile' && (
               <div className='mt-2'>
                 <Turnstile
