@@ -174,6 +174,13 @@ export interface CopyChannelResponse {
 // Multi-Key Management Types
 // ============================================================================
 
+export interface KeyTestResult {
+  status: 'testing' | 'success' | 'error'
+  responseTime?: number
+  error?: string
+  errorCode?: string
+}
+
 export interface KeyStatus {
   index: number
   status: number // 1: enabled, 2: manual disabled, 3: auto disabled

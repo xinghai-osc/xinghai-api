@@ -196,6 +196,22 @@ func (channel *Channel) GetKeys() []string {
 	return keys
 }
 
+func (channel *Channel) GetKeyByIndex(index int) (string, *types.NewAPIError) {
+	if !channel.ChannelInfo.IsMultiKey {
+		return "", types.NewError(errors.New("channel is not multi-key"), types.ErrorCodeChannelNoAvailableKey)
+	}
+
+	keys := channel.GetKeys()
+	if len(keys) == 0 {
+		return "", types.NewError(errors.New("no keys available"), types.ErrorCodeChannelNoAvailableKey)
+	}
+	if index < 0 || index >= len(keys) {
+		return "", types.NewError(errors.New("key index out of range"), types.ErrorCodeChannelNoAvailableKey)
+	}
+
+	return keys[index], nil
+}
+
 func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
 	// If not in multi-key mode, return the original key string directly.
 	if !channel.ChannelInfo.IsMultiKey {

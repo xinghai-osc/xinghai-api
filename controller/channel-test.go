@@ -59,7 +59,7 @@ func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointTyp
 	return normalized
 }
 
-func testChannel(channel *model.Channel, testModel string, endpointType string, isStream bool) testResult {
+func testChannel(channel *model.Channel, testModel string, endpointType string, isStream bool, keyIndex ...int) testResult {
 	tik := time.Now()
 	var unsupportedTestChannelTypes = []int{
 		constant.ChannelTypeMidjourney,
@@ -159,6 +159,9 @@ func testChannel(channel *model.Channel, testModel string, endpointType string, 
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
+	if len(keyIndex) > 0 {
+		common.SetContextKey(c, constant.ContextKeyChannelMultiKeyIndex, keyIndex[0])
+	}
 	group, _ := model.GetUserGroup(1, false)
 	c.Set("group", group)
 
@@ -869,8 +872,17 @@ func TestChannel(c *gin.Context) {
 	testModel := c.Query("model")
 	endpointType := c.Query("endpoint_type")
 	isStream, _ := strconv.ParseBool(c.Query("stream"))
+	var keyIndex []int
+	if keyIndexQuery := strings.TrimSpace(c.Query("key_index")); keyIndexQuery != "" {
+		parsedKeyIndex, err := strconv.Atoi(keyIndexQuery)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		keyIndex = append(keyIndex, parsedKeyIndex)
+	}
 	tik := time.Now()
-	result := testChannel(channel, testModel, endpointType, isStream)
+	result := testChannel(channel, testModel, endpointType, isStream, keyIndex...)
 	if result.localErr != nil {
 		resp := gin.H{
 			"success": false,

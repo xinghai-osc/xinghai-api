@@ -65,7 +65,12 @@ import {
   getMultiKeyConfirmMessage,
   isDestructiveAction,
 } from '../../lib'
-import type { KeyStatus, MultiKeyConfirmAction } from '../../types'
+import { handleTestChannel } from '../../lib/channel-actions'
+import type {
+  KeyStatus,
+  KeyTestResult,
+  MultiKeyConfirmAction,
+} from '../../types'
 import { useChannels } from '../channels-provider'
 import { StatisticsCard } from './multi-key-statistics-card'
 import { MultiKeyTableRowActions } from './multi-key-table-row-actions'
@@ -99,12 +104,16 @@ export function MultiKeyManageDialog({
   const [confirmAction, setConfirmAction] =
     useState<MultiKeyConfirmAction | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
+  const [keyTestResults, setKeyTestResults] = useState<
+    Record<number, KeyTestResult>
+  >({})
 
   // Reset and load data when dialog opens
   useEffect(() => {
     if (open && currentRow) {
       setCurrentPage(1)
       setStatusFilter(null)
+      setKeyTestResults({})
       loadKeyStatus(1, pageSize, null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,7 +166,7 @@ export function MultiKeyManageDialog({
     loadKeyStatus(newPage, pageSize)
   }
 
-  const performAction = async () => {
+  const performAction = async (): Promise<void> => {
     if (!confirmAction || !currentRow) return
 
     setIsPerformingAction(true)
@@ -205,6 +214,41 @@ export function MultiKeyManageDialog({
     }
   }
 
+  const handleTestKey = async (keyIndex: number) => {
+    if (!currentRow) return
+
+    setKeyTestResults((prev) => ({
+      ...prev,
+      [keyIndex]: { status: 'testing' },
+    }))
+
+    try {
+      await handleTestChannel(
+        currentRow.id,
+        { keyIndex },
+        (success, responseTime, error, errorCode) => {
+          setKeyTestResults((prev) => ({
+            ...prev,
+            [keyIndex]: {
+              status: success ? 'success' : 'error',
+              responseTime,
+              error,
+              errorCode,
+            },
+          }))
+        }
+      )
+    } catch (error: unknown) {
+      setKeyTestResults((prev) => ({
+        ...prev,
+        [keyIndex]: {
+          status: 'error',
+          error: error instanceof Error ? error.message : t('Test failed'),
+        },
+      }))
+    }
+  }
+
   const renderStatusBadge = (status: number) => {
     const config = getMultiKeyStatusConfig(status)
     return (
@@ -220,6 +264,24 @@ export function MultiKeyManageDialog({
   const formatKeyTimestamp = (timestamp?: number) => {
     if (!timestamp) return '-'
     return formatTimestamp(timestamp)
+  }
+
+  const renderTestResult = (result?: KeyTestResult) => {
+    if (!result || result.status === 'testing') return '-'
+
+    if (result.status === 'success') {
+      return (
+        <span className='text-green-600'>
+          {t('Success')} · {result.responseTime?.toFixed(2) ?? '-'}s
+        </span>
+      )
+    }
+
+    return (
+      <span className='text-destructive' title={result.error}>
+        {result.error || result.errorCode || t('Test failed')}
+      </span>
+    )
   }
 
   if (!currentRow) return null
@@ -359,7 +421,7 @@ export function MultiKeyManageDialog({
                   {t('No keys found')}
                 </div>
               ) : (
-                <div className='min-w-[800px]'>
+                <div className='min-w-[980px]'>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -371,7 +433,10 @@ export function MultiKeyManageDialog({
                         <TableHead className='w-44'>
                           {t('Disabled Time')}
                         </TableHead>
-                        <TableHead className='w-44 text-right'>
+                        <TableHead className='min-w-[180px]'>
+                          {t('Test Result')}
+                        </TableHead>
+                        <TableHead className='w-60 text-right'>
                           {t('Actions')}
                         </TableHead>
                       </TableRow>
@@ -389,11 +454,16 @@ export function MultiKeyManageDialog({
                           <TableCell className='text-muted-foreground text-sm'>
                             {formatKeyTimestamp(key.disabled_time)}
                           </TableCell>
+                          <TableCell className='max-w-xs truncate text-sm'>
+                            {renderTestResult(keyTestResults[key.index])}
+                          </TableCell>
                           <TableCell>
                             <MultiKeyTableRowActions
                               keyIndex={key.index}
                               status={key.status}
+                              testResult={keyTestResults[key.index]}
                               onAction={setConfirmAction}
+                              onTest={handleTestKey}
                             />
                           </TableCell>
                         </TableRow>
