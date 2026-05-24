@@ -37,6 +37,69 @@ var alwaysSkipRetryCodes = map[types.ErrorCode]struct{}{
 	types.ErrorCodeBadResponseBody: {},
 }
 
+var AutomaticRetryErrorCodes = []types.ErrorCode{
+	types.ErrorCodeChannelNoAvailableKey,
+	types.ErrorCodeChannelParamOverrideInvalid,
+	types.ErrorCodeChannelHeaderOverrideInvalid,
+	types.ErrorCodeChannelModelMappedError,
+	types.ErrorCodeChannelAwsClientError,
+	types.ErrorCodeChannelInvalidKey,
+	types.ErrorCodeChannelResponseTimeExceeded,
+}
+
+func AutomaticRetryErrorCodesToString() string {
+	if len(AutomaticRetryErrorCodes) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(AutomaticRetryErrorCodes))
+	for _, code := range AutomaticRetryErrorCodes {
+		parts = append(parts, string(code))
+	}
+	return strings.Join(parts, ",")
+}
+
+func AutomaticRetryErrorCodesFromString(s string) error {
+	codes := parseErrorCodes(s)
+	AutomaticRetryErrorCodes = codes
+	return nil
+}
+
+func ShouldRetryByErrorCode(errorCode types.ErrorCode) bool {
+	if errorCode == "" {
+		return false
+	}
+	for _, code := range AutomaticRetryErrorCodes {
+		if code == errorCode {
+			return true
+		}
+	}
+	return false
+}
+
+func parseErrorCodes(input string) []types.ErrorCode {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil
+	}
+	input = strings.NewReplacer("，", ",", "\r\n", ",", "\n", ",").Replace(input)
+	segments := strings.Split(input, ",")
+	seen := make(map[types.ErrorCode]bool, len(segments))
+	codes := make([]types.ErrorCode, 0, len(segments))
+	for _, seg := range segments {
+		seg = strings.TrimSpace(seg)
+		if seg == "" {
+			continue
+		}
+		code := types.ErrorCode(seg)
+		if seen[code] {
+			continue
+		}
+		seen[code] = true
+		codes = append(codes, code)
+	}
+	return codes
+}
+
 func AutomaticDisableStatusCodesToString() string {
 	return statusCodeRangesToString(AutomaticDisableStatusCodeRanges)
 }

@@ -344,7 +344,7 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		return false
 	}
 	if types.IsChannelError(openaiErr) {
-		return true
+		return operation_setting.ShouldRetryByErrorCode(openaiErr.GetErrorCode())
 	}
 	if types.IsSkipRetryError(openaiErr) {
 		return false
@@ -360,6 +360,9 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		return false
 	}
 	if code < 100 || code > 599 {
+		return true
+	}
+	if operation_setting.ShouldRetryByErrorCode(openaiErr.GetErrorCode()) {
 		return true
 	}
 	if operation_setting.IsAlwaysSkipRetryCode(openaiErr.GetErrorCode()) {

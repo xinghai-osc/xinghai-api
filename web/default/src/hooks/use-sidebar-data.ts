@@ -34,6 +34,7 @@ import {
   ListTodo,
   Settings,
   ImageIcon,
+  RefreshCw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { WORKSPACE_IDS } from '@/components/layout/lib/workspace-registry'
@@ -153,6 +154,11 @@ export function useSidebarData(): SidebarData {
             title: t('Subscription Management'),
             url: '/subscriptions',
             icon: CreditCard,
+          },
+          {
+            title: t('Retry channel settings'),
+            url: '/retry-channel-settings',
+            icon: RefreshCw,
           },
           {
             title: t('System Settings'),
