@@ -427,7 +427,13 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	common.SetContextKey(c, constant.ContextKeyChannelModelMapping, channel.GetModelMapping())
 	common.SetContextKey(c, constant.ContextKeyChannelStatusCodeMapping, channel.GetStatusCodeMapping())
 
-	forcedKeyIndex, useForcedKeyIndex := common.GetContextKey(c, constant.ContextKeyChannelMultiKeyIndex).(int)
+	forcedKeyIndex, useForcedKeyIndex := -1, false
+	if value, ok := common.GetContextKey(c, constant.ContextKeyChannelMultiKeyIndex); ok {
+		if index, ok := value.(int); ok {
+			forcedKeyIndex = index
+			useForcedKeyIndex = true
+		}
+	}
 	var key string
 	var index int
 	var newAPIError *types.NewAPIError
