@@ -89,8 +89,17 @@ func Distribute() func(c *gin.Context) {
 				}
 				var selectGroup string
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
-				isPlaygroundRelay := strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") || strings.HasPrefix(c.Request.URL.Path, "/pg/images/generations")
+				isPlaygroundRelay := strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") ||
+					strings.HasPrefix(c.Request.URL.Path, "/pg/images/generations") ||
+					strings.HasPrefix(c.Request.URL.Path, "/pg/images/edits")
 				if isPlaygroundRelay {
+					userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+					if freshUserGroup, err := model.GetUserGroup(c.GetInt("id"), false); err == nil && freshUserGroup != "" {
+						userGroup = freshUserGroup
+						common.SetContextKey(c, constant.ContextKeyUserGroup, userGroup)
+					}
+					usingGroup = userGroup
+					common.SetContextKey(c, constant.ContextKeyUsingGroup, usingGroup)
 					playgroundRequest := &dto.PlayGroundRequest{}
 					err = common.UnmarshalBodyReusable(c, playgroundRequest)
 					if err != nil {
@@ -98,7 +107,7 @@ func Distribute() func(c *gin.Context) {
 						return
 					}
 					if playgroundRequest.Group != "" {
-						if playgroundRequest.Group != "auto" && !service.GroupInUserUsableGroups(usingGroup, playgroundRequest.Group) && playgroundRequest.Group != usingGroup {
+						if playgroundRequest.Group != "auto" && !service.GroupInUserUsableGroups(userGroup, playgroundRequest.Group) {
 							abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorGroupAccessDenied))
 							return
 						}
