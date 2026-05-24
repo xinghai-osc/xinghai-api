@@ -17,9 +17,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useRef, useState } from 'react'
-import { ImageIcon, Loader2Icon, UploadIcon, XIcon } from 'lucide-react'
+import {
+  ImageIcon,
+  Loader2Icon,
+  SendIcon,
+  Settings2Icon,
+  Trash2Icon,
+  UploadIcon,
+  XIcon,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation'
+import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -50,6 +65,20 @@ interface ImageContextItem {
   source: string
 }
 
+interface ImageMessageItem {
+  id: string
+  name: string
+  source: string
+  revisedPrompt?: string
+}
+
+interface ImageConversationTurn {
+  id: string
+  prompt: string
+  images: ImageMessageItem[]
+  contextCount: number
+}
+
 const fallbackModel = 'gpt-image-2'
 
 const sizeOptions = ['auto', '1024x1024', '1536x1024', '1024x1536']
@@ -74,7 +103,9 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 function getImageSource(image: ImageData, outputFormat: string) {
-  return image.url || `data:image/${outputFormat};base64,${image.b64_json}`
+  if (image.url) return image.url
+  if (image.b64_json) return `data:image/${outputFormat};base64,${image.b64_json}`
+  return ''
 }
 
 export function PlaygroundImageGenerator({
@@ -95,7 +126,7 @@ export function PlaygroundImageGenerator({
   const [outputFormat, setOutputFormat] = useState('png')
   const [n, setN] = useState(1)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [images, setImages] = useState<ImageData[]>([])
+  const [conversation, setConversation] = useState<ImageConversationTurn[]>([])
   const [contextImages, setContextImages] = useState<ImageContextItem[]>([])
 
   const selectedModel = modelValue || fallbackModel
@@ -111,6 +142,7 @@ export function PlaygroundImageGenerator({
       return
     }
 
+    const requestContextImages = contextImages
     setIsGenerating(true)
     try {
       const response = await generateImage({
@@ -124,13 +156,41 @@ export function PlaygroundImageGenerator({
         output_format: outputFormat,
         response_format: 'b64_json',
         images:
-          contextImages.length > 0
-            ? contextImages.map((image) => image.source)
+          requestContextImages.length > 0
+            ? requestContextImages.map((image) => image.source)
             : undefined,
       })
-      setImages(response.data ?? [])
+
+      const generatedImages = [] as ImageMessageItem[]
+      ;(response.data ?? []).forEach((image, index) => {
+        const source = getImageSource(image, outputFormat)
+        if (!source) return
+        generatedImages.push({
+          id: `generated-${Date.now()}-${index}-${crypto.randomUUID()}`,
+          name: `${t('Generated image')} ${index + 1}`,
+          source,
+          revisedPrompt: image.revised_prompt,
+        })
+      })
+
+      if (generatedImages.length === 0) {
+        toast.error(t('Generated image is unavailable'))
+        return
+      }
+
+      setContextImages((current) => [...current, ...generatedImages])
+      setConversation((current) => [
+        ...current,
+        {
+          id: `turn-${Date.now()}-${crypto.randomUUID()}`,
+          prompt: trimmedPrompt,
+          images: generatedImages,
+          contextCount: requestContextImages.length,
+        },
+      ])
+      setPrompt('')
       toast.success(
-        contextImages.length > 0
+        requestContextImages.length > 0
           ? t('Image edited successfully')
           : t('Image generated successfully')
       )
@@ -174,138 +234,33 @@ export function PlaygroundImageGenerator({
     }
   }
 
-  const handleUseGeneratedAsContext = (image: ImageData, index: number) => {
-    const source = getImageSource(image, outputFormat)
-    if (!source || source.includes('undefined')) {
-      toast.error(t('Generated image is unavailable'))
-      return
-    }
-    setContextImages((current) => [
-      ...current,
-      {
-        id: `generated-${Date.now()}-${index}`,
-        name: `${t('Generated image')} ${index + 1}`,
-        source,
-      },
-    ])
-    toast.success(t('Added to image context'))
-  }
-
   const removeContextImage = (id: string) => {
     setContextImages((current) => current.filter((image) => image.id !== id))
   }
 
+  const removeGeneratedImage = (id: string) => {
+    setContextImages((current) => current.filter((image) => image.id !== id))
+    setConversation((current) =>
+      current.map((turn) => ({
+        ...turn,
+        images: turn.images.filter((image) => image.id !== id),
+      }))
+    )
+  }
+
   return (
-    <div className='mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 overflow-auto p-4 md:p-6'>
-      <Card>
-        <CardHeader>
+    <div className='mx-auto flex size-full max-w-6xl flex-col overflow-hidden p-4 md:p-6'>
+      <Card className='mb-4 shrink-0'>
+        <CardHeader className='pb-3'>
           <CardTitle className='flex items-center gap-2'>
-            <ImageIcon className='size-5' />
-            {t('Image generation')}
+            <Settings2Icon className='size-5' />
+            {t('Image generation settings')}
           </CardTitle>
           <CardDescription>
-            {t('Generate images with gpt-image-2 from the console.')}
+            {t('Generated images are automatically added to image context.')}
           </CardDescription>
         </CardHeader>
         <CardContent className='grid gap-4'>
-          <div className='grid gap-2'>
-            <label className='text-sm font-medium' htmlFor='image-prompt'>
-              {t('Prompt')}
-            </label>
-            <Textarea
-              id='image-prompt'
-              className='min-h-32 resize-none'
-              disabled={isGenerating}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder={
-                contextImages.length > 0
-                  ? t('Describe how you want to modify the image')
-                  : t('Describe the image you want to generate')
-              }
-              value={prompt}
-            />
-          </div>
-
-          <div className='grid gap-2'>
-            <div className='flex flex-wrap items-center justify-between gap-2'>
-              <div>
-                <label className='text-sm font-medium' htmlFor='image-context'>
-                  {t('Image context')}
-                </label>
-                <p className='text-muted-foreground text-xs'>
-                  {t(
-                    'Upload images or reuse generated images to edit them with the next prompt.'
-                  )}
-                </p>
-              </div>
-              <div className='flex gap-2'>
-                {contextImages.length > 0 && (
-                  <Button
-                    disabled={isGenerating}
-                    onClick={() => setContextImages([])}
-                    type='button'
-                    variant='outline'
-                  >
-                    {t('Clear')}
-                  </Button>
-                )}
-                <Button
-                  disabled={isGenerating}
-                  onClick={() => fileInputRef.current?.click()}
-                  type='button'
-                  variant='outline'
-                >
-                  <UploadIcon />
-                  {t('Upload images')}
-                </Button>
-              </div>
-            </div>
-            <Input
-              ref={fileInputRef}
-              id='image-context'
-              accept='image/*'
-              className='hidden'
-              disabled={isGenerating}
-              multiple
-              onChange={(event) => handleContextUpload(event.target.files)}
-              type='file'
-            />
-            {contextImages.length > 0 ? (
-              <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-                {contextImages.map((image) => (
-                  <Card key={image.id} className='overflow-hidden'>
-                    <div className='relative'>
-                      <img
-                        alt={image.name}
-                        className='aspect-square w-full object-cover'
-                        src={image.source}
-                      />
-                      <Button
-                        className='absolute top-2 right-2 size-8 rounded-full'
-                        disabled={isGenerating}
-                        onClick={() => removeContextImage(image.id)}
-                        size='icon'
-                        type='button'
-                        variant='secondary'
-                      >
-                        <XIcon className='size-4' />
-                      </Button>
-                    </div>
-                    <CardContent className='text-muted-foreground truncate p-2 text-xs'>
-                      {image.name}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className='text-muted-foreground rounded-lg border border-dashed p-4 text-sm'>
-                {t(
-                  'No image context yet. Upload an image or add a generated result as context.'
-                )}
-              </div>
-            )}
-          </div>
-
           <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
             <div className='grid gap-2'>
               <label className='text-sm font-medium' htmlFor='image-model'>
@@ -435,60 +390,195 @@ export function PlaygroundImageGenerator({
                 value={n}
               />
             </div>
+          </div>
 
-            <div className='flex items-end'>
-              <Button
-                className='w-full'
-                disabled={isGenerating || !prompt.trim()}
-                onClick={handleGenerate}
-              >
-                {isGenerating ? (
-                  <Loader2Icon className='animate-spin' />
-                ) : (
-                  <ImageIcon />
+          <div className='grid gap-2'>
+            <div className='flex flex-wrap items-center justify-between gap-2'>
+              <div>
+                <label className='text-sm font-medium' htmlFor='image-context'>
+                  {t('Image context')}
+                </label>
+                <p className='text-muted-foreground text-xs'>
+                  {t(
+                    'Generated images are kept as context for the next prompt. Delete any image you do not want to use.'
+                  )}
+                </p>
+              </div>
+              <div className='flex gap-2'>
+                {contextImages.length > 0 && (
+                  <Button
+                    disabled={isGenerating}
+                    onClick={() => setContextImages([])}
+                    type='button'
+                    variant='outline'
+                  >
+                    {t('Clear')}
+                  </Button>
                 )}
-                {isGenerating
-                  ? t('Generating')
-                  : contextImages.length > 0
-                    ? t('Edit image')
-                    : t('Generate')}
-              </Button>
+                <Button
+                  disabled={isGenerating}
+                  onClick={() => fileInputRef.current?.click()}
+                  type='button'
+                  variant='outline'
+                >
+                  <UploadIcon />
+                  {t('Upload images')}
+                </Button>
+              </div>
             </div>
+            <Input
+              ref={fileInputRef}
+              id='image-context'
+              accept='image/*'
+              className='hidden'
+              disabled={isGenerating}
+              multiple
+              onChange={(event) => handleContextUpload(event.target.files)}
+              type='file'
+            />
+            {contextImages.length > 0 ? (
+              <div className='grid max-h-40 gap-3 overflow-auto sm:grid-cols-3 lg:grid-cols-6'>
+                {contextImages.map((image) => (
+                  <Card key={image.id} className='overflow-hidden'>
+                    <div className='relative'>
+                      <img
+                        alt={image.name}
+                        className='aspect-square w-full object-cover'
+                        src={image.source}
+                      />
+                      <Button
+                        className='absolute top-2 right-2 size-8 rounded-full'
+                        disabled={isGenerating}
+                        onClick={() => removeContextImage(image.id)}
+                        size='icon'
+                        type='button'
+                        variant='secondary'
+                      >
+                        <XIcon className='size-4' />
+                      </Button>
+                    </div>
+                    <CardContent className='text-muted-foreground truncate p-2 text-xs'>
+                      {image.name}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className='text-muted-foreground rounded-lg border border-dashed p-4 text-sm'>
+                {t('No image context yet. Generated images will appear here automatically.')}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {images.length > 0 && (
-        <div className='grid gap-4 md:grid-cols-2'>
-          {images.map((image, index) => {
-            const source = getImageSource(image, outputFormat)
-            return (
-              <Card key={`${source}-${index}`}>
-                <img
-                  alt={image.revised_prompt || prompt}
-                  className='aspect-square w-full object-contain'
-                  src={source}
-                />
-                <CardContent className='grid gap-3 pt-0'>
-                  {image.revised_prompt && (
-                    <p className='text-muted-foreground text-sm'>
-                      {image.revised_prompt}
-                    </p>
-                  )}
-                  <Button
-                    onClick={() => handleUseGeneratedAsContext(image, index)}
-                    type='button'
-                    variant='outline'
-                  >
-                    <ImageIcon />
-                    {t('Use as image context')}
-                  </Button>
-                </CardContent>
-              </Card>
-            )
-          })}
+      <Conversation className='min-h-0 rounded-xl border bg-background'>
+        <ConversationContent className='grid gap-5 p-4 md:p-6'>
+          {conversation.length === 0 ? (
+            <ConversationEmptyState
+              icon={<ImageIcon className='size-10' />}
+              title={t('Start generating images')}
+              description={t(
+                'Send a prompt to generate an image. Each result is automatically added to the next turn context.'
+              )}
+            />
+          ) : (
+            conversation.map((turn) => (
+              <div key={turn.id} className='grid gap-3'>
+                <Message from='user'>
+                  <MessageContent className='max-w-[85%] px-4 py-3' variant='contained'>
+                    <p className='whitespace-pre-wrap'>{turn.prompt}</p>
+                    {turn.contextCount > 0 && (
+                      <p className='text-xs opacity-80'>
+                        {t('Used {{count}} context images', {
+                          count: turn.contextCount,
+                        })}
+                      </p>
+                    )}
+                  </MessageContent>
+                </Message>
+                <Message from='assistant'>
+                  <MessageContent className='max-w-[92%] bg-secondary p-3' variant='contained'>
+                    <div className='grid gap-3 sm:grid-cols-2'>
+                      {turn.images.map((image) => (
+                        <div key={image.id} className='group/image relative overflow-hidden rounded-lg border bg-background'>
+                          <img
+                            alt={image.revisedPrompt || image.name}
+                            className='aspect-square w-full object-contain'
+                            src={image.source}
+                          />
+                          <Button
+                            className='absolute top-2 right-2 size-8 rounded-full opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/image:opacity-100'
+                            disabled={isGenerating}
+                            onClick={() => removeGeneratedImage(image.id)}
+                            size='icon'
+                            type='button'
+                            variant='secondary'
+                          >
+                            <Trash2Icon className='size-4' />
+                          </Button>
+                          {image.revisedPrompt && (
+                            <div className='text-muted-foreground border-t p-3 text-xs'>
+                              {image.revisedPrompt}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </MessageContent>
+                </Message>
+              </div>
+            ))
+          )}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      <div className='mt-4 shrink-0 rounded-xl border bg-background p-3 shadow-sm'>
+        <div className='flex gap-2'>
+          <Textarea
+            id='image-prompt'
+            className='min-h-20 flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0'
+            disabled={isGenerating}
+            onChange={(event) => setPrompt(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault()
+                void handleGenerate()
+              }
+            }}
+            placeholder={
+              contextImages.length > 0
+                ? t('Describe how you want to modify the image')
+                : t('Describe the image you want to generate')
+            }
+            value={prompt}
+          />
+          <div className='flex flex-col justify-end gap-2'>
+            <Button
+              disabled={isGenerating}
+              onClick={() => fileInputRef.current?.click()}
+              size='icon'
+              type='button'
+              variant='outline'
+            >
+              <UploadIcon className='size-4' />
+            </Button>
+            <Button
+              disabled={isGenerating || !prompt.trim()}
+              onClick={handleGenerate}
+              size='icon'
+              type='button'
+            >
+              {isGenerating ? (
+                <Loader2Icon className='size-4 animate-spin' />
+              ) : (
+                <SendIcon className='size-4' />
+              )}
+            </Button>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
