@@ -99,6 +99,7 @@ export function LogSettingsSection({
   const [purgeDate, setPurgeDate] = useState<Date | undefined>(() =>
     getDateDaysAgo(30)
   )
+  const [purgeScope, setPurgeScope] = useState<'all' | 'error'>('all')
   const [isCleaning, setIsCleaning] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
@@ -141,7 +142,10 @@ export function LogSettingsSection({
 
     setIsCleaning(true)
     try {
-      const res = await deleteLogsBefore(purgeTimestamp)
+      const res = await deleteLogsBefore(
+        purgeTimestamp,
+        purgeScope === 'error' ? 'error' : undefined
+      )
       if (!res.success) {
         throw new Error(res.message || t('Failed to clean logs'))
       }
@@ -198,11 +202,29 @@ export function LogSettingsSection({
               <h4 className='text-sm font-medium'>{t('Clean history logs')}</h4>
               <p className='text-muted-foreground text-sm'>
                 {t(
-                  'Remove all log entries created before the selected timestamp.'
+                  purgeScope === 'error'
+                    ? 'Remove error log entries created before the selected timestamp.'
+                    : 'Remove all log entries created before the selected timestamp.'
                 )}
               </p>
             </div>
             <DateTimePicker value={purgeDate} onChange={setPurgeDate} />
+            <div className='flex flex-wrap gap-3'>
+              <Button
+                type='button'
+                variant={purgeScope === 'all' ? 'default' : 'outline'}
+                onClick={() => setPurgeScope('all')}
+              >
+                {t('All logs')}
+              </Button>
+              <Button
+                type='button'
+                variant={purgeScope === 'error' ? 'default' : 'outline'}
+                onClick={() => setPurgeScope('error')}
+              >
+                {t('Error logs')}
+              </Button>
+            </div>
             <div className='flex flex-wrap gap-3'>
               {quickSelectOptions.map((option) => (
                 <Button
@@ -237,11 +259,15 @@ export function LogSettingsSection({
             <AlertDialogDescription>
               {formattedPurgeDate
                 ? t(
-                    'This will permanently remove all log entries created before {{date}}.',
+                    purgeScope === 'error'
+                      ? 'This will permanently remove error log entries created before {{date}}.'
+                      : 'This will permanently remove all log entries created before {{date}}.',
                     { date: formattedPurgeDate }
                   )
                 : t(
-                    'This will permanently remove log entries before the selected timestamp.'
+                    purgeScope === 'error'
+                      ? 'This will permanently remove error log entries before the selected timestamp.'
+                      : 'This will permanently remove log entries before the selected timestamp.'
                   )}{' '}
               {t('This action cannot be undone.')}
             </AlertDialogDescription>

@@ -520,7 +520,7 @@ func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	return token
 }
 
-func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+func deleteOldLogWithScope(ctx context.Context, targetTimestamp int64, logType int, limit int) (int64, error) {
 	var total int64 = 0
 
 	for {
@@ -528,7 +528,11 @@ func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64,
 			return total, ctx.Err()
 		}
 
-		result := LOG_DB.Where("created_at < ?", targetTimestamp).Limit(limit).Delete(&Log{})
+		tx := LOG_DB.Where("created_at < ?", targetTimestamp)
+		if logType != LogTypeUnknown {
+			tx = tx.Where("type = ?", logType)
+		}
+		result := tx.Limit(limit).Delete(&Log{})
 		if nil != result.Error {
 			return total, result.Error
 		}
@@ -541,4 +545,12 @@ func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64,
 	}
 
 	return total, nil
+}
+
+func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+	return deleteOldLogWithScope(ctx, targetTimestamp, LogTypeUnknown, limit)
+}
+
+func DeleteOldErrorLog(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+	return deleteOldLogWithScope(ctx, targetTimestamp, LogTypeError, limit)
 }

@@ -159,7 +159,14 @@ func DeleteHistoryLogs(c *gin.Context) {
 		})
 		return
 	}
-	count, err := model.DeleteOldLog(c.Request.Context(), targetTimestamp, 100)
+	logScope := c.Query("scope")
+	var count int64
+	var err error
+	if logScope == "error" {
+		count, err = model.DeleteOldErrorLog(c.Request.Context(), targetTimestamp, 100)
+	} else {
+		count, err = model.DeleteOldLog(c.Request.Context(), targetTimestamp, 100)
+	}
 	if err != nil {
 		common.ApiError(c, err)
 		return

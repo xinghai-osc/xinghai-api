@@ -47,13 +47,14 @@ export default function SettingsLog(props) {
   const [inputs, setInputs] = useState({
     LogConsumeEnabled: false,
     historyTimestamp: dayjs().subtract(1, 'month').toDate(),
+    historyLogScope: 'all',
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
 
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow).filter(
-      (item) => item.key !== 'historyTimestamp',
+      (item) => !['historyTimestamp', 'historyLogScope'].includes(item.key),
     );
 
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
@@ -99,6 +100,7 @@ export default function SettingsLog(props) {
     const targetTime = targetDate.format('YYYY-MM-DD HH:mm:ss');
     const currentTime = now.format('YYYY-MM-DD HH:mm:ss');
     const daysDiff = now.diff(targetDate, 'day');
+    const isErrorScope = inputs.historyLogScope === 'error';
 
     Modal.confirm({
       title: t('确认清除历史日志'),
@@ -121,6 +123,12 @@ export default function SettingsLog(props) {
                 ({t('约')} {daysDiff} {t('天前')})
               </Text>
             )}
+          </p>
+          <p>
+            <Text>{t('清理范围')}：</Text>
+            <Text strong type='danger'>
+              {isErrorScope ? t('错误日志') : t('全部日志')}
+            </Text>
           </p>
           <div
             style={{
@@ -145,7 +153,10 @@ export default function SettingsLog(props) {
                 ({t('约')} {daysDiff} {t('天前')})
               </Text>
             )}
-            <Text style={{ color: '#333' }}> {t('之前的所有日志')}</Text>
+            <Text style={{ color: '#333' }}>
+              {' '}
+              {isErrorScope ? t('之前的错误日志') : t('之前的所有日志')}
+            </Text>
           </div>
           <p style={{ marginTop: '12px' }}>
             <Text type='danger'>
@@ -160,8 +171,10 @@ export default function SettingsLog(props) {
       onOk: async () => {
         try {
           setLoadingCleanHistoryLog(true);
+          const timestamp = Date.parse(inputs.historyTimestamp) / 1000;
+          const scope = inputs.historyLogScope === 'error' ? '&scope=error' : '';
           const res = await API.delete(
-            `/api/log/?target_timestamp=${Date.parse(inputs.historyTimestamp) / 1000}`,
+            `/api/log/?target_timestamp=${timestamp}${scope}`,
           );
           const { success, message, data } = res.data;
           if (success) {
@@ -187,6 +200,7 @@ export default function SettingsLog(props) {
       }
     }
     currentInputs['historyTimestamp'] = inputs.historyTimestamp;
+    currentInputs['historyLogScope'] = inputs.historyLogScope;
     setInputs(Object.assign(inputs, currentInputs));
     setInputsRow(structuredClone(currentInputs));
     refForm.current.setValues(currentInputs);
@@ -230,12 +244,28 @@ export default function SettingsLog(props) {
                       });
                     }}
                   />
+                  <Form.Select
+                    field={'historyLogScope'}
+                    label={t('清理范围')}
+                    optionList={[
+                      { label: t('全部日志'), value: 'all' },
+                      { label: t('错误日志'), value: 'error' },
+                    ]}
+                    onChange={(value) => {
+                      setInputs({
+                        ...inputs,
+                        historyLogScope: value,
+                      });
+                    }}
+                  />
                   <Text
                     type='tertiary'
                     size='small'
                     style={{ display: 'block', marginTop: 4, marginBottom: 8 }}
                   >
-                    {t('将清除选定时间之前的所有日志')}
+                    {inputs.historyLogScope === 'error'
+                      ? t('将清除选定时间之前的错误日志')
+                      : t('将清除选定时间之前的所有日志')}
                   </Text>
                   <Button
                     size='default'

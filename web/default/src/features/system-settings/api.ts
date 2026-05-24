@@ -48,9 +48,9 @@ export async function confirmPaymentCompliance() {
   return res.data
 }
 
-export async function deleteLogsBefore(targetTimestamp: number) {
+export async function deleteLogsBefore(targetTimestamp: number, scope?: string) {
   const res = await api.delete<DeleteLogsResponse>('/api/log/', {
-    params: { target_timestamp: targetTimestamp },
+    params: { target_timestamp: targetTimestamp, scope },
   })
   return res.data
 }
