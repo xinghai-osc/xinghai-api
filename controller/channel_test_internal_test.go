@@ -29,16 +29,55 @@ func TestSettleTestQuotaUsesTieredBilling(t *testing.T) {
 		},
 	}
 
-	quota, result := settleTestQuota(info, types.PriceData{
-		ModelRatio:      1,
-		CompletionRatio: 2,
-	}, &dto.Usage{
+	quota, result := settleTestQuota(nil, info, &dto.Usage{
 		PromptTokens: 1000,
 	})
 
 	require.Equal(t, 1500, quota)
 	require.NotNil(t, result)
 	require.Equal(t, "stream", result.MatchedTier)
+}
+
+func TestSettleTestQuotaUsesTextQuotaCalculation(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "gpt-test",
+		PriceData: types.PriceData{
+			ModelRatio:      0.375,
+			CompletionRatio: 6,
+			GroupRatioInfo:  types.GroupRatioInfo{GroupRatio: 1.7},
+		},
+	}
+
+	quota, result := settleTestQuota(ctx, info, &dto.Usage{
+		PromptTokens:     18,
+		CompletionTokens: 13,
+	})
+
+	require.Equal(t, 61, quota)
+	require.Nil(t, result)
+}
+
+func TestSettleTestQuotaUsesFixedPriceGroupRatio(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "fixed-test",
+		PriceData: types.PriceData{
+			UsePrice:       true,
+			ModelPrice:     0.01,
+			GroupRatioInfo: types.GroupRatioInfo{GroupRatio: 1.7},
+		},
+	}
+
+	quota, result := settleTestQuota(ctx, info, &dto.Usage{
+		PromptTokens: 1,
+		TotalTokens:  1,
+	})
+
+	require.Equal(t, 8500, quota)
+	require.Nil(t, result)
 }
 
 func TestBuildTestLogOtherInjectsTieredInfo(t *testing.T) {

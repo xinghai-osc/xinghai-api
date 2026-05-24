@@ -106,7 +106,10 @@ func calculateTextToolCallSurcharge(ctx *gin.Context, relayInfo *relaycommon.Rel
 			Mul(dQuotaPerUnit))
 	}
 
-	summary.ClaudeWebSearchCallCount = ctx.GetInt("claude_web_search_requests")
+	summary.ClaudeWebSearchCallCount = 0
+	if ctx != nil {
+		summary.ClaudeWebSearchCallCount = ctx.GetInt("claude_web_search_requests")
+	}
 	if summary.ClaudeWebSearchCallCount > 0 {
 		summary.ClaudeWebSearchPrice = operation_setting.GetToolPrice("web_search")
 		surcharge = surcharge.Add(decimal.NewFromFloat(summary.ClaudeWebSearchPrice).
@@ -154,6 +157,11 @@ func composeTieredTextQuota(relayInfo *relaycommon.RelayInfo, summary textQuotaS
 	}
 
 	return tieredQuota + int(summary.ToolCallSurchargeQuota.Round(0).IntPart())
+}
+
+func CalculateTextQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) int {
+	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	return summary.Quota
 }
 
 func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) textQuotaSummary {
