@@ -40,7 +40,8 @@ export const channelSchema = z.object({
   key: z.string(),
   openai_organization: z.string().nullish(),
   test_model: z.string().nullish(),
-  status: z.number(), // 1: enabled, 0: manual disabled, 2: auto disabled
+  status: z.number(), // 1: enabled, 2: manual disabled, 3: auto disabled
+  backup_channel_id: z.number().nullish(),
   name: z.string(),
   weight: z.number().nullish(),
   created_time: z.number(),

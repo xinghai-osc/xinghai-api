@@ -27,6 +27,7 @@ type Channel struct {
 	OpenAIOrganization *string `json:"openai_organization"`
 	TestModel          *string `json:"test_model"`
 	Status             int     `json:"status" gorm:"default:1"`
+	BackupChannelId    *int    `json:"backup_channel_id" gorm:"column:backup_channel_id;index"`
 	Name               string  `json:"name" gorm:"index"`
 	Weight             *uint   `json:"weight" gorm:"default:0"`
 	CreatedTime        int64   `json:"created_time" gorm:"bigint"`
@@ -369,6 +370,34 @@ func (channel *Channel) SaveWithoutKey() error {
 	return DB.Omit("key").Save(channel).Error
 }
 
+func (channel *Channel) ActivateBackupChannel() (*Channel, bool) {
+	if channel == nil || channel.BackupChannelId == nil || *channel.BackupChannelId <= 0 || *channel.BackupChannelId == channel.Id {
+		return nil, false
+	}
+	backup, err := GetChannelById(*channel.BackupChannelId, true)
+	if err != nil {
+		common.SysLog(fmt.Sprintf("failed to get backup channel: channel_id=%d, backup_channel_id=%d, error=%v", channel.Id, *channel.BackupChannelId, err))
+		return nil, false
+	}
+	if backup.Status == common.ChannelStatusEnabled {
+		return backup, false
+	}
+	backup.Status = common.ChannelStatusEnabled
+	info := backup.GetOtherInfo()
+	info["status_reason"] = fmt.Sprintf("Activated as backup for channel #%d", channel.Id)
+	info["status_time"] = common.GetTimestamp()
+	backup.SetOtherInfo(info)
+	if err := backup.SaveWithoutKey(); err != nil {
+		common.SysLog(fmt.Sprintf("failed to activate backup channel: channel_id=%d, backup_channel_id=%d, error=%v", channel.Id, backup.Id, err))
+		return nil, false
+	}
+	if err := UpdateAbilityStatus(backup.Id, true); err != nil {
+		common.SysLog(fmt.Sprintf("failed to update backup channel ability status: channel_id=%d, backup_channel_id=%d, error=%v", channel.Id, backup.Id, err))
+	}
+	InitChannelCache()
+	return backup, true
+}
+
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool, sortOptions ...ChannelSortOptions) ([]*Channel, error) {
 	var channels []*Channel
 	var err error
@@ -693,6 +722,7 @@ func handlerMultiKeyUpdate(channel *Channel, usingKey string, status int, reason
 }
 
 func UpdateChannelStatus(channelId int, usingKey string, status int, reason string) bool {
+	var updatedChannel *Channel
 	if common.MemoryCacheEnabled {
 		channelStatusLock.Lock()
 		defer channelStatusLock.Unlock()
@@ -759,6 +789,10 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 			common.SysLog(fmt.Sprintf("failed to update channel status: channel_id=%d, status=%d, error=%v", channel.Id, status, err))
 			return false
 		}
+		updatedChannel = channel
+	}
+	if updatedChannel != nil && status != common.ChannelStatusEnabled && updatedChannel.Status != common.ChannelStatusEnabled {
+		updatedChannel.ActivateBackupChannel()
 	}
 	return true
 }

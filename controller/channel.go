@@ -490,6 +490,22 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
 		}
 	}
 
+	if channel.BackupChannelId != nil && *channel.BackupChannelId <= 0 {
+		channel.BackupChannelId = nil
+	}
+	if channel.BackupChannelId != nil {
+		if !isAdd && *channel.BackupChannelId == channel.Id {
+			return fmt.Errorf("备用渠道不能设置为自身")
+		}
+		backupChannel, err := model.GetChannelById(*channel.BackupChannelId, false)
+		if err != nil {
+			return fmt.Errorf("备用渠道不存在")
+		}
+		if backupChannel.Status == common.ChannelStatusEnabled {
+			return fmt.Errorf("备用渠道必须默认禁用")
+		}
+	}
+
 	// Codex OAuth key validation (optional, only when JSON object is provided)
 	if channel.Type == constant.ChannelTypeCodex {
 		trimmedKey := strings.TrimSpace(channel.Key)
@@ -978,6 +994,9 @@ func UpdateChannel(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	if channel.Status != common.ChannelStatusEnabled {
+		channel.ActivateBackupChannel()
 	}
 	model.InitChannelCache()
 	service.ResetProxyClientCache()

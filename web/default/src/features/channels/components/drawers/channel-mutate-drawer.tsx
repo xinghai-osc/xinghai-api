@@ -109,6 +109,7 @@ import {
   createChannel,
   fetchModels,
   getAllModels,
+  getChannels,
   getChannel,
   getChannelKey,
   getGroups,
@@ -233,6 +234,7 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.remark?.trim() ||
     values.priority ||
     values.weight ||
+    values.backup_channel_id ||
     values.proxy?.trim() ||
     values.system_prompt?.trim() ||
     values.force_format ||
@@ -345,6 +347,11 @@ export function ChannelMutateDrawer({
   const { data: allModelsData } = useQuery({
     queryKey: ['channel_models'],
     queryFn: getAllModels,
+  })
+
+  const { data: backupChannelsData } = useQuery({
+    queryKey: ['channels', 'backup-options'],
+    queryFn: () => getChannels({ status: 'disabled', page_size: 1000 }),
   })
 
   // Fetch prefill model groups
@@ -483,6 +490,16 @@ export function ChannelMutateDrawer({
     }
     return options
   }, [currentType, t])
+
+  const backupChannelOptions = useMemo(() => {
+    const items = backupChannelsData?.data?.items || []
+    return items
+      .filter((channel) => channel.id !== channelId)
+      .map((channel) => ({
+        value: String(channel.id),
+        label: `#${channel.id} ${channel.name}`,
+      }))
+  }, [backupChannelsData, channelId])
 
   // Extract redirect models from model_mapping (target values)
   const redirectModelList = useMemo(
@@ -2551,6 +2568,55 @@ export function ChannelMutateDrawer({
                                 }
                               />
                             </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name='backup_channel_id'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Backup Channel')}</FormLabel>
+                            <Select
+                              items={[
+                                { value: 'none', label: t('No backup channel') },
+                                ...backupChannelOptions,
+                              ]}
+                              onValueChange={(value) =>
+                                field.onChange(
+                                  value === 'none' ? null : Number(value)
+                                )
+                              }
+                              value={field.value ? String(field.value) : 'none'}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent alignItemWithTrigger={false}>
+                                <SelectGroup>
+                                  <SelectItem value='none'>
+                                    {t('No backup channel')}
+                                  </SelectItem>
+                                  {backupChannelOptions.map((option) => (
+                                    <SelectItem
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {t(
+                                'Select a disabled channel to enable automatically when this channel is disabled.'
+                              )}
+                            </FormDescription>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
