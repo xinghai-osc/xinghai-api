@@ -22,6 +22,103 @@ import path from 'node:path'
 // This script is executed from the web/ package root (see package.json script).
 const LOCALES_DIR = path.resolve('src/i18n/locales')
 const FALLBACK_COMPARE_LOCALE = 'en' // used for "still English" detection only
+const NON_TRANSLATABLE_KEY_PATTERNS = [
+  /^https?:\/\//,
+  /^\/[^\s]+/,
+  /^\[?\{/,
+  /^"?\{/,
+  /^example\.com/,
+  /^"default/,
+  /^smtp\./,
+  /^socks5:\/\//,
+  /^name@/,
+  /^noreply@/,
+  /^org-/,
+  /^price_/,
+  /^whsec_/,
+  /^gpt-/,
+  /^checkout\./,
+  /^footer\./,
+  /^[A-Z0-9_ *:/-]+$/,
+]
+const NON_TRANSLATABLE_KEYS = new Set([
+  'AccessKey / SecretAccessKey',
+  'AI Proxy',
+  'AIGC2D',
+  'Alipay',
+  'Anthropic',
+  'API URL',
+  'API2GPT',
+  'Baidu V2',
+  'CherryStudio',
+  'Claude',
+  'Client ID',
+  'Client Secret',
+  'Cloudflare',
+  'Cohere',
+  'DeepSeek',
+  'Discord',
+  'DoubaoVideo',
+  'edit_this',
+  'FastGPT',
+  'Geetest',
+  'Gemini',
+  'Gemini Image 4K',
+  'GitHub',
+  'Jimeng',
+  'JustSong',
+  'LingYiWanWu',
+  'LinuxDO',
+  'Midjourney',
+  'MidjourneyPlus',
+  'MiniMax',
+  'Mistral',
+  'MokaAI',
+  'Moonshot',
+  'my-status',
+  'New API',
+  'New API &lt;noreply@example.com&gt;',
+  'NewAPI',
+  'OhMyGPT',
+  'Ollama',
+  'One API',
+  'OpenAI',
+  'OpenAIMax',
+  'OpenCode',
+  'OpenRouter',
+  'Pancake',
+  'Passkey',
+  'Perplexity',
+  'QuantumNous',
+  'Quota:',
+  'Replicate',
+  'SiliconFlow',
+  'Stripe',
+  'Submodel',
+  'SunoAPI',
+  'Telegram',
+  'Tencent',
+  'TTFT P50',
+  'TTFT P95',
+  'TTFT P99',
+  'Turnstile',
+  'Uptime Kuma',
+  'Uptime Kuma URL',
+  'Vertex AI',
+  'VolcEngine',
+  'Waffo Aggregator Gateway',
+  'Waffo Pancake Dashboard',
+  'Waffo Pancake MoR',
+  'Webhook URL',
+  'Webhook URL:',
+  'WeChat',
+  'WeChat Pay',
+  'Well-Known URL',
+  'Worker URL',
+  'Xinference',
+  'Xunfei',
+  'Zhipu V4',
+])
 const OBFUSCATED_KEYS = [
   {
     runtime: ['footer', 'new' + 'api', 'projectAttributionSuffix'].join('.'),
@@ -91,7 +188,12 @@ function reorderLikeBase(base, target, fill, extras, missing, currentPath = []) 
   return target === undefined ? (fill ?? base) : target
 }
 
-function isLikelyUntranslated({ locale, baseValue, value }) {
+function isNonTranslatableKey(key) {
+  return NON_TRANSLATABLE_KEYS.has(key) || NON_TRANSLATABLE_KEY_PATTERNS.some((pattern) => pattern.test(key))
+}
+
+function isLikelyUntranslated({ locale, key, baseValue, value }) {
+  if (isNonTranslatableKey(key)) return false
   if (typeof value !== 'string' || typeof baseValue !== 'string') return false
   if (value !== baseValue) return false
 
@@ -172,7 +274,7 @@ async function main() {
       for (const k of Object.keys(compareTrans)) {
         const baseValue = compareTrans[k]
         const value = trans[k]
-        if (isLikelyUntranslated({ locale, baseValue, value })) {
+        if (isLikelyUntranslated({ locale, key: k, baseValue, value })) {
           untranslated[k] = value
         }
       }

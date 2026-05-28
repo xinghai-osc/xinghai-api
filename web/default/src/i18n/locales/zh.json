@@ -435,7 +435,7 @@
     "auth.resetPasswordConfirm.confirm": "确认重置密码",
     "auth.resetPasswordConfirm.description": "确认重置请求以生成新密码。",
     "auth.resetPasswordConfirm.retry": "重试 ({{seconds}}s)",
-    "auth.resetPasswordConfirm.success": "Your password has been reset successfully",
+    "auth.resetPasswordConfirm.success": "您的密码已成功重置",
     "Authentication": "身份验证",
     "Authenticator code": "身份验证器代码",
     "Authorization Endpoint": "授权端点",
