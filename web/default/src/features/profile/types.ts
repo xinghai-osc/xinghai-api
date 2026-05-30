@@ -185,6 +185,37 @@ export interface TwoFASetupData {
   backup_codes: string[]
 }
 
+/**
+ * Real-name verification status response
+ */
+export interface RealNameRecord {
+  id: number
+  user_id: number
+  real_name: string
+  id_card_last_four: string
+  provider: string
+  status: number
+  result_code: string
+  description: string
+  request_id: string
+  verified_at: number
+  created_at: number
+  updated_at: number
+}
+
+export interface RealNameStatusResponse {
+  enabled: boolean
+  verified: boolean
+  provider: string
+  require_unique: boolean
+  record?: RealNameRecord
+}
+
+export interface RealNameVerifyRequest {
+  name: string
+  id_card: string
+}
+
 // ============================================================================
 // Checkin Type Definitions
 // ============================================================================

@@ -207,6 +207,17 @@ func UpdateOption(c *gin.Context) {
 
 			return
 		}
+	case "real_name.enabled":
+		if option.Value == "true" {
+			realNameSettings := system_setting.GetRealNameSettings()
+			if realNameSettings.SecretId == "" || realNameSettings.SecretKey == "" {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "无法启用实名认证，请先填入腾讯云 SecretId 以及 SecretKey！",
+				})
+				return
+			}
+		}
 	case "geetest.enabled":
 		if option.Value == "true" && common.GeetestCaptchaID == "" {
 			c.JSON(http.StatusOK, gin.H{

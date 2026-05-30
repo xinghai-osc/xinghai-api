@@ -25,6 +25,8 @@ import type {
   DeleteAccountRequest,
   CheckinStatusResponse,
   CheckinResponse,
+  RealNameStatusResponse,
+  RealNameVerifyRequest,
 } from './types'
 
 // ============================================================================
@@ -84,6 +86,18 @@ export async function deleteUserAccount(
  */
 export async function generateAccessToken(): Promise<ApiResponse<string>> {
   const res = await api.get('/api/user/token')
+  return res.data
+}
+
+export async function getRealNameStatus(): Promise<ApiResponse<RealNameStatusResponse>> {
+  const res = await api.get('/api/user/real-name')
+  return res.data
+}
+
+export async function verifyRealName(
+  data: RealNameVerifyRequest
+): Promise<ApiResponse<RealNameStatusResponse['record']>> {
+  const res = await api.post('/api/user/real-name', data)
   return res.data
 }
 
