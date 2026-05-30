@@ -80,7 +80,7 @@ func OaiResponsesToChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		}
 		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
 			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
-			chatResp = service.BuildSensitiveBlockedOpenAIResponse(chatResp.Id, chatResp.Created, chatResp.Model, chatResp.Usage)
+			chatResp = service.BuildSensitiveBlockedOpenAIResponse(chatResp.Id, chatResp.Created, chatResp.Model, chatResp.Usage, words...)
 		}
 	}
 
@@ -157,7 +157,7 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 				if contains, words := service.CheckSensitiveText(completionSensitiveText.String()); contains {
 					logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
 					completionSensitiveBlocked = true
-					blockedResponse := service.BuildSensitiveBlockedStreamResponse(responseId, createAt, model, nil)
+					blockedResponse := service.BuildSensitiveBlockedStreamResponse(responseId, createAt, model, nil, words...)
 					if err := helper.ObjectData(c, blockedResponse); err != nil {
 						streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
 						return false

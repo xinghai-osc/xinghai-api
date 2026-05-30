@@ -75,7 +75,7 @@ export function MissingModelsDialog({
 
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setSearchTerm('')
 
       setCurrentPage(1)
@@ -98,7 +98,7 @@ export function MissingModelsDialog({
 
   useEffect(() => {
     if (currentPage > totalPages) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setCurrentPage(Math.max(1, totalPages))
     }
   }, [currentPage, totalPages])

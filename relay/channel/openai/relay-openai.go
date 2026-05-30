@@ -153,7 +153,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 				if contains, words := service.CheckSensitiveText(responseTextBuilder.String()); contains {
 					logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
 					completionSensitiveBlocked = true
-					blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), model, nil)
+					blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), model, nil, words...)
 					if err := helper.ObjectData(c, blockedResponse); err != nil {
 						sr.Error(err)
 						return
@@ -285,7 +285,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		}
 		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
 			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
-			blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(simpleResponse.Id, simpleResponse.Created, simpleResponse.Model, simpleResponse.Usage)
+			blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(simpleResponse.Id, simpleResponse.Created, simpleResponse.Model, simpleResponse.Usage, words...)
 			simpleResponse = *blockedResponse
 			responseBody, err = common.Marshal(blockedResponse)
 			if err != nil {

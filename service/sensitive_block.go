@@ -8,7 +8,13 @@ import (
 	"github.com/QuantumNous/new-api/setting"
 )
 
-func GetSensitiveBlockResponse() string {
+func GetSensitiveBlockResponse(words ...string) string {
+	for _, word := range words {
+		response := strings.TrimSpace(setting.SensitiveWordResponses[strings.ToLower(strings.TrimSpace(word))])
+		if response != "" {
+			return response
+		}
+	}
 	text := strings.TrimSpace(setting.SensitiveBlockResponse)
 	if text == "" {
 		return "Sensitive words detected"
@@ -16,7 +22,7 @@ func GetSensitiveBlockResponse() string {
 	return setting.SensitiveBlockResponse
 }
 
-func BuildSensitiveBlockedOpenAIResponse(id string, created any, model string, usage dto.Usage) *dto.OpenAITextResponse {
+func BuildSensitiveBlockedOpenAIResponse(id string, created any, model string, usage dto.Usage, words ...string) *dto.OpenAITextResponse {
 	return &dto.OpenAITextResponse{
 		Id:      id,
 		Model:   model,
@@ -27,7 +33,7 @@ func BuildSensitiveBlockedOpenAIResponse(id string, created any, model string, u
 				Index: 0,
 				Message: dto.Message{
 					Role:    "assistant",
-					Content: GetSensitiveBlockResponse(),
+					Content: GetSensitiveBlockResponse(words...),
 				},
 				FinishReason: constant.FinishReasonContentFilter,
 			},
@@ -36,7 +42,7 @@ func BuildSensitiveBlockedOpenAIResponse(id string, created any, model string, u
 	}
 }
 
-func BuildSensitiveBlockedStreamResponse(id string, created int64, model string, systemFingerprint *string) *dto.ChatCompletionsStreamResponse {
+func BuildSensitiveBlockedStreamResponse(id string, created int64, model string, systemFingerprint *string, words ...string) *dto.ChatCompletionsStreamResponse {
 	return &dto.ChatCompletionsStreamResponse{
 		Id:                id,
 		Object:            "chat.completion.chunk",
@@ -47,7 +53,7 @@ func BuildSensitiveBlockedStreamResponse(id string, created int64, model string,
 			{
 				Index: 0,
 				Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
-					Content: stringPointer(GetSensitiveBlockResponse()),
+					Content: stringPointer(GetSensitiveBlockResponse(words...)),
 				},
 				FinishReason: stringPointer(constant.FinishReasonContentFilter),
 			},

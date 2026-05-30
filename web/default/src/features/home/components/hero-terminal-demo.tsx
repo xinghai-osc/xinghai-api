@@ -17,6 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { type TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 type AccentTone = 'emerald' | 'amber' | 'blue' | 'violet'
@@ -24,7 +26,7 @@ type AccentTone = 'emerald' | 'amber' | 'blue' | 'violet'
 interface ApiDemoConfig {
   id: string
   label: string
-  method: 'POST' | 'GET'
+  responseText: string
   endpoint: string
   headers: string[]
   request: string[]
@@ -72,8 +74,8 @@ const ACCENT_CLASSES: Record<
 const API_DEMOS: ApiDemoConfig[] = [
   {
     id: 'gpt-chat',
-    label: '聊天',
-    method: 'POST',
+    label: 'Chat',
+    responseText: 'Chat request routed.',
     endpoint: '/v1/chat/completions',
     headers: ['"Authorization: Bearer sk-••••"'],
     request: [
@@ -95,8 +97,8 @@ const API_DEMOS: ApiDemoConfig[] = [
   },
   {
     id: 'responses',
-    label: '响应',
-    method: 'POST',
+    label: 'Responses',
+    responseText: 'Response workflow ready.',
     endpoint: '/v1/responses',
     headers: ['"Authorization: Bearer sk-••••"'],
     request: ['"model": "your-model",', '"input": "..."'],
@@ -121,6 +123,7 @@ interface HeroTerminalDemoProps {
 }
 
 export function HeroTerminalDemo(props: HeroTerminalDemoProps) {
+  const { t } = useTranslation()
   const [activeIndex, setActiveIndex] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined)
@@ -188,7 +191,7 @@ export function HeroTerminalDemo(props: HeroTerminalDemoProps) {
                     : 'text-foreground/40 hover:text-foreground/70 border-transparent'
                 )}
               >
-                {item.label}
+                {t(item.label)}
               </button>
             )
           })}
@@ -213,7 +216,7 @@ export function HeroTerminalDemo(props: HeroTerminalDemoProps) {
               accent.badge
             )}
           >
-            {demo.method}
+            POST
           </span>
           <code
             className={cn(
@@ -228,10 +231,9 @@ export function HeroTerminalDemo(props: HeroTerminalDemoProps) {
         {/* Body — fixed rows so neither block shifts when switching demos */}
         <div className='grid h-[400px] grid-rows-[235px_minmax(0,1fr)] font-mono text-[12.5px] leading-[1.55]'>
           {/* Request */}
-          <RequestBlock demo={demo} transitioning={transitioning} />
+          <RequestBlock demo={demo} transitioning={transitioning} t={t} />
 
-          {/* Response */}
-          <ResponseBlock demo={demo} transitioning={transitioning} />
+          <ResponseBlock demo={demo} transitioning={transitioning} t={t} />
         </div>
 
         {/* Footer metrics */}
@@ -249,11 +251,11 @@ export function HeroTerminalDemo(props: HeroTerminalDemoProps) {
             <span className='bg-foreground/15 size-1 rounded-full' />
             <span className='flex items-center gap-1'>
               <span className='font-mono'>{demo.tokens}</span>
-              <span className='tracking-wider uppercase'>tokens</span>
+              <span className='tracking-wider uppercase'>{t('tokens')}</span>
             </span>
             <span className='bg-foreground/15 size-1 rounded-full' />
             <span className='flex items-center gap-1'>
-              <span className='tracking-wider uppercase'>cost</span>
+              <span className='tracking-wider uppercase'>{t('cost')}</span>
               <span className='font-mono'>
                 ${(demo.tokens * 0.00003).toFixed(5)}
               </span>
@@ -268,12 +270,16 @@ export function HeroTerminalDemo(props: HeroTerminalDemoProps) {
   )
 }
 
-function RequestBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
-  const { demo, transitioning } = props
+function RequestBlock(props: {
+  demo: ApiDemoConfig
+  transitioning: boolean
+  t: TFunction
+}) {
+  const { demo, transitioning, t } = props
 
   return (
     <div className='relative px-5 py-4'>
-      <SectionLabel>Request</SectionLabel>
+      <SectionLabel>{t('Request')}</SectionLabel>
       <div
         className={cn(
           'mt-2 transition-opacity duration-200',
@@ -307,8 +313,12 @@ function RequestBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
   )
 }
 
-function ResponseBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
-  const { demo, transitioning } = props
+function ResponseBlock(props: {
+  demo: ApiDemoConfig
+  transitioning: boolean
+  t: TFunction
+}) {
+  const { demo, transitioning, t } = props
 
   return (
     <div
@@ -317,7 +327,7 @@ function ResponseBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
         'border-border/40 bg-muted/20 dark:border-white/[0.05] dark:bg-white/[0.015]'
       )}
     >
-      <SectionLabel>Response</SectionLabel>
+      <SectionLabel>{t('Response')}</SectionLabel>
       <div
         className={cn(
           'mt-2 transition-opacity duration-200',
@@ -325,7 +335,7 @@ function ResponseBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
         )}
       >
         {demo.response.map((line, i) => (
-          <CodeLine key={i}>{renderResponseLine(line, demo)}</CodeLine>
+          <CodeLine key={i}>{renderResponseLine(line, demo, t)}</CodeLine>
         ))}
       </div>
     </div>
@@ -348,7 +358,11 @@ function renderJsonLine(line: string): ReactNode {
   return tokenize(line)
 }
 
-function renderResponseLine(line: string, demo: ApiDemoConfig): ReactNode {
+function renderResponseLine(
+  line: string,
+  demo: ApiDemoConfig,
+  t: TFunction
+): ReactNode {
   if (!line.trim()) return <Muted> </Muted>
 
   const segments: ReactNode[] = []
@@ -368,7 +382,7 @@ function renderResponseLine(line: string, demo: ApiDemoConfig): ReactNode {
     if (placeholder === '<text>') {
       segments.push(
         <Accent key={`ph-${idx}`} accent={demo.accent}>
-          {`"${truncateResponse(demo)}"`}
+          {`"${truncateResponse(demo, t)}"`}
         </Accent>
       )
     } else if (placeholder === '<tokens>') {
@@ -398,14 +412,8 @@ function renderResponseLine(line: string, demo: ApiDemoConfig): ReactNode {
   return segments
 }
 
-function truncateResponse(demo: ApiDemoConfig): string {
-  const map: Record<string, string> = {
-    'gpt-chat': 'Chat request routed.',
-    responses: 'Response workflow ready.',
-    claude: 'Claude message routed.',
-    gemini: 'Gemini request served.',
-  }
-  return map[demo.id] ?? '...'
+function truncateResponse(demo: ApiDemoConfig, t: TFunction): string {
+  return t(demo.responseText)
 }
 
 function tokenize(input: string): ReactNode {

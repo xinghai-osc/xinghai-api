@@ -47,6 +47,7 @@ const sensitiveSchema = z.object({
   CheckSensitiveOnPromptEnabled: z.boolean(),
   CheckSensitiveOnCompletionEnabled: z.boolean(),
   SensitiveBlockResponse: z.string().optional(),
+  SensitiveWordResponses: z.string().optional(),
   SensitiveWords: z.string().optional(),
 })
 
@@ -175,6 +176,29 @@ export function SensitiveWordsSection({
                 <FormDescription>
                   {t(
                     'This content is returned when prompts or model outputs contain blocked keywords.'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='SensitiveWordResponses'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Keyword-specific responses')}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={8}
+                    placeholder={t('keyword=>Custom response')}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Configure one mapping per line using keyword=>response. When multiple keywords match, the first matched keyword response is used; otherwise the default block response is returned.'
                   )}
                 </FormDescription>
                 <FormMessage />

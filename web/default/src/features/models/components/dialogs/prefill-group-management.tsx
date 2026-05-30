@@ -37,7 +37,7 @@ export function PrefillGroupManagement({
 
   useEffect(() => {
     if (!open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setView('dialog')
 
       setCurrentGroup(null)
