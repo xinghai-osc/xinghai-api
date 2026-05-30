@@ -82,7 +82,8 @@ export function CommonLogsFilterBar<TData>(
 
   useEffect(() => {
     const { start, end } = getDefaultTimeRange()
-    setFilters({
+    queueMicrotask(() =>
+      setFilters({
       startTime: searchParams.startTime
         ? new Date(searchParams.startTime)
         : start,
@@ -93,8 +94,9 @@ export function CommonLogsFilterBar<TData>(
       group: searchParams.group || undefined,
       username: searchParams.username || undefined,
       requestId: searchParams.requestId || undefined,
-      upstreamRequestId: searchParams.upstreamRequestId || undefined,
-    })
+        upstreamRequestId: searchParams.upstreamRequestId || undefined,
+      })
+    )
 
     const typeArr = searchParams.type
     const nextLogType =
@@ -103,7 +105,7 @@ export function CommonLogsFilterBar<TData>(
       isLogTypeValue(typeArr[0])
         ? typeArr[0]
         : LOG_TYPE_ALL_VALUE
-    setLogType(nextLogType)
+    queueMicrotask(() => setLogType(nextLogType))
   }, [
     searchParams.startTime,
     searchParams.endTime,

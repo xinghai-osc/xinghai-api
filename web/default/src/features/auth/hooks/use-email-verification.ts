@@ -26,8 +26,10 @@ import type { CaptchaType } from './use-captcha'
 
 interface UseEmailVerificationOptions {
   captchaToken?: string
+  turnstileToken?: string
   captchaType?: CaptchaType
   validateCaptcha?: () => boolean
+  validateTurnstile?: () => boolean
 }
 
 export function useEmailVerification(options?: UseEmailVerificationOptions) {
@@ -48,11 +50,15 @@ export function useEmailVerification(options?: UseEmailVerificationOptions) {
       return false
     }
 
+    if (options?.validateTurnstile && !options.validateTurnstile()) {
+      return false
+    }
+
     setIsSending(true)
     try {
       const res = await sendEmailVerification(
         email,
-        options?.captchaToken,
+        options?.captchaToken ?? options?.turnstileToken,
         options?.captchaType ?? undefined
       )
       if (res?.success) {

@@ -195,12 +195,12 @@ export function RetryChannelSettings() {
       <SectionPageLayout.Title>
         {t('Retry channel settings')}
       </SectionPageLayout.Title>
-      <SectionPageLayout.Description>
-        {t(
-          'Configure which upstream errors should switch to another channel for the current request only.'
-        )}
-      </SectionPageLayout.Description>
       <SectionPageLayout.Content>
+        <div className='text-muted-foreground mb-4 text-sm'>
+          {t(
+            'Configure which upstream errors should switch to another channel for the current request only.'
+          )}
+        </div>
         <div className='grid gap-6 lg:grid-cols-[1fr_320px]'>
           <Card>
             <CardHeader>

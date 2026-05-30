@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 /*
 Copyright (C) 2023-2026 QuantumNous
 

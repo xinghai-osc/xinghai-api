@@ -216,6 +216,7 @@ export async function handleTestChannel(
     endpointType?: string
     stream?: boolean
     silent?: boolean
+    keyIndex?: number
   },
   onTestComplete?: (
     success: boolean,
@@ -225,13 +226,18 @@ export async function handleTestChannel(
   ) => void
 ): Promise<void> {
   const payload =
-    options && (options.testModel || options.endpointType || options.stream)
+    options &&
+    (options.testModel ||
+      options.endpointType ||
+      options.stream ||
+      options.keyIndex !== undefined)
       ? {
           ...(options.testModel ? { model: options.testModel } : {}),
           ...(options.endpointType
             ? { endpoint_type: options.endpointType }
             : {}),
           ...(options.stream ? { stream: true } : {}),
+          ...(options.keyIndex !== undefined ? { key_index: options.keyIndex } : {}),
         }
       : undefined
 

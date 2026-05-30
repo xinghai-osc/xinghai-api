@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MultiSelect } from '@/components/multi-select'
 import {
   Select,
   SelectContent,
@@ -326,31 +327,18 @@ export function UsersMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Group')}</FormLabel>
-                        <Select
-                          items={[
-                            ...groups.map((group) => ({
+                        <FormControl>
+                          <MultiSelect
+                            options={groups.map((group) => ({
                               value: group,
                               label: group,
-                            })),
-                          ]}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('Select a group')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent alignItemWithTrigger={false}>
-                            <SelectGroup>
-                              {groups.map((group) => (
-                                <SelectItem key={group} value={group}>
-                                  {group}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                            }))}
+                            selected={field.value ?? []}
+                            onChange={field.onChange}
+                            placeholder={t('Select a group')}
+                            allowCreate
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

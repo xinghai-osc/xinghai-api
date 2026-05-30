@@ -21,7 +21,6 @@ import {
   useContext,
   type ComponentProps,
   type ReactNode,
-  type RefObject,
 } from 'react'
 import { RotateCcw, Save } from 'lucide-react'
 import { createPortal } from 'react-dom'
@@ -108,7 +107,6 @@ type SettingsPageFormActionsProps = {
   savingLabel?: string
   resetLabel?: string
   resetVariant?: ComponentProps<typeof Button>['variant']
-  saveButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
 export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
@@ -132,7 +130,6 @@ export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
         </Button>
       )}
       <Button
-        ref={props.saveButtonRef}
         type='button'
         size='sm'
         onClick={props.onSave}

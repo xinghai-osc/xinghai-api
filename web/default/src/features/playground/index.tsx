@@ -20,14 +20,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { getUserModels, getUserGroups } from './api'
+import { getUserModels, getUserGroups, type UserGroupsResult } from './api'
 import { PlaygroundChat } from './components/playground-chat'
 import { PlaygroundInput } from './components/playground-input'
 import { usePlaygroundState, useChatHandler } from './hooks'
 import { createUserMessage, createLoadingAssistantMessage } from './lib'
 import type { Message as MessageType } from './types'
 
-export function Playground() {
+type PlaygroundProps = {
+  initialTab?: string
+}
+
+export function Playground(_props: PlaygroundProps = {}) {
   const { t } = useTranslation()
   const {
     config,
@@ -54,7 +58,7 @@ export function Playground() {
 
   // Load models
   const { data: modelsData, isLoading: isLoadingModels } = useQuery({
-    queryKey: ['playground-models'],
+    queryKey: ['playground-models', t],
     queryFn: async () => {
       try {
         return await getUserModels()
@@ -71,7 +75,7 @@ export function Playground() {
 
   // Load groups
   const { data: groupsData } = useQuery({
-    queryKey: ['playground-groups'],
+    queryKey: ['playground-groups', t],
     queryFn: async () => {
       try {
         return await getUserGroups()
@@ -81,7 +85,7 @@ export function Playground() {
             ? error.message
             : t('Failed to load playground groups')
         )
-        return []
+        return { groups: [], userGroup: '' } satisfies UserGroupsResult
       }
     },
   })
@@ -103,13 +107,14 @@ export function Playground() {
   useEffect(() => {
     if (!groupsData) return
 
-    setGroups(groupsData)
+    const groupOptions = groupsData.groups
+    setGroups(groupOptions)
 
-    const hasCurrentGroup = groupsData.some((g) => g.value === config.group)
-    if (!hasCurrentGroup && groupsData.length > 0) {
+    const hasCurrentGroup = groupOptions.some((g) => g.value === config.group)
+    if (!hasCurrentGroup && groupOptions.length > 0) {
       const fallback =
-        groupsData.find((g) => g.value === 'default')?.value ??
-        groupsData[0].value
+        groupOptions.find((g) => g.value === 'default')?.value ??
+        groupOptions[0].value
       updateConfig('group', fallback)
     }
   }, [groupsData, setGroups, config.group, updateConfig])
