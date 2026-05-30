@@ -838,7 +838,7 @@ func shouldBanChannelByTestResult(result testResult, milliseconds int64, disable
 	return nil, false
 }
 
-func confirmChannelDisableByTests(channel *model.Channel, disableThreshold int64) (*types.NewAPIError, bool) {
+func confirmChannelDisableByTests(channel *model.Channel, testUserID int, disableThreshold int64) (*types.NewAPIError, bool) {
 	var lastAPIError *types.NewAPIError
 	for i := 0; i < channelDisableConfirmationTestTimes; i++ {
 		tik := time.Now()
@@ -976,7 +976,7 @@ func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
 
 			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
 				common.SysLog(fmt.Sprintf("通道「%s」（#%d）测试失败，禁用前开始复测 %d 次", channel.Name, channel.Id, channelDisableConfirmationTestTimes))
-				newAPIError, shouldBanChannel = confirmChannelDisableByTests(channel, disableThreshold)
+				newAPIError, shouldBanChannel = confirmChannelDisableByTests(channel, testUserID, disableThreshold)
 			}
 
 			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {

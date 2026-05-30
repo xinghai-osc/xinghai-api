@@ -385,7 +385,12 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 					return
 				}
 				common.SysLog(fmt.Sprintf("通道「%s」（#%d）发生错误，禁用前开始复测 %d 次", channelError.ChannelName, channelError.ChannelId, channelDisableConfirmationTestTimes))
-				confirmError, shouldDisable := confirmChannelDisableByTests(channel, 10000000)
+				testUserID, resolveErr := resolveChannelTestUserID(c)
+				if resolveErr != nil {
+					common.SysError(fmt.Sprintf("failed to resolve test user id for channel disable confirmation: %v", resolveErr))
+					return
+				}
+				confirmError, shouldDisable := confirmChannelDisableByTests(channel, testUserID, 10000000)
 				if !shouldDisable {
 					return
 				}
