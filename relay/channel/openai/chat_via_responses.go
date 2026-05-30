@@ -13,6 +13,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -71,6 +72,18 @@ func OaiResponsesToChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		chatResp.Usage = *usage
 	}
 
+	if setting.ShouldCheckCompletionSensitive() {
+		var completionText strings.Builder
+		for _, choice := range chatResp.Choices {
+			completionText.WriteString(choice.Message.StringContent())
+			completionText.WriteString(choice.Message.GetReasoningContent())
+		}
+		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
+			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
+			chatResp = service.BuildSensitiveBlockedOpenAIResponse(chatResp.Id, chatResp.Created, chatResp.Model, chatResp.Usage)
+		}
+	}
+
 	var responseBody []byte
 	switch info.RelayFormat {
 	case types.RelayFormatClaude:
@@ -102,13 +115,15 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 	model := info.UpstreamModelName
 
 	var (
-		usage       = &dto.Usage{}
-		outputText  strings.Builder
-		usageText   strings.Builder
-		sentStart   bool
-		sentStop    bool
-		sawToolCall bool
-		streamErr   *types.NewAPIError
+		usage                     = &dto.Usage{}
+		outputText                strings.Builder
+		usageText                 strings.Builder
+		completionSensitiveText   strings.Builder
+		sentStart                 bool
+		sentStop                  bool
+		sawToolCall               bool
+		streamErr                 *types.NewAPIError
+		completionSensitiveBlocked bool
 	)
 
 	toolCallIndexByID := make(map[string]int)
@@ -127,6 +142,30 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 	sendChatChunk := func(chunk *dto.ChatCompletionsStreamResponse) bool {
 		if chunk == nil {
 			return true
+		}
+		if completionSensitiveBlocked {
+			return true
+		}
+		if setting.ShouldCheckCompletionSensitive() {
+			var completionText strings.Builder
+			for _, choice := range chunk.Choices {
+				completionText.WriteString(choice.Delta.GetContentString())
+				completionText.WriteString(choice.Delta.GetReasoningContent())
+			}
+			if completionText.Len() > 0 {
+				completionSensitiveText.WriteString(completionText.String())
+				if contains, words := service.CheckSensitiveText(completionSensitiveText.String()); contains {
+					logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
+					completionSensitiveBlocked = true
+					blockedResponse := service.BuildSensitiveBlockedStreamResponse(responseId, createAt, model, nil)
+					if err := helper.ObjectData(c, blockedResponse); err != nil {
+						streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+						return false
+					}
+					helper.Done(c)
+					return false
+				}
+			}
 		}
 		if info.RelayFormat == types.RelayFormatOpenAI {
 			if err := helper.ObjectData(c, chunk); err != nil {
@@ -443,6 +482,9 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		case "response.function_call_arguments.done":
 
 		case "response.completed":
+			if completionSensitiveBlocked {
+				return
+			}
 			if streamResp.Response != nil {
 				if streamResp.Response.Model != "" {
 					model = streamResp.Response.Model
@@ -515,7 +557,10 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		return nil, streamErr
 	}
 
-	if usage.TotalTokens == 0 {
+	if completionSensitiveBlocked {
+		return usage, streamErr
+	}
+	if usage == nil || usage.TotalTokens == 0 {
 		usage = service.ResponseText2Usage(c, usageText.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
 	}
 

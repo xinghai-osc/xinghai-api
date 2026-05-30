@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -44,6 +45,8 @@ import { useUpdateOption } from '../hooks/use-update-option'
 const sensitiveSchema = z.object({
   CheckSensitiveEnabled: z.boolean(),
   CheckSensitiveOnPromptEnabled: z.boolean(),
+  CheckSensitiveOnCompletionEnabled: z.boolean(),
+  SensitiveBlockResponse: z.string().optional(),
   SensitiveWords: z.string().optional(),
 })
 
@@ -133,7 +136,51 @@ export function SensitiveWordsSection({
                 </SettingsSwitchItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name='CheckSensitiveOnCompletionEnabled'
+              render={({ field }) => (
+                <SettingsSwitchItem>
+                  <SettingsSwitchContent>
+                    <FormLabel>{t('Inspect model outputs')}</FormLabel>
+                    <FormDescription>
+                      {t(
+                        'When enabled, model outputs are scanned and replaced with the configured block response when keywords are detected.'
+                      )}
+                    </FormDescription>
+                  </SettingsSwitchContent>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </SettingsSwitchItem>
+              )}
+            />
           </div>
+
+          <FormField
+            control={form.control}
+            name='SensitiveBlockResponse'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Block response')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder={t('Sensitive words detected')}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'This content is returned when prompts or model outputs contain blocked keywords.'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

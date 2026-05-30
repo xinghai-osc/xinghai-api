@@ -14,6 +14,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting"
 
 	"github.com/QuantumNous/new-api/types"
 
@@ -121,11 +122,15 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var usage = &dto.Usage{}
 	var lastStreamData string
 	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
+	completionSensitiveBlocked := false
 
 	// 检查是否为音频模型
 	isAudioModel := strings.Contains(strings.ToLower(model), "audio")
 
 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
+		if completionSensitiveBlocked {
+			return
+		}
 		if lastStreamData != "" {
 			if err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent); err != nil {
 				common.SysLog("error handling stream format: " + err.Error())
@@ -142,9 +147,27 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			if err := processTokenData(info.RelayMode, data, &responseTextBuilder, &toolCount); err != nil {
 				logger.LogError(c, "error processing stream token data: "+err.Error())
 				sr.Error(err)
+				return
+			}
+			if setting.ShouldCheckCompletionSensitive() {
+				if contains, words := service.CheckSensitiveText(responseTextBuilder.String()); contains {
+					logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
+					completionSensitiveBlocked = true
+					blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), model, nil)
+					if err := helper.ObjectData(c, blockedResponse); err != nil {
+						sr.Error(err)
+						return
+					}
+					helper.Done(c)
+					sr.Done()
+				}
 			}
 		}
 	})
+
+	if completionSensitiveBlocked {
+		return usage, nil
+	}
 
 	// 对音频模型，从倒数第二个stream data中提取usage信息
 	if isAudioModel && secondLastStreamData != "" {
@@ -253,6 +276,23 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	}
 
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
+
+	if setting.ShouldCheckCompletionSensitive() {
+		var completionText strings.Builder
+		for _, choice := range simpleResponse.Choices {
+			completionText.WriteString(choice.Message.StringContent())
+			completionText.WriteString(choice.Message.GetReasoningContent())
+		}
+		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
+			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
+			blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(simpleResponse.Id, simpleResponse.Created, simpleResponse.Model, simpleResponse.Usage)
+			simpleResponse = *blockedResponse
+			responseBody, err = common.Marshal(blockedResponse)
+			if err != nil {
+				return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+			}
+		}
+	}
 
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
