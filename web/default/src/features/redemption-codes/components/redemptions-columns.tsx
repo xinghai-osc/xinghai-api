@@ -178,6 +178,26 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       },
     },
     {
+      accessorKey: 'subscription_plan_id',
+      meta: { label: t('Subscription Plan') },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t('Subscription Plan')} />
+      ),
+      cell: ({ row }) => {
+        const planId = row.getValue('subscription_plan_id') as number
+        if (!planId) {
+          return <span className='text-muted-foreground text-sm'>-</span>
+        }
+        return (
+          <StatusBadge
+            label={t('Plan {{id}}', { id: planId })}
+            variant='neutral'
+            copyable={false}
+          />
+        )
+      },
+    },
+    {
       accessorKey: 'created_time',
       meta: { label: t('Created'), mobileHidden: true },
       header: ({ column }) => (

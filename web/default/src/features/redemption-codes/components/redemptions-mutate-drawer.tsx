@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -35,6 +35,13 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -51,6 +58,8 @@ import {
   sideDrawerFormClassName,
   sideDrawerHeaderClassName,
 } from '@/components/drawer-layout'
+import { getAdminPlans } from '@/features/subscriptions/api'
+import type { PlanRecord } from '@/features/subscriptions/types'
 import { createRedemption, updateRedemption, getRedemption } from '../api'
 import { SUCCESS_MESSAGES } from '../constants'
 import {
@@ -78,11 +87,29 @@ export function RedemptionsMutateDrawer({
   const isUpdate = !!currentRow
   const { triggerRefresh } = useRedemptions()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [plans, setPlans] = useState<PlanRecord[]>([])
 
   const form = useForm<RedemptionFormValues>({
     resolver: zodResolver(getRedemptionFormSchema(t)),
     defaultValues: REDEMPTION_FORM_DEFAULT_VALUES,
   })
+
+  useEffect(() => {
+    if (!open) return
+
+    getAdminPlans()
+      .then((result) => {
+        if (result.success) {
+          setPlans(result.data || [])
+        }
+      })
+      .catch(() => setPlans([]))
+  }, [open])
+
+  const planOptions = useMemo(
+    () => plans.map((record) => record.plan).filter((plan) => plan.enabled),
+    [plans]
+  )
 
   // Load existing data when updating
   useEffect(() => {
@@ -221,6 +248,38 @@ export function RedemptionsMutateDrawer({
                         : t('Enter the quota amount in {{currency}}', {
                             currency: currencyLabel,
                           })}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='subscription_plan_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Subscription Plan')}</FormLabel>
+                    <Select
+                      value={String(field.value || 0)}
+                      onValueChange={(value) => field.onChange(Number(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('No subscription plan')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='0'>{t('No subscription plan')}</SelectItem>
+                        {planOptions.map((plan) => (
+                          <SelectItem key={plan.id} value={String(plan.id)}>
+                            {plan.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t('Redeeming this code will also grant the selected subscription plan.')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
