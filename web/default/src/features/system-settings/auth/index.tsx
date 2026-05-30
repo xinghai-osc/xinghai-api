@@ -69,6 +69,13 @@ const defaultAuthSettings: AuthSettings = {
   'passkey.allow_insecure_origin': false,
   'passkey.user_verification': 'preferred',
   'passkey.attachment_preference': '',
+  'real_name.enabled': false,
+  'real_name.provider': 'tencent_faceid',
+  'real_name.secret_id': '',
+  'real_name.secret_key': '',
+  'real_name.endpoint': 'faceid.tencentcloudapi.com',
+  'real_name.region': '',
+  'real_name.require_unique': true,
 }
 
 export function AuthSettings() {

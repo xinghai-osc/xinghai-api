@@ -101,6 +101,23 @@ const AUTH_SECTIONS = [
     ),
   },
   {
+    id: 'real-name',
+    titleKey: 'Real-name Verification',
+    build: (settings: AuthSettings) => (
+      <RealNameSection
+        defaultValues={{
+          'real_name.enabled': settings['real_name.enabled'],
+          'real_name.provider': settings['real_name.provider'],
+          'real_name.secret_id': settings['real_name.secret_id'],
+          'real_name.secret_key': settings['real_name.secret_key'],
+          'real_name.endpoint': settings['real_name.endpoint'],
+          'real_name.region': settings['real_name.region'],
+          'real_name.require_unique': settings['real_name.require_unique'],
+        }}
+      />
+    ),
+  },
+  {
     id: 'bot-protection',
     titleKey: 'Bot Protection',
     build: (settings: AuthSettings) => (

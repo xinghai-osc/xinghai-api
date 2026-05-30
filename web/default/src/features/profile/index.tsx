@@ -40,6 +40,7 @@ export function Profile() {
   const permissions = useAuthStore((s) => s.auth.user?.permissions)
 
   const checkinEnabled = status?.checkin_enabled === true
+  const realNameEnabled = status?.real_name_enabled === true
   const turnstileEnabled = !!(
     status?.turnstile_check && status?.turnstile_site_key
   )
@@ -66,6 +67,7 @@ export function Profile() {
                   profile={profile}
                   onProfileUpdate={refreshProfile}
                 />
+                {realNameEnabled && <RealNameCard enabled={realNameEnabled} />}
                 <ProfileSecurityCard profile={profile} loading={loading} />
               </div>
 
