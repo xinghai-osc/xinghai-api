@@ -21,7 +21,6 @@ import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -33,6 +32,12 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import {
+  SettingsForm,
+  SettingsSwitchContent,
+  SettingsSwitchItem,
+} from '../components/settings-form-layout'
+import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 
@@ -40,9 +45,6 @@ const botProtectionSchema = z.object({
   TurnstileCheckEnabled: z.boolean(),
   TurnstileSiteKey: z.string().optional(),
   TurnstileSecretKey: z.string().optional(),
-  GeetestEnabled: z.boolean(),
-  GeetestCaptchaID: z.string().optional(),
-  GeetestCaptchaKey: z.string().optional(),
 })
 
 type BotProtectionFormValues = z.infer<typeof botProtectionSchema>
@@ -78,154 +80,73 @@ export function BotProtectionSection({
   }
 
   return (
-    <SettingsSection
-      title={t('Bot Protection')}
-      description={t(
-        'Protect login and registration with Turnstile or Geetest'
-      )}
-    >
+    <SettingsSection title={t('Bot Protection')}>
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className='space-y-6'
-          autoComplete='off'
-        >
-          <div className='space-y-6'>
-            <div className='text-lg font-medium'>{t('Turnstile')}</div>
+        <SettingsForm onSubmit={form.handleSubmit(onSubmit)} autoComplete='off'>
+          <SettingsPageFormActions
+            onSave={form.handleSubmit(onSubmit)}
+            isSaving={updateOption.isPending}
+          />
+          <FormField
+            control={form.control}
+            name='TurnstileCheckEnabled'
+            render={({ field }) => (
+              <SettingsSwitchItem>
+                <SettingsSwitchContent>
+                  <FormLabel>{t('Enable Turnstile')}</FormLabel>
+                  <FormDescription>
+                    {t(
+                      'Protect login and registration with Cloudflare Turnstile'
+                    )}
+                  </FormDescription>
+                </SettingsSwitchContent>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </SettingsSwitchItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name='TurnstileCheckEnabled'
-              render={({ field }) => (
-                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                  <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>
-                      {t('Enable Turnstile')}
-                    </FormLabel>
-                    <FormDescription>
-                      {t(
-                        'Protect login and registration with Cloudflare Turnstile'
-                      )}
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+          <FormField
+            control={form.control}
+            name='TurnstileSiteKey'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Site Key')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder={t('Your Turnstile site key')}
+                    autoComplete='off'
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name='TurnstileSiteKey'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Site Key')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('Your Turnstile site key')}
-                      autoComplete='off'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='TurnstileSecretKey'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Secret Key')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type='password'
-                      placeholder={t('Your Turnstile secret key')}
-                      autoComplete='new-password'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className='border-t pt-6 space-y-6'>
-            <div className='text-lg font-medium'>{t('Geetest')}</div>
-
-            <FormField
-              control={form.control}
-              name='GeetestEnabled'
-              render={({ field }) => (
-                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                  <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>
-                      {t('Enable Geetest')}
-                    </FormLabel>
-                    <FormDescription>
-                      {t(
-                        'Protect login and registration with Geetest captcha'
-                      )}
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='GeetestCaptchaID'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Captcha ID')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('Your Geetest captcha ID')}
-                      autoComplete='off'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='GeetestCaptchaKey'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Captcha Key')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type='password'
-                      placeholder={t('Your Geetest captcha key')}
-                      autoComplete='new-password'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <Button type='submit' disabled={updateOption.isPending}>
-            {updateOption.isPending ? t('Saving...') : t('Save Changes')}
-          </Button>
-        </form>
+          <FormField
+            control={form.control}
+            name='TurnstileSecretKey'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Secret Key')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type='password'
+                    placeholder={t('Your Turnstile secret key')}
+                    autoComplete='new-password'
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </SettingsForm>
       </Form>
     </SettingsSection>
   )

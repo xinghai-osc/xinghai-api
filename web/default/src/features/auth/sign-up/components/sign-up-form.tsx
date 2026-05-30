@@ -46,15 +46,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
-import { Geetest } from '@/components/geetest'
 import { register, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { registerFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
 import { useEmailVerification } from '@/features/auth/hooks/use-email-verification'
-import { useCaptcha } from '@/features/auth/hooks/use-captcha'
-import { getAffiliateCode } from '@/features/auth/lib/storage'
+import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
+import {
+  getAffiliateCode,
+  saveAffiliateCode,
+} from '@/features/auth/lib/storage'
 
 export function SignUpForm({
   className,
@@ -71,15 +73,12 @@ export function SignUpForm({
 
   const { status } = useStatus()
   const {
-    captchaType,
-    isCaptchaEnabled,
-    captchaToken,
-    setCaptchaToken,
-    validateCaptcha,
-    onVerifyGeetest,
+    isTurnstileEnabled,
     turnstileSiteKey,
-    geetestCaptchaId,
-  } = useCaptcha()
+    turnstileToken,
+    setTurnstileToken,
+    validateTurnstile,
+  } = useTurnstile()
   const { redirectToLogin, handleLoginSuccess } = useAuthRedirect()
   const {
     isSending: isSendingCode,
@@ -87,9 +86,8 @@ export function SignUpForm({
     isActive,
     sendCode,
   } = useEmailVerification({
-    captchaToken,
-    captchaType,
-    validateCaptcha,
+    turnstileToken,
+    validateTurnstile,
   })
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
@@ -112,6 +110,7 @@ export function SignUpForm({
     status?.data?.oauth_register_enabled ??
     true
   const hasWeChatLogin = Boolean(status?.wechat_login)
+  const turnstileReady = !isTurnstileEnabled || Boolean(turnstileToken)
 
   const wechatQrCodeUrl = useMemo(() => {
     return (
@@ -135,6 +134,13 @@ export function SignUpForm({
     }
   }, [requiresLegalConsent])
 
+  useEffect(() => {
+    const aff = new URLSearchParams(window.location.search).get('aff')?.trim()
+    if (aff) {
+      saveAffiliateCode(aff)
+    }
+  }, [])
+
   async function onSubmit(data: z.infer<typeof registerFormSchema>) {
     if (requiresLegalConsent && !agreedToLegal) {
       toast.error(legalConsentErrorMessage)
@@ -153,37 +159,24 @@ export function SignUpForm({
       }
     }
 
-    if (!validateCaptcha()) return
+    if (!validateTurnstile()) return
 
     setIsLoading(true)
     try {
-      const registerData: {
-        username: string
-        password: string
-        email?: string
-        verification_code?: string
-        aff?: string
-        turnstile?: string
-        geetest?: string
-      } = {
+      const res = await register({
         username: data.username,
         password: data.password,
         email: data.email || undefined,
         verification_code: verificationCode || undefined,
-        aff: getAffiliateCode(),
-      }
-
-      if (captchaType === 'turnstile') {
-        registerData.turnstile = captchaToken
-      } else if (captchaType === 'geetest') {
-        registerData.geetest = captchaToken
-      }
-
-      const res = await register(registerData)
+        aff_code: getAffiliateCode(),
+        turnstile: turnstileToken,
+      })
 
       if (res?.success) {
         toast.success(t('Account created! Please sign in'))
         redirectToLogin()
+      } else {
+        toast.error(res?.message || t('Failed to create account'))
       }
     } catch (_error) {
       // Errors are handled by global interceptor
@@ -327,7 +320,13 @@ export function SignUpForm({
               <Button
                 variant='outline'
                 type='button'
-                disabled={isLoading || isSendingCode || isActive || !emailValue}
+                disabled={
+                  isLoading ||
+                  isSendingCode ||
+                  isActive ||
+                  !emailValue ||
+                  !turnstileReady
+                }
                 onClick={handleSendVerificationCode}
               >
                 {isActive ? (
@@ -339,26 +338,17 @@ export function SignUpForm({
                 )}
               </Button>
             </div>
-
-            {isCaptchaEnabled && captchaType === 'turnstile' && (
-              <div className='mt-2'>
-                <Turnstile
-                  siteKey={turnstileSiteKey}
-                  onVerify={setCaptchaToken}
-                />
-              </div>
-            )}
-            {isCaptchaEnabled && captchaType === 'geetest' && (
-              <div className='mt-2'>
-                <Geetest
-                  captchaId={geetestCaptchaId}
-                  onVerify={onVerifyGeetest}
-                  product='bind'
-                  version={4}
-                />
-              </div>
-            )}
           </>
+        )}
+
+        {/* Turnstile */}
+        {isTurnstileEnabled && (
+          <div className='mt-2'>
+            <Turnstile
+              siteKey={turnstileSiteKey}
+              onVerify={setTurnstileToken}
+            />
+          </div>
         )}
 
         <LegalConsent
@@ -372,7 +362,11 @@ export function SignUpForm({
         <Button
           type='submit'
           className='mt-2 w-full justify-center gap-2'
-          disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+          disabled={
+            isLoading ||
+            (requiresLegalConsent && !agreedToLegal) ||
+            !turnstileReady
+          }
         >
           {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : null}
           {t('Create account')}

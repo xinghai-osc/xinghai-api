@@ -52,13 +52,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
-import { Geetest } from '@/components/geetest'
 import { login, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
-import { useCaptcha } from '@/features/auth/hooks/use-captcha'
+import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
 import { beginPasskeyLogin, finishPasskeyLogin } from '@/features/auth/passkey'
 import type { AuthFormProps } from '@/features/auth/types'
 
@@ -82,16 +81,17 @@ export function UserAuthForm({
   const passkeyLoginEnabled = Boolean(
     status?.passkey_login ?? status?.data?.passkey_login
   )
+  const passwordLoginEnabled =
+    (status?.password_login_enabled ??
+      status?.data?.password_login_enabled ??
+      true) !== false
   const {
-    captchaType,
-    isCaptchaEnabled,
-    captchaToken,
-    setCaptchaToken,
-    validateCaptcha,
-    onVerifyGeetest,
+    isTurnstileEnabled,
     turnstileSiteKey,
-    geetestCaptchaId,
-  } = useCaptcha()
+    turnstileToken,
+    setTurnstileToken,
+    validateTurnstile,
+  } = useTurnstile()
   const { handleLoginSuccess, redirectTo2FA } = useAuthRedirect()
 
   const hasUserAgreement = Boolean(status?.user_agreement_enabled)
@@ -102,6 +102,16 @@ export function UserAuthForm({
     !passkeySupported ||
     (requiresLegalConsent && !agreedToLegal)
   const hasWeChatLogin = Boolean(status?.wechat_login)
+  const hasOAuthLogin = Boolean(
+    status?.github_oauth ||
+    status?.discord_oauth ||
+    status?.oidc_enabled ||
+    status?.linuxdo_oauth ||
+    status?.telegram_oauth ||
+    (status?.custom_oauth_providers?.length ?? 0) > 0
+  )
+  const hasAlternativeLogin =
+    passkeyLoginEnabled || hasWeChatLogin || hasOAuthLogin
 
   useEffect(() => {
     if (requiresLegalConsent) {
@@ -145,27 +155,15 @@ export function UserAuthForm({
       return
     }
 
-    if (!validateCaptcha()) return
+    if (!validateTurnstile()) return
 
     setIsLoading(true)
     try {
-      const loginData: {
-        username: string
-        password: string
-        turnstile?: string
-        geetest?: string
-      } = {
+      const res = await login({
         username: data.username,
         password: data.password,
-      }
-
-      if (captchaType === 'turnstile') {
-        loginData.turnstile = captchaToken
-      } else if (captchaType === 'geetest') {
-        loginData.geetest = captchaToken
-      }
-
-      const res = await login(loginData)
+        turnstile: turnstileToken,
+      })
 
       if (res.success) {
         if (res.data?.require_2fa) {
@@ -291,6 +289,42 @@ export function UserAuthForm({
     }
   }
 
+  const alternativeLoginMethods = (
+    <>
+      {passkeyLoginEnabled && (
+        <div className='mt-2 space-y-1'>
+          <Button
+            type='button'
+            variant='outline'
+            disabled={passkeyButtonDisabled}
+            onClick={handlePasskeyLogin}
+            className='h-11 w-full justify-center gap-2 rounded-lg'
+          >
+            {isPasskeyLoading ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <KeyRound className='h-4 w-4' />
+            )}
+            {t('Sign in with Passkey')}
+          </Button>
+          {!passkeySupported && (
+            <p className='text-muted-foreground text-xs'>
+              {t('Passkey is not supported on this device.')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* OAuth Providers */}
+      <OAuthProviders
+        status={status}
+        disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+        onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
+        isWeChatLoading={isWeChatSubmitting}
+      />
+    </>
+  )
+
   return (
     <Form {...form}>
       <form
@@ -298,73 +332,72 @@ export function UserAuthForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
-        {/* Username Field */}
-        <FormField
-          control={form.control}
-          name='username'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('Username or Email')}</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder={t('Enter your username or email')}
-                  {...field}
+        {hasAlternativeLogin && alternativeLoginMethods}
+
+        {passwordLoginEnabled && (
+          <>
+            {/* Username Field */}
+            <FormField
+              control={form.control}
+              name='username'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Username or Email')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('Enter your username or email')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Password Field */}
+            <FormField
+              control={form.control}
+              name='password'
+              render={({ field }) => (
+                <FormItem className='relative'>
+                  <FormLabel>{t('Password')}</FormLabel>
+                  <FormControl>
+                    <PasswordInput
+                      placeholder={t('Enter password')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <Link
+                    to='/forgot-password'
+                    className='text-muted-foreground absolute end-0 -top-0.5 z-10 text-sm font-medium hover:opacity-75'
+                  >
+                    {t('Forgot password?')}
+                  </Link>
+                </FormItem>
+              )}
+            />
+
+            {/* Submit Button */}
+            <Button
+              type='submit'
+              className='mt-2 w-full justify-center gap-2'
+              disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+            >
+              {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
+              {t('Sign in')}
+            </Button>
+
+            {/* Turnstile */}
+            {isTurnstileEnabled && (
+              <div className='mt-2'>
+                <Turnstile
+                  siteKey={turnstileSiteKey}
+                  onVerify={setTurnstileToken}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Password Field */}
-        <FormField
-          control={form.control}
-          name='password'
-          render={({ field }) => (
-            <FormItem className='relative'>
-              <FormLabel>{t('Password')}</FormLabel>
-              <FormControl>
-                <PasswordInput placeholder={t('Enter password')} {...field} />
-              </FormControl>
-              <FormMessage />
-              <Link
-                to='/forgot-password'
-                className='text-muted-foreground absolute end-0 -top-0.5 z-10 text-sm font-medium hover:opacity-75'
-              >
-                {t('Forgot password?')}
-              </Link>
-            </FormItem>
-          )}
-        />
-
-        {/* Submit Button */}
-        <Button
-          type='submit'
-          className='mt-2 w-full justify-center gap-2'
-          disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
-        >
-          {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
-          {t('Sign in')}
-        </Button>
-
-        {/* Captcha */}
-        {isCaptchaEnabled && captchaType === 'turnstile' && (
-          <div className='mt-2'>
-            <Turnstile
-              siteKey={turnstileSiteKey}
-              onVerify={setCaptchaToken}
-            />
-          </div>
-        )}
-        {isCaptchaEnabled && captchaType === 'geetest' && (
-          <div className='mt-2'>
-            <Geetest
-              captchaId={geetestCaptchaId}
-              onVerify={onVerifyGeetest}
-              product='bind'
-              version={4}
-            />
-          </div>
+              </div>
+            )}
+          </>
         )}
 
         <LegalConsent
@@ -374,37 +407,7 @@ export function UserAuthForm({
           className='mt-1'
         />
 
-        {passkeyLoginEnabled && (
-          <div className='mt-2 space-y-1'>
-            <Button
-              type='button'
-              variant='outline'
-              disabled={passkeyButtonDisabled}
-              onClick={handlePasskeyLogin}
-              className='h-11 w-full justify-center gap-2 rounded-lg'
-            >
-              {isPasskeyLoading ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                <KeyRound className='h-4 w-4' />
-              )}
-              {t('Sign in with Passkey')}
-            </Button>
-            {!passkeySupported && (
-              <p className='text-muted-foreground text-xs'>
-                {t('Passkey is not supported on this device.')}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* OAuth Providers */}
-        <OAuthProviders
-          status={status}
-          disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
-          onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
-          isWeChatLoading={isWeChatSubmitting}
-        />
+        {!hasAlternativeLogin && alternativeLoginMethods}
       </form>
 
       {hasWeChatLogin && (
