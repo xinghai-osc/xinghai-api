@@ -1676,6 +1676,10 @@ export function ChannelMutateDrawer({
                                   value: 'doubao-coding-plan',
                                   label: t('Doubao Coding Plan'),
                                 },
+                                {
+                                  value: 'doubao-plan',
+                                  label: t('Doubao Plan'),
+                                },
                               ]}
                               onValueChange={field.onChange}
                               value={
@@ -1700,6 +1704,9 @@ export function ChannelMutateDrawer({
                                   </SelectItem>
                                   <SelectItem value='doubao-coding-plan'>
                                     {t('Doubao Coding Plan')}
+                                  </SelectItem>
+                                  <SelectItem value='doubao-plan'>
+                                    {t('Doubao Plan')}
                                   </SelectItem>
                                 </SelectGroup>
                               </SelectContent>

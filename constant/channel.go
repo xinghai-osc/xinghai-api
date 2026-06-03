@@ -209,4 +209,8 @@ var ChannelSpecialBases = map[string]ChannelSpecialBase{
 		ClaudeBaseURL: "https://ark.cn-beijing.volces.com/api/coding",
 		OpenAIBaseURL: "https://ark.cn-beijing.volces.com/api/coding/v3",
 	},
+	"doubao-plan": {
+		ClaudeBaseURL: "https://ark.cn-beijing.volces.com/api/plan/v3",
+		OpenAIBaseURL: "https://ark.cn-beijing.volces.com/api/plan/v3",
+	},
 }

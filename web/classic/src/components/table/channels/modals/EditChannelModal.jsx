@@ -3440,6 +3440,10 @@ const EditChannelModal = (props) => {
                                 label: doubaoCodingPlanOptionLabel,
                                 disabled: !canKeepDeprecatedDoubaoCodingPlan,
                               },
+                              {
+                                value: 'doubao-plan',
+                                label: 'Doubao Plan',
+                              },
                             ]}
                             defaultValue='https://ark.cn-beijing.volces.com'
                             disabled={isIonetLocked}
