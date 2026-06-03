@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 declare global {
   interface Window {
@@ -40,6 +41,7 @@ export function Geetest({
   challenge = '',
   className,
 }: GeetestProps) {
+  const { t } = useTranslation()
   const ref = useRef<HTMLDivElement | null>(null)
   const [error, setError] = useState(false)
 
@@ -139,7 +141,7 @@ export function Geetest({
   if (error) {
     return (
       <div className={className}>
-        <p style={{ color: 'red' }}>Failed to load captcha</p>
+        <p style={{ color: 'red' }}>{t('Failed to load captcha')}</p>
       </div>
     )
   }
