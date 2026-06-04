@@ -16,24 +16,4 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { Main } from '@/components/layout'
-import { ImageGeneration } from '@/features/image-generation'
-import { isSidebarModuleEnabled } from '@/lib/nav-modules'
-
-export const Route = createFileRoute('/_authenticated/image-generation/')({
-  beforeLoad: () => {
-    if (!isSidebarModuleEnabled('chat', 'playground')) {
-      throw redirect({ to: '/dashboard' })
-    }
-  },
-  component: ImageGenerationPage,
-})
-
-function ImageGenerationPage() {
-  return (
-    <Main className='p-0'>
-      <ImageGeneration />
-    </Main>
-  )
-}
+export { useImageGenerationState } from './use-image-generation-state'

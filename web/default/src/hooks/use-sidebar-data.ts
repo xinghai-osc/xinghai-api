@@ -23,6 +23,7 @@ import {
   CreditCard,
   FileText,
   FlaskConical,
+  ImageIcon,
   Key,
   LayoutDashboard,
   ListTodo,
@@ -49,6 +50,11 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           title: t('Playground'),
           url: '/playground',
           icon: FlaskConical,
+        },
+        {
+          title: t('Image Generation'),
+          url: '/image-generation',
+          icon: ImageIcon,
         },
         {
           title: t('Chat'),
