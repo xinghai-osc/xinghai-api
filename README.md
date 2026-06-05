@@ -54,19 +54,11 @@
 
 ## 📝 Project Description
 
-<<<<<<< HEAD
-> \[!IMPORTANT]
->
-> - This project is for personal learning purposes only, with no guarantee of stability or technical support
-> - Users must comply with OpenAI's [Terms of Use](https://openai.com/policies/terms-of-use) and **applicable laws and regulations**, and must not use it for illegal purposes
-> - According to the [《Interim Measures for the Management of Generative Artificial Intelligence Services》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm), please do not provide any unregistered generative AI services to the public in China.
-=======
 > [!IMPORTANT]
 > - This project is intended solely for lawful and authorized AI API gateway, organization-level authentication, multi-model management, usage analytics, cost accounting, and private deployment scenarios.
 > - Users must lawfully obtain upstream API keys, accounts, model services, and interface permissions, and must comply with upstream terms of service and applicable laws and regulations.
 > - Users should ensure their use complies with upstream terms of service and applicable laws and regulations.
 > - When providing generative AI services to the public, users should comply with applicable regulatory requirements and fulfill all filing, licensing, content safety, real-name verification, log retention, tax, and upstream authorization obligations required by their jurisdiction.
->>>>>>> upstream/main
 
 ***
 
