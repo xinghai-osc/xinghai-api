@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,16 @@ type RankingQuotaBucket struct {
 	ModelName string `json:"model_name"`
 	Bucket    int64  `json:"bucket"`
 	Tokens    int64  `json:"tokens"`
+}
+
+type PersonalRankingTotal struct {
+	Rank         int     `json:"rank" gorm:"-"`
+	UserID       int     `json:"user_id"`
+	Username     string  `json:"username"`
+	DisplayName  string  `json:"display_name"`
+	TotalQuota   int64   `json:"total_quota"`
+	RequestCount int64   `json:"request_count"`
+	Share        float64 `json:"share" gorm:"-"`
 }
 
 func GetRankingQuotaTotals(startTime int64, endTime int64) ([]RankingQuotaTotal, error) {
@@ -46,6 +57,40 @@ func GetRankingQuotaBuckets(startTime int64, endTime int64, bucketSize int64) ([
 	query = applyRankingQuotaTimeRange(query, startTime, endTime)
 	err := query.Find(&rows).Error
 	return rows, err
+}
+
+func GetPersonalRankingQuotaTotals(startTime int64, endTime int64, limit int) ([]PersonalRankingTotal, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+
+	var rows []PersonalRankingTotal
+	query := DB.Table("quota_data").
+		Select("quota_data.user_id, users.username, users.display_name, sum(quota_data.quota) as total_quota, sum(quota_data.count) as request_count").
+		Joins("JOIN users ON users.id = quota_data.user_id").
+		Where("quota_data.user_id > 0").
+		Where("users.deleted_at IS NULL").
+		Where("users.setting LIKE ?", "%\""+dto.ShowInPersonalRankingKey+"\":true%").
+		Group("quota_data.user_id, users.username, users.display_name").
+		Having("sum(quota_data.quota) > 0").
+		Order("total_quota DESC").
+		Limit(limit)
+	query = applyRankingQuotaTimeRange(query, startTime, endTime)
+	if err := query.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	var total int64
+	for _, row := range rows {
+		total += row.TotalQuota
+	}
+	for i := range rows {
+		rows[i].Rank = i + 1
+		if total > 0 {
+			rows[i].Share = float64(rows[i].TotalQuota) / float64(total)
+		}
+	}
+	return rows, nil
 }
 
 func rankingBucketExpr(bucketSize int64) string {

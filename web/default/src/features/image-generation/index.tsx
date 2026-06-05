@@ -21,13 +21,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { PanelLeftIcon } from 'lucide-react'
-import { getUserModels, getUserGroups, type UserGroupsResult } from './api'
+import {
+  generateImage,
+  getUserGroups,
+  getUserModels,
+  type UserGroupsResult,
+} from './api'
 import { FALLBACK_MODEL } from './constants'
 import { useImageGenerationState } from './hooks'
 import { ImageConversation } from './components/image-conversation'
 import { ImageInput } from './components/image-input'
 import { ImageHistoryPanel } from './components/image-history-panel'
-import { generateImage } from './api'
 import type { ImageData, ImageMessageItem } from './types'
 
 function getImageSource(image: ImageData, outputFormat: string) {

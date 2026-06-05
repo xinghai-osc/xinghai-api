@@ -67,6 +67,16 @@ export type VendorRanking = {
   top_model: string
 }
 
+export type PersonalRanking = {
+  rank: number
+  user_id: number
+  username: string
+  display_name: string
+  total_quota: number
+  request_count: number
+  share: number
+}
+
 export type RankingMover = {
   model_name: string
   vendor: string
@@ -127,6 +137,7 @@ export type RankingsSnapshot = {
   // Overall (all categories) ------------------------------------------------
   models: ModelRanking[]
   vendors: VendorRanking[]
+  personal_rankings: PersonalRanking[]
   /** Largest rank gainers in this period. */
   top_movers: RankingMover[]
   /** Largest rank losers in this period. */

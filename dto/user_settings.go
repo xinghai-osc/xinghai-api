@@ -1,7 +1,9 @@
 package dto
 
+const ShowInPersonalRankingKey = "show_in_personal_ranking"
+
 type UserSetting struct {
-	NotifyType                       string  `json:"notify_type,omitempty"`                          // QuotaWarningType 额度预警类型
+	NotifyType                       string  `json:"notify_type,omitempty"`                          // NotifyType 通知类型
 	QuotaWarningThreshold            float64 `json:"quota_warning_threshold,omitempty"`              // QuotaWarningThreshold 额度预警阈值
 	WebhookUrl                       string  `json:"webhook_url,omitempty"`                          // WebhookUrl webhook地址
 	WebhookSecret                    string  `json:"webhook_secret,omitempty"`                       // WebhookSecret webhook密钥
@@ -16,6 +18,7 @@ type UserSetting struct {
 	SidebarModules                   string  `json:"sidebar_modules,omitempty"`                      // SidebarModules 左侧边栏模块配置
 	BillingPreference                string  `json:"billing_preference,omitempty"`                   // BillingPreference 扣费策略（订阅/钱包）
 	Language                         string  `json:"language,omitempty"`                             // Language 用户语言偏好 (zh, en)
+	ShowInPersonalRanking            bool    `json:"show_in_personal_ranking,omitempty"`             // ShowInPersonalRanking 是否展示在个人调用量排行榜
 }
 
 var (

@@ -28,6 +28,7 @@ import {
   useState,
 } from 'react'
 import { BrainIcon, ChevronDownIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useControllableState } from '@/lib/use-controllable-state'
 import { cn } from '@/lib/utils'
 import {
@@ -156,6 +157,7 @@ const getThinkingMessage = (
 
 export const ReasoningTrigger = memo(
   ({ className, children, ...props }: ReasoningTriggerProps) => {
+    const { t } = useTranslation()
     const { isStreaming, isOpen, duration } = useReasoning()
 
     return (

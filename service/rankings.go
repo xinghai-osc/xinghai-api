@@ -21,12 +21,13 @@ const (
 )
 
 type RankingsResponse struct {
-	Models             []RankedModel      `json:"models"`
-	Vendors            []RankedVendor     `json:"vendors"`
-	TopMovers          []RankingMover     `json:"top_movers"`
-	TopDroppers        []RankingMover     `json:"top_droppers"`
-	ModelsHistory      ModelHistorySeries `json:"models_history"`
-	VendorShareHistory VendorShareSeries  `json:"vendor_share_history"`
+	Models             []RankedModel                 `json:"models"`
+	Vendors            []RankedVendor                `json:"vendors"`
+	PersonalRankings   []model.PersonalRankingTotal  `json:"personal_rankings"`
+	TopMovers          []RankingMover                `json:"top_movers"`
+	TopDroppers        []RankingMover                `json:"top_droppers"`
+	ModelsHistory      ModelHistorySeries            `json:"models_history"`
+	VendorShareHistory VendorShareSeries             `json:"vendor_share_history"`
 }
 
 type RankedModel struct {
@@ -190,6 +191,10 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 	if err != nil {
 		return nil, err
 	}
+	personalRankings, err := model.GetPersonalRankingQuotaTotals(startTime, endTime, rankingLeaderboardLimit)
+	if err != nil {
+		return nil, err
+	}
 
 	var previousTotals []model.RankingQuotaTotal
 	if config.hasPrevious {
@@ -214,6 +219,7 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 	return &RankingsResponse{
 		Models:             limitRankedModels(rankedModels, rankingLeaderboardLimit),
 		Vendors:            vendors,
+		PersonalRankings:   personalRankings,
 		TopMovers:          movers,
 		TopDroppers:        droppers,
 		ModelsHistory:      modelHistory,

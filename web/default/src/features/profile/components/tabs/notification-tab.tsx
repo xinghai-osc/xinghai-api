@@ -68,6 +68,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
     accept_unset_model_ratio_model: false,
     record_ip_log: false,
     upstream_model_update_notify_enabled: false,
+    show_in_personal_ranking: false,
   })
 
   // Update form field helper
@@ -97,6 +98,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
         record_ip_log: parsed.record_ip_log || false,
         upstream_model_update_notify_enabled:
           parsed.upstream_model_update_notify_enabled || false,
+        show_in_personal_ranking: parsed.show_in_personal_ranking || false,
       })
     }
   }, [profile])
@@ -361,6 +363,28 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             checked={settings.accept_unset_model_ratio_model}
             onCheckedChange={(checked) =>
               updateField('accept_unset_model_ratio_model', checked)
+            }
+          />
+        </div>
+
+        {/* Show In Personal Ranking */}
+        <div className='flex items-start justify-between gap-3 rounded-lg border p-3 sm:items-center sm:p-4'>
+          <div className='space-y-0.5'>
+            <Label htmlFor='showInPersonalRanking'>
+              {t('Join Personal Usage Ranking')}
+            </Label>
+            <p className='text-muted-foreground text-xs sm:text-sm'>
+              {t(
+                'Show your display name and usage on the public personal usage ranking'
+              )}
+            </p>
+          </div>
+          <Switch
+            id='showInPersonalRanking'
+            className='shrink-0'
+            checked={settings.show_in_personal_ranking}
+            onCheckedChange={(checked) =>
+              updateField('show_in_personal_ranking', checked)
             }
           />
         </div>
