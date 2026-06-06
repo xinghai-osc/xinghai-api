@@ -121,10 +121,7 @@ func Distribute() func(c *gin.Context) {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil {
 						if preferred.Status != common.ChannelStatusEnabled {
-							if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
-								abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorAffinityChannelDisabled))
-								return
-							}
+							// Keep affinity unusable and fall back to random selection.
 						} else if !service.IsChannelMatchedForApiTypes(preferred, allowedApiTypes, deniedApiTypes) {
 							// Keep affinity unusable for this API type and fall back to random selection.
 						} else if usingGroup == "auto" {
