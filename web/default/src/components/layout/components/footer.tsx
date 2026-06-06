@@ -135,6 +135,15 @@ function ProjectAttribution(props: { currentYear: number; inline?: boolean }) {
       >
         {t('New API')}
       </a>
+      &
+      <a
+        href='https://github.com/xinghai-osc/xinghai-api'
+        target='_blank'
+        rel='noopener noreferrer'
+        className='text-foreground/70 hover:text-foreground font-medium transition-colors'
+      >
+        {t('Xinghai API')}
+      </a>
       . {t(NEW_API_FOOTER_ATTRIBUTION_KEY)}
     </span>
   )
