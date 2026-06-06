@@ -43,7 +43,7 @@ type testResult struct {
 	newAPIError *types.NewAPIError
 }
 
-const channelDisableConfirmationTestTimes = 3
+const channelDisableConfirmationTestTimes = 5
 
 func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointType string) string {
 	normalized := strings.TrimSpace(endpointType)
@@ -59,13 +59,7 @@ func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointTyp
 	return normalized
 }
 
-func resolveChannelTestUserID(c *gin.Context) (int, error) {
-	if c != nil {
-		if userID := c.GetInt("id"); userID > 0 {
-			return userID, nil
-		}
-	}
-
+func resolveChannelTestUserID(_ *gin.Context) (int, error) {
 	var rootUser model.User
 	if err := model.DB.Select("id").Where("role = ?", common.RoleRootUser).First(&rootUser).Error; err != nil {
 		return 0, fmt.Errorf("failed to resolve channel test user: %w", err)
