@@ -4616,6 +4616,19 @@
     "Zero retention": "零数据保留",
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "API-compatible endpoints": "API 兼容端点",
+    "Across all providers": "覆盖所有提供商",
+    "Add your upstream API keys and configure model routing in minutes": "添加上游 API 密钥并在几分钟内配置模型路由",
+    "Everything you need to ship AI products faster": "更快交付 AI 产品所需的一切",
+    "Global AI providers": "全球 AI 提供商",
+    "Monitor costs, usage patterns, and performance in real time": "实时监控成本、使用模式和性能",
+    "OpenAI, Anthropic, Gemini compatible": "兼容 OpenAI、Anthropic、Gemini",
+    "Route Requests": "路由请求",
+    "Send requests through a single unified endpoint — we handle the rest": "通过单一统一端点发送请求，其余交给我们处理",
+    "Track & Optimize": "跟踪与优化",
+    "Up and running in minutes": "几分钟即可启动运行",
+    "active deployments": "活跃部署",
+    "upstream providers": "上游提供商"
   }
 }

@@ -4616,6 +4616,19 @@
     "Zero retention": "Без хранения данных",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "API-compatible endpoints": "API-совместимые конечные точки",
+    "Across all providers": "У всех провайдеров",
+    "Add your upstream API keys and configure model routing in minutes": "Добавьте upstream API-ключи и настройте маршрутизацию моделей за несколько минут",
+    "Everything you need to ship AI products faster": "Все, что нужно для более быстрой поставки AI-продуктов",
+    "Global AI providers": "Глобальные AI-провайдеры",
+    "Monitor costs, usage patterns, and performance in real time": "Отслеживайте затраты, сценарии использования и производительность в реальном времени",
+    "OpenAI, Anthropic, Gemini compatible": "Совместимо с OpenAI, Anthropic и Gemini",
+    "Route Requests": "Маршрутизация запросов",
+    "Send requests through a single unified endpoint — we handle the rest": "Отправляйте запросы через единую конечную точку — остальное мы берем на себя",
+    "Track & Optimize": "Отслеживание и оптимизация",
+    "Up and running in minutes": "Запуск за несколько минут",
+    "active deployments": "активные развертывания",
+    "upstream providers": "upstream-провайдеры"
   }
 }

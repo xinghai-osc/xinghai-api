@@ -4616,6 +4616,19 @@
     "Zero retention": "Không lưu dữ liệu",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "API-compatible endpoints": "Điểm cuối tương thích API",
+    "Across all providers": "Trên tất cả nhà cung cấp",
+    "Add your upstream API keys and configure model routing in minutes": "Thêm khóa API upstream và cấu hình định tuyến mô hình trong vài phút",
+    "Everything you need to ship AI products faster": "Mọi thứ bạn cần để phát hành sản phẩm AI nhanh hơn",
+    "Global AI providers": "Nhà cung cấp AI toàn cầu",
+    "Monitor costs, usage patterns, and performance in real time": "Theo dõi chi phí, mẫu sử dụng và hiệu suất theo thời gian thực",
+    "OpenAI, Anthropic, Gemini compatible": "Tương thích OpenAI, Anthropic, Gemini",
+    "Route Requests": "Định tuyến yêu cầu",
+    "Send requests through a single unified endpoint — we handle the rest": "Gửi yêu cầu qua một điểm cuối thống nhất — chúng tôi xử lý phần còn lại",
+    "Track & Optimize": "Theo dõi & tối ưu",
+    "Up and running in minutes": "Sẵn sàng chạy trong vài phút",
+    "active deployments": "triển khai đang hoạt động",
+    "upstream providers": "nhà cung cấp upstream"
   }
 }

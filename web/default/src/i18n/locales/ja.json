@@ -4616,6 +4616,19 @@
     "Zero retention": "データ保持なし",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "API-compatible endpoints": "API 互換エンドポイント",
+    "Across all providers": "すべてのプロバイダーに対応",
+    "Add your upstream API keys and configure model routing in minutes": "アップストリーム API キーを追加し、数分でモデルルーティングを設定",
+    "Everything you need to ship AI products faster": "AI プロダクトをより速く届けるために必要なすべて",
+    "Global AI providers": "グローバル AI プロバイダー",
+    "Monitor costs, usage patterns, and performance in real time": "コスト、利用パターン、パフォーマンスをリアルタイムで監視",
+    "OpenAI, Anthropic, Gemini compatible": "OpenAI、Anthropic、Gemini 互換",
+    "Route Requests": "リクエストをルーティング",
+    "Send requests through a single unified endpoint — we handle the rest": "単一の統合エンドポイント経由でリクエストを送信 — 残りはお任せください",
+    "Track & Optimize": "追跡と最適化",
+    "Up and running in minutes": "数分で稼働開始",
+    "active deployments": "アクティブなデプロイ",
+    "upstream providers": "アップストリームプロバイダー"
   }
 }
