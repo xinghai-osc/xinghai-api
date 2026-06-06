@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Trophy, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatShare, formatTokens } from '../lib/format'
 import type { PersonalRanking } from '../types'
 
@@ -57,9 +58,14 @@ export function PersonalRankingsSection(props: PersonalRankingsSectionProps) {
                   <span className='text-muted-foreground/80 w-6 shrink-0 text-right font-mono text-xs tabular-nums'>
                     {row.rank}.
                   </span>
-                  <span className='bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full'>
-                    <UserRound className='size-4' />
-                  </span>
+                  <Avatar className='size-8 shrink-0'>
+                    {row.avatar_url && (
+                      <AvatarImage src={row.avatar_url} alt={displayName} />
+                    )}
+                    <AvatarFallback className='bg-muted text-muted-foreground'>
+                      <UserRound className='size-4' />
+                    </AvatarFallback>
+                  </Avatar>
                   <div className='min-w-0 flex-1'>
                     <div className='text-foreground truncate text-sm font-medium'>
                       {displayName}

@@ -69,6 +69,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
     record_ip_log: false,
     upstream_model_update_notify_enabled: false,
     show_in_personal_ranking: false,
+    avatar_url: '',
   })
 
   // Update form field helper
@@ -99,6 +100,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
         upstream_model_update_notify_enabled:
           parsed.upstream_model_update_notify_enabled || false,
         show_in_personal_ranking: parsed.show_in_personal_ranking || false,
+        avatar_url: parsed.avatar_url ?? profile.avatar_url ?? '',
       })
     }
   }, [profile])
@@ -310,6 +312,33 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
           </div>
         </>
       )}
+
+      {/* Divider */}
+      <div className='border-t' />
+
+      <div className='space-y-3'>
+        <div>
+          <h4 className='text-sm font-medium'>{t('Profile')}</h4>
+          <p className='text-muted-foreground mt-1 text-xs'>
+            {t('Customize how your account appears')}
+          </p>
+        </div>
+
+        <div className='space-y-1.5'>
+          <Label htmlFor='avatarUrl'>{t('Avatar URL')}</Label>
+          <Input
+            id='avatarUrl'
+            type='url'
+            className='h-9'
+            value={settings.avatar_url}
+            onChange={(e) => updateField('avatar_url', e.target.value)}
+            placeholder='https://example.com/avatar.png'
+          />
+          <p className='text-muted-foreground text-xs'>
+            {t('Enter an HTTP or HTTPS image URL for your avatar')}
+          </p>
+        </div>
+      </div>
 
       {/* Divider */}
       <div className='border-t' />

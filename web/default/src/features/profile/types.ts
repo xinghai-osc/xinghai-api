@@ -81,6 +81,8 @@ export interface UserProfile {
   telegram_id?: string
   /** LinuxDO ID (OAuth) */
   linux_do_id?: string
+  /** Avatar image URL */
+  avatar_url?: string
 }
 
 /**
@@ -120,6 +122,8 @@ export interface UserSettings {
   show_in_personal_ranking?: boolean
   /** Preferred interface/API response language */
   language?: string
+  /** Avatar image URL */
+  avatar_url?: string
 }
 
 /**
@@ -148,6 +152,7 @@ export interface UpdateUserSettingsRequest {
   record_ip_log?: boolean
   upstream_model_update_notify_enabled?: boolean
   show_in_personal_ranking?: boolean
+  avatar_url?: string
 }
 
 /**

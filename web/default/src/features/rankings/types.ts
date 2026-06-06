@@ -72,6 +72,7 @@ export type PersonalRanking = {
   user_id: number
   username: string
   display_name: string
+  avatar_url?: string
   total_quota: number
   request_count: number
   share: number

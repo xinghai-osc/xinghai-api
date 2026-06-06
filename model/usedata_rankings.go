@@ -24,6 +24,8 @@ type PersonalRankingTotal struct {
 	UserID       int     `json:"user_id"`
 	Username     string  `json:"username"`
 	DisplayName  string  `json:"display_name"`
+	AvatarUrl    string  `json:"avatar_url" gorm:"-"`
+	Setting      string  `json:"-"`
 	TotalQuota   int64   `json:"total_quota"`
 	RequestCount int64   `json:"request_count"`
 	Share        float64 `json:"share" gorm:"-"`
@@ -66,12 +68,12 @@ func GetPersonalRankingQuotaTotals(startTime int64, endTime int64, limit int) ([
 
 	var rows []PersonalRankingTotal
 	query := DB.Table("quota_data").
-		Select("quota_data.user_id, users.username, users.display_name, sum(quota_data.quota) as total_quota, sum(quota_data.count) as request_count").
+		Select("quota_data.user_id, users.username, users.display_name, users.setting, sum(quota_data.quota) as total_quota, sum(quota_data.count) as request_count").
 		Joins("JOIN users ON users.id = quota_data.user_id").
 		Where("quota_data.user_id > 0").
 		Where("users.deleted_at IS NULL").
 		Where("users.setting LIKE ?", "%\""+dto.ShowInPersonalRankingKey+"\":true%").
-		Group("quota_data.user_id, users.username, users.display_name").
+		Group("quota_data.user_id, users.username, users.display_name, users.setting").
 		Having("sum(quota_data.quota) > 0").
 		Order("total_quota DESC").
 		Limit(limit)
@@ -86,11 +88,23 @@ func GetPersonalRankingQuotaTotals(startTime int64, endTime int64, limit int) ([
 	}
 	for i := range rows {
 		rows[i].Rank = i + 1
+		rows[i].AvatarUrl = parseRankingAvatarUrl(rows[i].Setting)
 		if total > 0 {
 			rows[i].Share = float64(rows[i].TotalQuota) / float64(total)
 		}
 	}
 	return rows, nil
+}
+
+func parseRankingAvatarUrl(settingJson string) string {
+	if settingJson == "" {
+		return ""
+	}
+	setting := dto.UserSetting{}
+	if err := common.UnmarshalJsonStr(settingJson, &setting); err != nil {
+		return ""
+	}
+	return setting.AvatarUrl
 }
 
 func rankingBucketExpr(bucketSize int64) string {

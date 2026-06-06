@@ -112,6 +112,7 @@ func setupLogin(user *model.User, c *gin.Context) {
 			"role":         user.Role,
 			"status":       user.Status,
 			"group":        user.Group,
+			"avatar_url":   user.GetSetting().AvatarUrl,
 		},
 	})
 }
@@ -431,6 +432,7 @@ func GetSelf(c *gin.Context) {
 		"inviter_id":        user.InviterId,
 		"linux_do_id":       user.LinuxDOId,
 		"setting":           user.Setting,
+		"avatar_url":        userSetting.AvatarUrl,
 		"stripe_customer":   user.StripeCustomer,
 		"sidebar_modules":   userSetting.SidebarModules, // 正确提取sidebar_modules字段
 		"permissions":       permissions,                // 新增权限字段
@@ -1155,6 +1157,7 @@ type UpdateUserSettingRequest struct {
 	AcceptUnsetModelRatioModel       bool    `json:"accept_unset_model_ratio_model"`
 	RecordIpLog                      bool    `json:"record_ip_log"`
 	ShowInPersonalRanking            bool    `json:"show_in_personal_ranking"`
+	AvatarUrl                        string  `json:"avatar_url,omitempty"`
 }
 
 func UpdateUserSetting(c *gin.Context) {
@@ -1238,6 +1241,19 @@ func UpdateUserSetting(c *gin.Context) {
 		}
 	}
 
+	avatarUrl := strings.TrimSpace(req.AvatarUrl)
+	if avatarUrl != "" {
+		parsedAvatarUrl, err := url.ParseRequestURI(avatarUrl)
+		if err != nil || parsedAvatarUrl.Scheme == "" || parsedAvatarUrl.Host == "" {
+			common.ApiErrorI18n(c, i18n.MsgInvalidInput)
+			return
+		}
+		if parsedAvatarUrl.Scheme != "https" && parsedAvatarUrl.Scheme != "http" {
+			common.ApiErrorI18n(c, i18n.MsgSettingUrlMustHttp)
+			return
+		}
+	}
+
 	userId := c.GetInt("id")
 	user, err := model.GetUserById(userId, true)
 	if err != nil {
@@ -1261,6 +1277,7 @@ func UpdateUserSetting(c *gin.Context) {
 		SidebarModules:                   existingSettings.SidebarModules,
 		BillingPreference:                existingSettings.BillingPreference,
 		Language:                         existingSettings.Language,
+		AvatarUrl:                        avatarUrl,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置
