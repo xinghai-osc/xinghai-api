@@ -49,15 +49,23 @@ export function Features(_props: FeaturesProps) {
 
   const features = [
     {
-      key: 'lightning',
-      iconKey: 'Zap',
-      title: t('Lightning Fast'),
-      desc: t(
-        'Sub-100ms latency with optimized routing and intelligent caching'
-      ),
-      gradient: 'from-amber-500/20 to-orange-500/20',
-      iconColor: 'text-amber-500',
-      borderColor: 'hover:border-amber-500/40',
+      key: 'developer',
+      iconKey: 'Code',
+      title: t('Developer Friendly'),
+      desc: t('Drop-in replacement for OpenAI, Anthropic, and Gemini APIs'),
+      highlight: true,
+    },
+    {
+      key: 'performance',
+      iconKey: 'Gauge',
+      title: t('High Performance'),
+      desc: t('Smart load balancing with automatic failover and rate limiting'),
+    },
+    {
+      key: 'billing',
+      iconKey: 'DollarSign',
+      title: t('Transparent Billing'),
+      desc: t('Real-time cost tracking with budget alerts and team quotas'),
     },
     {
       key: 'secure',
@@ -66,101 +74,85 @@ export function Features(_props: FeaturesProps) {
       desc: t(
         'Enterprise-grade security with role-based access and audit logging'
       ),
-      gradient: 'from-emerald-500/20 to-green-500/20',
-      iconColor: 'text-emerald-500',
-      borderColor: 'hover:border-emerald-500/40',
     },
     {
       key: 'global',
       iconKey: 'Globe',
       title: t('Global Coverage'),
       desc: t('Multi-region failover for 99.9% uptime worldwide'),
-      gradient: 'from-blue-500/20 to-cyan-500/20',
-      iconColor: 'text-blue-500',
-      borderColor: 'hover:border-blue-500/40',
     },
     {
-      key: 'developer',
-      iconKey: 'Code',
-      title: t('Developer Friendly'),
-      desc: t('Drop-in replacement for OpenAI, Anthropic, and Gemini APIs'),
-      gradient: 'from-violet-500/20 to-purple-500/20',
-      iconColor: 'text-violet-500',
-      borderColor: 'hover:border-violet-500/40',
-    },
-    {
-      key: 'performance',
-      iconKey: 'Gauge',
-      title: t('High Performance'),
-      desc: t('Smart load balancing with automatic failover and rate limiting'),
-      gradient: 'from-red-500/20 to-pink-500/20',
-      iconColor: 'text-red-500',
-      borderColor: 'hover:border-red-500/40',
-    },
-    {
-      key: 'billing',
-      iconKey: 'DollarSign',
-      title: t('Transparent Billing'),
-      desc: t('Real-time cost tracking with budget alerts and team quotas'),
-      gradient: 'from-green-500/20 to-teal-500/20',
-      iconColor: 'text-green-500',
-      borderColor: 'hover:border-green-500/40',
+      key: 'lightning',
+      iconKey: 'Zap',
+      title: t('Lightning Fast'),
+      desc: t(
+        'Sub-100ms latency with optimized routing and intelligent caching'
+      ),
     },
     {
       key: 'team',
       iconKey: 'Users',
       title: t('Team Collaboration'),
       desc: t('Granular permissions and shared workspaces for your team'),
-      gradient: 'from-indigo-500/20 to-blue-500/20',
-      iconColor: 'text-indigo-500',
-      borderColor: 'hover:border-indigo-500/40',
     },
     {
       key: 'opensource',
       iconKey: 'HeartHandshake',
       title: t('Open Source'),
       desc: t('Self-hosted, extensible, backed by an active community'),
-      gradient: 'from-rose-500/20 to-pink-500/20',
-      iconColor: 'text-rose-500',
-      borderColor: 'hover:border-rose-500/40',
     },
   ]
 
   return (
-    <section className='relative z-10 px-6 py-24 md:py-32'>
-      <div className='mx-auto max-w-5xl'>
-        <AnimateInView className='mb-16 text-center md:mb-20'>
-          <p className='text-muted-foreground mb-3 text-xs font-medium tracking-[0.2em] uppercase'>
+    <section className='relative z-10 overflow-hidden px-6 py-24 md:py-32'>
+      <div
+        aria-hidden
+        className='absolute inset-x-0 top-1/3 -z-10 h-80 bg-gradient-to-r from-blue-500/10 via-violet-500/10 to-fuchsia-500/10 blur-3xl'
+      />
+      <div className='mx-auto max-w-7xl'>
+        <AnimateInView className='mb-14 max-w-3xl md:mb-16'>
+          <p className='text-muted-foreground mb-4 text-xs font-bold tracking-[0.24em] uppercase'>
             {t('Core Features')}
           </p>
-          <h2 className='text-3xl leading-tight font-bold tracking-tight md:text-4xl'>
+          <h2 className='text-4xl leading-tight font-black tracking-[-0.04em] md:text-6xl'>
             {t('Everything you need to ship AI products faster')}
           </h2>
-          <div className='mx-auto mt-6 h-1 w-16 rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-purple-500' />
         </AnimateInView>
 
-        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+        <div className='grid gap-4 md:grid-cols-4'>
           {features.map((f, i) => (
             <AnimateInView
               key={f.key}
-              delay={i * 60}
+              delay={i * 50}
               animation='fade-up'
-              className='group relative rounded-xl border border-border/60 bg-card/40 p-5 backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-card/80 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5'
+              className={`group border-border/60 bg-background/70 relative overflow-hidden rounded-[1.6rem] border p-6 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-950/5 dark:hover:shadow-black/20 ${
+                f.highlight ? 'md:col-span-2 md:row-span-2 md:p-8' : ''
+              }`}
             >
-              <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${f.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
-
+              <div className='absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
               <div className='relative'>
-                <div className={`mb-4 inline-flex rounded-lg ${f.iconColor} bg-current/10 p-2.5`}>
+                <div className='mb-6 flex size-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-blue-500/15 dark:bg-white dark:text-slate-950'>
                   {featureIcons[f.iconKey as keyof typeof featureIcons]}
                 </div>
-
-                <h3 className='mb-2 text-sm font-semibold'>{f.title}</h3>
-                <p className='text-muted-foreground text-xs leading-relaxed'>
+                <h3 className={f.highlight ? 'mb-3 text-2xl font-bold' : 'mb-2 text-base font-bold'}>
+                  {f.title}
+                </h3>
+                <p className={`text-muted-foreground leading-relaxed ${f.highlight ? 'text-base' : 'text-sm'}`}>
                   {f.desc}
                 </p>
+                {f.highlight && (
+                  <div className='mt-8 grid grid-cols-2 gap-3 text-xs'>
+                    <div className='rounded-2xl bg-muted/50 p-4'>
+                      <div className='mb-1 text-2xl font-black'>1</div>
+                      <div className='text-muted-foreground'>{t('Unified endpoint')}</div>
+                    </div>
+                    <div className='rounded-2xl bg-muted/50 p-4'>
+                      <div className='mb-1 text-2xl font-black'>∞</div>
+                      <div className='text-muted-foreground'>{t('Provider choices')}</div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent ${f.borderColor.replace('hover:', '')} via-primary/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
             </AnimateInView>
           ))}
         </div>

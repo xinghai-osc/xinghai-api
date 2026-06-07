@@ -126,30 +126,29 @@ export function Stats(_props: StatsProps) {
   ]
 
   return (
-    <div className='border-border/40 relative z-10 border-y bg-gradient-to-b from-muted/30 to-transparent'>
-      <div className='mx-auto max-w-6xl px-6 py-16 md:py-20'>
-        <div className='grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8'>
+    <section className='relative z-10 px-6 py-6'>
+      <div className='mx-auto max-w-7xl'>
+        <div className='border-border/60 bg-background/65 grid overflow-hidden rounded-[2rem] border shadow-sm backdrop-blur-xl md:grid-cols-4'>
           {stats.map((s, index) => (
             <div
               key={s.label}
-              className='group relative flex flex-col items-center text-center'
+              className='group relative p-6 text-left transition-colors hover:bg-muted/35 md:p-8'
             >
               {index > 0 && (
-                <div className='absolute left-0 top-1/2 hidden h-12 w-px -translate-y-1/2 bg-gradient-to-b from-transparent via-border to-transparent md:block' style={{ marginLeft: '-2rem' }} />
+                <div className='absolute top-8 bottom-8 left-0 hidden w-px bg-gradient-to-b from-transparent via-border to-transparent md:block' />
               )}
-
-              <div className='mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-md group-hover:shadow-primary/20'>
+              <div className='mb-4 text-4xl font-black tracking-tight md:text-5xl'>
                 <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
               </div>
-
-              <span className='text-sm font-semibold'>{s.label}</span>
-              <span className='text-muted-foreground mt-0.5 text-xs'>
+              <div className='text-sm font-semibold'>{s.label}</div>
+              <div className='text-muted-foreground mt-1 text-xs'>
                 {s.description}
-              </span>
+              </div>
+              <div className='absolute inset-x-6 bottom-0 h-px origin-left scale-x-0 bg-gradient-to-r from-blue-500 via-violet-500 to-transparent transition-transform duration-300 group-hover:scale-x-100' />
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   )
 }
