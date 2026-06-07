@@ -17,19 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { formatTimestampToDate } from '@/lib/format'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/confirm-dialog'
-import { deleteAffinityCache, getAffinityUsageCache } from './api'
+import { Dialog } from '@/components/dialog'
+import { getAffinityUsageCache } from './api'
 
 function formatRate(hit: number, total: number): string {
   if (!total || total <= 0) return '-'
@@ -53,8 +45,6 @@ export function CacheStatsDialog(props: Props) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState<Record<string, unknown> | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const seqRef = useRef(0)
 
   useEffect(() => {
@@ -138,89 +128,43 @@ export function CacheStatsDialog(props: Props) {
     return data
   }, [stats, props.target, t])
 
-  const handleDelete = async () => {
-    if (!props.target?.rule_name || !props.target?.key_fp) return
-
-    setDeleting(true)
-    try {
-      const res = await deleteAffinityCache({
-        rule_name: props.target.rule_name,
-        using_group: props.target.using_group,
-        key_fp: props.target.key_fp,
-      })
-      if (res.success) {
-        toast.success(t('Deleted successfully'))
-        props.onOpenChange(false)
-      } else {
-        toast.error(res.message || t('Request failed'))
-      }
-    } catch {
-      toast.error(t('Request failed'))
-    } finally {
-      setDeleting(false)
-      setDeleteDialogOpen(false)
-    }
-  }
-
   return (
-    <>
-      <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-        <DialogContent className='sm:max-w-lg'>
-          <DialogHeader>
-            <DialogTitle>{t('Channel Affinity: Upstream Cache Hit')}</DialogTitle>
-          </DialogHeader>
-          <p className='text-muted-foreground text-xs'>
-            {t(
-              'Hit criteria: If cached tokens exist in usage, it counts as a hit.'
-            )}
-          </p>
-          {loading ? (
-            <div className='text-muted-foreground py-8 text-center text-sm'>
-              {t('Loading...')}
-            </div>
-          ) : rows.length > 0 ? (
-            <div className='space-y-2'>
-              {rows.map((row) => (
-                <div
-                  key={row.key}
-                  className='flex justify-between border-b pb-1 text-sm'
-                >
-                  <span className='text-muted-foreground'>{row.key}</span>
-                  <span className='font-medium'>{row.value}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className='text-muted-foreground py-8 text-center text-sm'>
-              {t('No data available')}
-            </div>
-          )}
-          {props.target?.rule_name && props.target?.key_fp && (
-            <Button
-              variant='destructive'
-              size='sm'
-              className='mt-2'
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={loading}
-            >
-              <Trash2 className='mr-1 h-3 w-3' />
-              {t('Delete Affinity')}
-            </Button>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title={t('Confirm deleting channel affinity')}
-        desc={t(
-          'This will delete the channel affinity cache entry for this key. The next request will be routed to a new channel.'
+    <Dialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      title={t('Channel Affinity: Upstream Cache Hit')}
+      contentClassName='sm:max-w-lg'
+      contentHeight='auto'
+      bodyClassName='space-y-4'
+    >
+      <p className='text-muted-foreground text-xs'>
+        {t(
+          'Hit criteria: If cached tokens exist in usage, it counts as a hit.'
         )}
-        handleConfirm={handleDelete}
-        destructive
-        isLoading={deleting}
-      />
-    </>
+      </p>
+      {loading ? (
+        <div className='text-muted-foreground py-8 text-center text-sm'>
+          {t('Loading...')}
+        </div>
+      ) : rows.length > 0 ? (
+        <div className='space-y-2'>
+          {rows.map((row) => (
+            <div
+              key={row.key}
+              className='flex justify-between gap-4 border-b pb-1 text-sm'
+            >
+              <span className='text-muted-foreground'>{row.key}</span>
+              <span className='text-right font-medium break-all'>
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className='text-muted-foreground py-8 text-center text-sm'>
+          {t('No data available')}
+        </div>
+      )}
+    </Dialog>
   )
 }
