@@ -28,7 +28,7 @@ import {
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge, StatusBadgeList } from '@/components/status-badge'
-import { DEFAULT_TOKEN_UNIT, QUOTA_TYPE_VALUES } from '../constants'
+import { DEFAULT_TOKEN_UNIT, FILTER_ALL, QUOTA_TYPE_VALUES } from '../constants'
 import {
   getDynamicDisplayGroupRatio,
   getDynamicPricingSummary,
@@ -36,6 +36,8 @@ import {
 import { parseTags } from '../lib/filters'
 import { isTokenBasedModel } from '../lib/model-helpers'
 import {
+  formatFixedPrice,
+  formatGroupPrice,
   formatPrice,
   formatRequestPrice,
   stripTrailingZeros,
@@ -51,6 +53,7 @@ export interface PricingColumnsOptions {
   priceRate?: number
   usdExchangeRate?: number
   showRechargePrice?: boolean
+  selectedGroup?: string
 }
 
 function renderLimitedTags(
@@ -92,9 +95,14 @@ export function usePricingColumns(
     priceRate = 1,
     usdExchangeRate = 1,
     showRechargePrice = false,
+    selectedGroup: selectedGroupOption,
   } = options
 
   const tokenUnitLabel = tokenUnit === 'K' ? '1K' : '1M'
+  const selectedGroup =
+    selectedGroupOption && selectedGroupOption !== FILTER_ALL
+      ? selectedGroupOption
+      : null
 
   return [
     // Model column
@@ -151,12 +159,17 @@ export function usePricingColumns(
       ),
       cell: ({ row }) => {
         const model = row.original
+        const groupRatio = model.group_ratio || {}
+        const selectedGroupRatio = selectedGroup
+          ? groupRatio[selectedGroup] || 1
+          : null
         const dynamicSummary = getDynamicPricingSummary(model, {
           tokenUnit,
           showRechargePrice,
           priceRate,
           usdExchangeRate,
-          groupRatioMultiplier: getDynamicDisplayGroupRatio(model),
+          groupRatioMultiplier:
+            selectedGroupRatio ?? getDynamicDisplayGroupRatio(model),
         })
 
         if (dynamicSummary) {
@@ -212,24 +225,46 @@ export function usePricingColumns(
 
         if (isTokenBased) {
           const inputPrice = stripTrailingZeros(
-            formatPrice(
-              model,
-              'input',
-              tokenUnit,
-              showRechargePrice,
-              priceRate,
-              usdExchangeRate
-            )
+            selectedGroup
+              ? formatGroupPrice(
+                  model,
+                  selectedGroup,
+                  'input',
+                  tokenUnit,
+                  showRechargePrice,
+                  priceRate,
+                  usdExchangeRate,
+                  groupRatio
+                )
+              : formatPrice(
+                  model,
+                  'input',
+                  tokenUnit,
+                  showRechargePrice,
+                  priceRate,
+                  usdExchangeRate
+                )
           )
           const outputPrice = stripTrailingZeros(
-            formatPrice(
-              model,
-              'output',
-              tokenUnit,
-              showRechargePrice,
-              priceRate,
-              usdExchangeRate
-            )
+            selectedGroup
+              ? formatGroupPrice(
+                  model,
+                  selectedGroup,
+                  'output',
+                  tokenUnit,
+                  showRechargePrice,
+                  priceRate,
+                  usdExchangeRate,
+                  groupRatio
+                )
+              : formatPrice(
+                  model,
+                  'output',
+                  tokenUnit,
+                  showRechargePrice,
+                  priceRate,
+                  usdExchangeRate
+                )
           )
 
           return (
@@ -247,12 +282,21 @@ export function usePricingColumns(
         }
 
         const price = stripTrailingZeros(
-          formatRequestPrice(
-            model,
-            showRechargePrice,
-            priceRate,
-            usdExchangeRate
-          )
+          selectedGroup
+            ? formatFixedPrice(
+                model,
+                selectedGroup,
+                showRechargePrice,
+                priceRate,
+                usdExchangeRate,
+                groupRatio
+              )
+            : formatRequestPrice(
+                model,
+                showRechargePrice,
+                priceRate,
+                usdExchangeRate
+              )
         )
 
         return (
@@ -275,12 +319,17 @@ export function usePricingColumns(
       header: t('Cached'),
       cell: ({ row }) => {
         const model = row.original
+        const groupRatio = model.group_ratio || {}
+        const selectedGroupRatio = selectedGroup
+          ? groupRatio[selectedGroup] || 1
+          : null
         const dynamicSummary = getDynamicPricingSummary(model, {
           tokenUnit,
           showRechargePrice,
           priceRate,
           usdExchangeRate,
-          groupRatioMultiplier: getDynamicDisplayGroupRatio(model),
+          groupRatioMultiplier:
+            selectedGroupRatio ?? getDynamicDisplayGroupRatio(model),
         })
 
         if (dynamicSummary) {
@@ -318,14 +367,25 @@ export function usePricingColumns(
         }
 
         const cachedPrice = stripTrailingZeros(
-          formatPrice(
-            model,
-            'cache',
-            tokenUnit,
-            showRechargePrice,
-            priceRate,
-            usdExchangeRate
-          )
+          selectedGroup
+            ? formatGroupPrice(
+                model,
+                selectedGroup,
+                'cache',
+                tokenUnit,
+                showRechargePrice,
+                priceRate,
+                usdExchangeRate,
+                groupRatio
+              )
+            : formatPrice(
+                model,
+                'cache',
+                tokenUnit,
+                showRechargePrice,
+                priceRate,
+                usdExchangeRate
+              )
         )
 
         return (
@@ -439,7 +499,11 @@ export function usePricingColumns(
       header: t('Groups'),
       cell: ({ row }) => {
         const groups = row.original.enable_groups || []
-        if (groups.length === 0) {
+        const displayGroups =
+          selectedGroup && groups.includes(selectedGroup)
+            ? [selectedGroup, ...groups.filter((group) => group !== selectedGroup)]
+            : groups
+        if (displayGroups.length === 0) {
           return <span className='text-muted-foreground/50 text-xs'>—</span>
         }
 
@@ -447,12 +511,12 @@ export function usePricingColumns(
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger render={<div />}>
-                {renderLimitedGroupBadges(groups, 2)}
+                {renderLimitedGroupBadges(displayGroups, 2)}
               </TooltipTrigger>
-              {groups.length > 2 && (
+              {displayGroups.length > 2 && (
                 <TooltipContent side='top' className='max-w-[280px] p-2'>
                   <div className='flex flex-wrap gap-1'>
-                    {groups.map((group) => (
+                    {displayGroups.map((group) => (
                       <GroupBadge key={group} group={group} size='sm' />
                     ))}
                   </div>

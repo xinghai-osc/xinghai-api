@@ -23,14 +23,19 @@ import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { StatusBadge } from '@/components/status-badge'
-import { DEFAULT_TOKEN_UNIT } from '../constants'
+import { DEFAULT_TOKEN_UNIT, FILTER_ALL } from '../constants'
 import {
   getDynamicDisplayGroupRatio,
   getDynamicPricingSummary,
 } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
 import { isTokenBasedModel } from '../lib/model-helpers'
-import { formatPrice, formatRequestPrice } from '../lib/price'
+import {
+  formatFixedPrice,
+  formatGroupPrice,
+  formatPrice,
+  formatRequestPrice,
+} from '../lib/price'
 import type { PricingModel, TokenUnit } from '../types'
 import { ModelPerfBadge, type ModelPerfBadgeData } from './model-perf-badge'
 
@@ -41,6 +46,7 @@ export interface ModelCardProps {
   usdExchangeRate?: number
   tokenUnit?: TokenUnit
   showRechargePrice?: boolean
+  selectedGroup?: string
   perf?: ModelPerfBadgeData
 }
 
@@ -65,22 +71,32 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     props.model.billing_mode === 'tiered_expr' &&
     Boolean(props.model.billing_expr)
   const hasCachedPrice = isTokenBased && props.model.cache_ratio != null
+  const groupRatio = props.model.group_ratio || {}
+  const selectedGroup =
+    props.selectedGroup && props.selectedGroup !== FILTER_ALL
+      ? props.selectedGroup
+      : null
+  const selectedGroupRatio = selectedGroup ? groupRatio[selectedGroup] || 1 : null
   const dynamicSummary = isDynamicPricing
     ? getDynamicPricingSummary(props.model, {
         tokenUnit,
         showRechargePrice,
         priceRate,
         usdExchangeRate,
-        groupRatioMultiplier: getDynamicDisplayGroupRatio(props.model),
+        groupRatioMultiplier:
+          selectedGroupRatio ?? getDynamicDisplayGroupRatio(props.model),
       })
     : null
 
-  const primaryGroup = groups[0]
-  const bottomTags = [...endpoints.slice(0, 2), ...tags.slice(0, 2)]
+  const primaryGroup = selectedGroup ?? groups[0]
+  const bottomTags = [
+    ...endpoints.slice(0, 2),
+    ...tags.filter((tag) => tag !== primaryGroup).slice(0, 2),
+  ]
   const hiddenCount =
     Math.max(groups.length - 1, 0) +
     Math.max(endpoints.length - 2, 0) +
-    Math.max(tags.length - 2, 0)
+    Math.max(tags.filter((tag) => tag !== primaryGroup).length - 2, 0)
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -144,28 +160,50 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   <span className='text-muted-foreground whitespace-nowrap'>
                     {t('Input')}{' '}
                     <span className='text-foreground font-mono font-semibold'>
-                      {formatPrice(
-                        props.model,
-                        'input',
-                        tokenUnit,
-                        showRechargePrice,
-                        priceRate,
-                        usdExchangeRate
-                      )}
+                      {selectedGroup
+                        ? formatGroupPrice(
+                            props.model,
+                            selectedGroup,
+                            'input',
+                            tokenUnit,
+                            showRechargePrice,
+                            priceRate,
+                            usdExchangeRate,
+                            groupRatio
+                          )
+                        : formatPrice(
+                            props.model,
+                            'input',
+                            tokenUnit,
+                            showRechargePrice,
+                            priceRate,
+                            usdExchangeRate
+                          )}
                     </span>
                     /{tokenUnitLabel}
                   </span>
                   <span className='text-muted-foreground whitespace-nowrap'>
                     {t('Output')}{' '}
                     <span className='text-foreground font-mono font-semibold'>
-                      {formatPrice(
-                        props.model,
-                        'output',
-                        tokenUnit,
-                        showRechargePrice,
-                        priceRate,
-                        usdExchangeRate
-                      )}
+                      {selectedGroup
+                        ? formatGroupPrice(
+                            props.model,
+                            selectedGroup,
+                            'output',
+                            tokenUnit,
+                            showRechargePrice,
+                            priceRate,
+                            usdExchangeRate,
+                            groupRatio
+                          )
+                        : formatPrice(
+                            props.model,
+                            'output',
+                            tokenUnit,
+                            showRechargePrice,
+                            priceRate,
+                            usdExchangeRate
+                          )}
                     </span>
                     /{tokenUnitLabel}
                   </span>
@@ -173,14 +211,25 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                     <span className='text-muted-foreground/60 whitespace-nowrap'>
                       {t('Cached')}{' '}
                       <span className='font-mono'>
-                        {formatPrice(
-                          props.model,
-                          'cache',
-                          tokenUnit,
-                          showRechargePrice,
-                          priceRate,
-                          usdExchangeRate
-                        )}
+                        {selectedGroup
+                          ? formatGroupPrice(
+                              props.model,
+                              selectedGroup,
+                              'cache',
+                              tokenUnit,
+                              showRechargePrice,
+                              priceRate,
+                              usdExchangeRate,
+                              groupRatio
+                            )
+                          : formatPrice(
+                              props.model,
+                              'cache',
+                              tokenUnit,
+                              showRechargePrice,
+                              priceRate,
+                              usdExchangeRate
+                            )}
                       </span>
                     </span>
                   )}
@@ -188,12 +237,21 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               ) : (
                 <span className='text-muted-foreground whitespace-nowrap'>
                   <span className='text-foreground font-mono font-semibold'>
-                    {formatRequestPrice(
-                      props.model,
-                      showRechargePrice,
-                      priceRate,
-                      usdExchangeRate
-                    )}
+                    {selectedGroup
+                      ? formatFixedPrice(
+                          props.model,
+                          selectedGroup,
+                          showRechargePrice,
+                          priceRate,
+                          usdExchangeRate,
+                          groupRatio
+                        )
+                      : formatRequestPrice(
+                          props.model,
+                          showRechargePrice,
+                          priceRate,
+                          usdExchangeRate
+                        )}
                   </span>{' '}
                   / {t('request')}
                 </span>
