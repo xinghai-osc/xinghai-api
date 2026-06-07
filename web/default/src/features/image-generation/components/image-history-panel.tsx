@@ -32,17 +32,17 @@ interface ImageHistoryPanelProps {
   className?: string
 }
 
-function formatRelativeTime(timestamp: number): string {
+function formatRelativeTime(timestamp: number, t: (key: string, options?: { count: number }) => string): string {
   const now = Date.now()
   const diff = now - timestamp
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (hours < 24) return `${hours}h ago`
-  if (days < 30) return `${days}d ago`
+  if (minutes < 1) return t('just now')
+  if (minutes < 60) return t('{{count}} minutes ago', { count: minutes })
+  if (hours < 24) return t('{{count}} hours ago', { count: hours })
+  if (days < 30) return t('{{count}} days ago', { count: days })
   return new Date(timestamp).toLocaleDateString()
 }
 
@@ -92,7 +92,7 @@ export function ImageHistoryPanel({
                   <div className='text-muted-foreground flex items-center gap-2 text-xs'>
                     <span>{session.turns.length} {t('turns')}</span>
                     <span>·</span>
-                    <span>{formatRelativeTime(session.updatedAt)}</span>
+                    <span>{formatRelativeTime(session.updatedAt, t)}</span>
                   </div>
                 </div>
                 <Button
