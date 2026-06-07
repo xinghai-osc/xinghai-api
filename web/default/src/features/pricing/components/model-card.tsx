@@ -47,6 +47,7 @@ export interface ModelCardProps {
   tokenUnit?: TokenUnit
   showRechargePrice?: boolean
   selectedGroup?: string
+  subscriptionUpgradeGroups?: Set<string>
   perf?: ModelPerfBadgeData
 }
 
@@ -89,6 +90,8 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     : null
 
   const primaryGroup = selectedGroup ?? groups[0]
+  const isSubscriptionResistantGroup =
+    Boolean(primaryGroup) && props.subscriptionUpgradeGroups?.has(primaryGroup)
   const bottomTags = [
     ...endpoints.slice(0, 2),
     ...tags.filter((tag) => tag !== primaryGroup).slice(0, 2),
@@ -293,9 +296,18 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               {primaryGroup} {t('Groups')}
             </span>
           )}
-          <span className='text-muted-foreground text-xs font-medium'>
-            {isTokenBased ? t('Token-based') : t('Per Request')}
-          </span>
+          {isSubscriptionResistantGroup ? (
+            <StatusBadge
+              label={t('Price Resistance')}
+              color='green'
+              copyable={false}
+              size='sm'
+            />
+          ) : (
+            <span className='text-muted-foreground text-xs font-medium'>
+              {isTokenBased ? t('Token-based') : t('Per Request')}
+            </span>
+          )}
           {isDynamicPricing && (
             <StatusBadge
               label={t('Dynamic Pricing')}

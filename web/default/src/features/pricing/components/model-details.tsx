@@ -595,6 +595,7 @@ function GroupPricingSection(props: {
   groupRatio: Record<string, number>
   usableGroup: Record<string, { desc: string; ratio: number }>
   autoGroups: string[]
+  subscriptionUpgradeGroups: Set<string>
   priceRate: number
   usdExchangeRate: number
   tokenUnit: TokenUnit
@@ -702,7 +703,14 @@ function GroupPricingSection(props: {
             return (
               <div key={group} className='overflow-hidden rounded-lg border'>
                 <div className='bg-muted/20 flex items-center justify-between gap-3 border-b px-3 py-2'>
-                  <GroupBadge group={group} size='sm' />
+                  <div className='flex items-center gap-2'>
+                    <GroupBadge group={group} size='sm' />
+                    {props.subscriptionUpgradeGroups.has(group) && (
+                      <span className='rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'>
+                        {t('Price Resistance')}
+                      </span>
+                    )}
+                  </div>
                   <span className='text-muted-foreground font-mono text-xs'>
                     {ratio}x
                   </span>
@@ -808,7 +816,14 @@ function GroupPricingSection(props: {
               return (
                 <TableRow key={group}>
                   <TableCell className='py-2.5'>
-                    <GroupBadge group={group} size='sm' />
+                    <div className='flex items-center gap-2'>
+                      <GroupBadge group={group} size='sm' />
+                      {props.subscriptionUpgradeGroups.has(group) && (
+                        <span className='rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'>
+                          {t('Price Resistance')}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className='text-muted-foreground py-2.5 font-mono'>
                     {ratio}x
@@ -902,6 +917,7 @@ export interface ModelDetailsContentProps {
   usableGroup: Record<string, { desc: string; ratio: number }>
   endpointMap: Record<string, { path?: string; method?: string }>
   autoGroups: string[]
+  subscriptionUpgradeGroups: Set<string>
   priceRate: number
   usdExchangeRate: number
   tokenUnit: TokenUnit
@@ -958,6 +974,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
               groupRatio={props.groupRatio}
               usableGroup={props.usableGroup}
               autoGroups={props.autoGroups}
+              subscriptionUpgradeGroups={props.subscriptionUpgradeGroups}
               priceRate={props.priceRate}
               usdExchangeRate={props.usdExchangeRate}
               tokenUnit={props.tokenUnit}
@@ -1036,6 +1053,7 @@ export function ModelDetails() {
     usableGroup,
     endpointMap,
     autoGroups,
+    subscriptionUpgradeGroups,
     isLoading,
     priceRate,
     usdExchangeRate,
@@ -1114,6 +1132,7 @@ export function ModelDetails() {
           groupRatio={groupRatio || {}}
           usableGroup={usableGroup || {}}
           autoGroups={autoGroups || []}
+          subscriptionUpgradeGroups={subscriptionUpgradeGroups}
           priceRate={priceRate ?? 1}
           usdExchangeRate={usdExchangeRate ?? 1}
           tokenUnit={tokenUnit}

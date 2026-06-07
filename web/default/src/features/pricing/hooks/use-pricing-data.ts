@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useStatus } from '@/hooks/use-status'
+import { getPublicPlans } from '@/features/subscriptions/api'
 import { getPricing } from '../api'
 
 export function usePricingData() {
@@ -27,6 +28,12 @@ export function usePricingData() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['pricing'],
     queryFn: getPricing,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: plansData } = useQuery({
+    queryKey: ['subscription-public-plans'],
+    queryFn: getPublicPlans,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -60,6 +67,15 @@ export function usePricingData() {
     })
   }, [data])
 
+  const subscriptionUpgradeGroups = useMemo(() => {
+    const groups = new Set<string>()
+    for (const record of plansData?.data || []) {
+      const group = record.plan?.upgrade_group
+      if (group) groups.add(group)
+    }
+    return groups
+  }, [plansData?.data])
+
   return {
     models,
     vendors: data?.vendors ?? [],
@@ -67,6 +83,7 @@ export function usePricingData() {
     usableGroup: data?.usable_group ?? {},
     endpointMap: data?.supported_endpoint ?? {},
     autoGroups: data?.auto_groups ?? [],
+    subscriptionUpgradeGroups,
     isLoading,
     error,
     refetch,
