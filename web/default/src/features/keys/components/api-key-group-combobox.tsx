@@ -41,6 +41,7 @@ export type ApiKeyGroupOption = {
   label: string
   desc?: string
   ratio?: number | string
+  subscription?: boolean
 }
 
 type ApiKeyGroupComboboxProps = {
@@ -95,6 +96,19 @@ function GroupRatioBadge({ ratio }: { ratio: ApiKeyGroupOption['ratio'] }) {
   )
 }
 
+function SubscriptionBadge() {
+  const { t } = useTranslation()
+
+  return (
+    <Badge
+      variant='outline'
+      className='border-violet-200 bg-violet-50 text-[10px] text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300 sm:text-xs'
+    >
+      {t('This group uses your subscription')}
+    </Badge>
+  )
+}
+
 export function ApiKeyGroupCombobox({
   options,
   value,
@@ -138,7 +152,11 @@ export function ApiKeyGroupCombobox({
             role='combobox'
             aria-expanded={open}
             disabled={disabled}
-            className='border-input bg-muted/40 hover:bg-muted/55 hover:text-foreground active:bg-background data-popup-open:border-ring data-popup-open:bg-background data-popup-open:ring-ring/20 h-auto min-h-14 w-full justify-between gap-2 rounded-lg px-3 py-2 text-start shadow-none transition-[background-color,border-color,box-shadow] duration-150 data-popup-open:ring-[3px] sm:min-h-20 sm:gap-3 sm:px-4 sm:py-3'
+            className={cn(
+              'border-input bg-muted/40 hover:bg-muted/55 hover:text-foreground active:bg-background data-popup-open:border-ring data-popup-open:bg-background data-popup-open:ring-ring/20 h-auto min-h-14 w-full justify-between gap-2 rounded-lg px-3 py-2 text-start shadow-none transition-[background-color,border-color,box-shadow] duration-150 data-popup-open:ring-[3px] sm:min-h-20 sm:gap-3 sm:px-4 sm:py-3',
+              selectedOption?.subscription &&
+                'border-violet-300 bg-violet-50/70 ring-violet-200/60 dark:border-violet-800 dark:bg-violet-950/30'
+            )}
           />
         }
       >
@@ -153,8 +171,11 @@ export function ApiKeyGroupCombobox({
               </span>
             )}
           </span>
-          <span className='hidden sm:block'>
-            <GroupRatioBadge ratio={selectedOption?.ratio} />
+          <span className='flex shrink-0 items-center gap-2'>
+            {selectedOption?.subscription && <SubscriptionBadge />}
+            <span className='hidden sm:block'>
+              <GroupRatioBadge ratio={selectedOption?.ratio} />
+            </span>
           </span>
         </span>
         <ChevronsUpDown className='h-4 w-4 shrink-0 opacity-50' />
@@ -179,7 +200,11 @@ export function ApiKeyGroupCombobox({
                   key={option.value}
                   value={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className='data-[selected=true]:bg-muted items-start gap-3 rounded-lg px-3 py-3 transition-colors'
+                  className={cn(
+                    'data-[selected=true]:bg-muted items-start gap-3 rounded-lg px-3 py-3 transition-colors',
+                    option.subscription &&
+                      'border border-violet-200 bg-violet-50/70 dark:border-violet-900/50 dark:bg-violet-950/20'
+                  )}
                 >
                   <Check
                     className={cn(
@@ -197,7 +222,10 @@ export function ApiKeyGroupCombobox({
                       </span>
                     )}
                   </span>
-                  <GroupRatioBadge ratio={option.ratio} />
+                  <span className='flex shrink-0 items-center gap-2'>
+                    {option.subscription && <SubscriptionBadge />}
+                    <GroupRatioBadge ratio={option.ratio} />
+                  </span>
                 </CommandItem>
               ))}
             </CommandGroup>

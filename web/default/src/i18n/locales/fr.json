@@ -4067,6 +4067,7 @@
     "This expression is too complex for the visual editor. Please switch to expression mode to edit.": "Cette expression est trop complexe pour l'éditeur visuel. Passez en mode expression pour la modifier.",
     "This feature is experimental. Configuration format and behavior may change.": "Cette fonctionnalité est expérimentale. Le format de configuration et le comportement peuvent changer.",
     "This feature requires server-side WeChat configuration": "Cette fonctionnalité nécessite une configuration WeChat côté serveur",
+    "This group uses your subscription": "Ce groupe utilise votre abonnement",
     "This may cause cache failures.": "Cela peut provoquer des échecs de cache.",
     "This may take a few moments while we validate the request and update your session.": "Cela peut prendre quelques instants pendant que nous validons la requête et mettons à jour votre session.",
     "This model has both fixed price and ratio billing conflicts": "Ce modèle présente des conflits de facturation à la fois en prix fixe et au ratio",

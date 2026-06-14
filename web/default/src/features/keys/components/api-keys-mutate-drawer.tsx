@@ -122,9 +122,11 @@ export function ApiKeysMutateDrawer({
       label: key,
       desc: info.desc || key,
       ratio: info.ratio,
+      subscription: info.subscription || !!groupsData?.subscription_groups?.[key],
     })
   )
   const backendHasAuto = groups.some((g) => g.value === 'auto')
+  const subscriptionGroup = groups.find((g) => g.subscription)?.value
   const schema = getApiKeyFormSchema(t)
 
   const form = useForm<ApiKeyFormValues>({
@@ -141,11 +143,26 @@ export function ApiKeysMutateDrawer({
         }
       })
     } else if (open && !isUpdate) {
-      form.reset(
-        getApiKeyFormDefaultValues(defaultUseAutoGroup && backendHasAuto)
+      const defaultValues = getApiKeyFormDefaultValues(
+        defaultUseAutoGroup && backendHasAuto && !subscriptionGroup
       )
+      form.reset({
+        ...defaultValues,
+        group: subscriptionGroup || defaultValues.group,
+        cross_group_retry: subscriptionGroup
+          ? false
+          : defaultValues.cross_group_retry,
+      })
     }
-  }, [open, isUpdate, currentRow, form, defaultUseAutoGroup, backendHasAuto])
+  }, [
+    open,
+    isUpdate,
+    currentRow,
+    form,
+    defaultUseAutoGroup,
+    backendHasAuto,
+    subscriptionGroup,
+  ])
 
   // Correct group after groups load: if the form value is not in available groups, fall back
   useEffect(() => {
@@ -153,6 +170,7 @@ export function ApiKeysMutateDrawer({
     const currentGroup = form.getValues('group')
     if (currentGroup && !groups.some((g) => g.value === currentGroup)) {
       const fallback =
+        subscriptionGroup ??
         groups.find((g) => g.value === 'default')?.value ??
         groups[0]?.value ??
         ''
@@ -161,7 +179,7 @@ export function ApiKeysMutateDrawer({
         form.setValue('cross_group_retry', false)
       }
     }
-  }, [groups, form])
+  }, [groups, form, subscriptionGroup])
 
   const onSubmit = async (data: ApiKeyFormValues) => {
     setIsSubmitting(true)

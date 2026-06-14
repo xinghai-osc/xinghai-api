@@ -4067,6 +4067,7 @@
     "This expression is too complex for the visual editor. Please switch to expression mode to edit.": "此表达式对可视化编辑器过于复杂，请切换到表达式模式进行编辑。",
     "This feature is experimental. Configuration format and behavior may change.": "此功能为实验性功能。配置格式和行为可能会发生变化。",
     "This feature requires server-side WeChat configuration": "此功能需要服务器端微信配置",
+    "This group uses your subscription": "该分组使用您的订阅",
     "This may cause cache failures.": "这可能导致缓存故障。",
     "This may take a few moments while we validate the request and update your session.": "这可能需要一些时间，因为我们正在验证请求并更新您的会话。",
     "This model has both fixed price and ratio billing conflicts": "此模型同时存在固定价格和比例计费冲突",

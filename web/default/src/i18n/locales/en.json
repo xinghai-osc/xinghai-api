@@ -4067,6 +4067,7 @@
     "This expression is too complex for the visual editor. Please switch to expression mode to edit.": "This expression is too complex for the visual editor. Please switch to expression mode to edit.",
     "This feature is experimental. Configuration format and behavior may change.": "This feature is experimental. Configuration format and behavior may change.",
     "This feature requires server-side WeChat configuration": "This feature requires server-side WeChat configuration",
+    "This group uses your subscription": "This group uses your subscription",
     "This may cause cache failures.": "This may cause cache failures.",
     "This may take a few moments while we validate the request and update your session.": "This may take a few moments while we validate the request and update your session.",
     "This model has both fixed price and ratio billing conflicts": "This model has both fixed price and ratio billing conflicts",

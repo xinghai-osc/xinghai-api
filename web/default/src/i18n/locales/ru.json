@@ -4067,6 +4067,7 @@
     "This expression is too complex for the visual editor. Please switch to expression mode to edit.": "Для визуального редактора это выражение слишком сложно. Переключитесь в режим выражения для правки.",
     "This feature is experimental. Configuration format and behavior may change.": "Эта функция является экспериментальной. Формат конфигурации и поведение могут измениться.",
     "This feature requires server-side WeChat configuration": "Эта функция требует серверной конфигурации WeChat",
+    "This group uses your subscription": "Эта группа использует вашу подписку",
     "This may cause cache failures.": "Это может привести к сбоям кэша.",
     "This may take a few moments while we validate the request and update your session.": "Это может занять несколько мгновений, пока мы проверяем запрос и обновляем вашу сессию.",
     "This model has both fixed price and ratio billing conflicts": "Эта модель имеет конфликты как фиксированной цены, так и пропорциональной тарификации",

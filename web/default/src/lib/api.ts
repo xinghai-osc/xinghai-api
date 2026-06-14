@@ -199,8 +199,13 @@ export async function getUserModels(): Promise<{
 export async function getUserGroups(): Promise<{
   success: boolean
   message?: string
-  data?: Record<string, { desc: string; ratio: number | string }>
+  data?: Record<
+    string,
+    { desc: string; ratio: number | string; subscription?: boolean }
+  >
   user_group?: string
+  user_groups?: string[]
+  subscription_groups?: Record<string, boolean>
 }> {
   const res = await api.get('/api/user/self/groups')
   return res.data
