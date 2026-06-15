@@ -43,6 +43,8 @@ export interface Model {
   endpoints?: string
   status: number
   sync_official: number
+  registration_no?: string
+  license_no?: string
   created_time: number
   updated_time: number
   name_rule: number
@@ -238,6 +240,8 @@ export const modelFormSchema = z.object({
   name_rule: z.number().min(0).max(3).default(0),
   status: z.boolean().default(true),
   sync_official: z.boolean().default(true),
+  registration_no: z.string().default(''),
+  license_no: z.string().default(''),
 })
 
 export type ModelFormValues = z.infer<typeof modelFormSchema>

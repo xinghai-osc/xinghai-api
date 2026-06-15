@@ -792,6 +792,18 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
               : t('May be used for training by upstream provider')}
           </span>
         </InfoCell>
+
+        {props.model.registration_no && (
+          <InfoCell label={t('Registration No.')}>
+            <span className='text-sm'>{props.model.registration_no}</span>
+          </InfoCell>
+        )}
+
+        {props.model.license_no && (
+          <InfoCell label={t('License No.')}>
+            <span className='text-sm'>{props.model.license_no}</span>
+          </InfoCell>
+        )}
       </div>
     </section>
   )

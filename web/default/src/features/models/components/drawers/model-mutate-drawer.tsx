@@ -96,6 +96,8 @@ const extendedModelFormSchema = z.object({
   name_rule: z.number(),
   status: z.boolean(),
   sync_official: z.boolean(),
+  registration_no: z.string().optional(),
+  license_no: z.string().optional(),
   price: z.string().optional(),
   ratio: z.string().optional(),
   cacheRatio: z.string().optional(),
@@ -218,6 +220,8 @@ export function ModelMutateDrawer({
       name_rule: 0,
       status: true,
       sync_official: true,
+      registration_no: '',
+      license_no: '',
       price: '',
       ratio: '',
       cacheRatio: '',
@@ -277,6 +281,8 @@ export function ModelMutateDrawer({
         name_rule: model.name_rule || 0,
         status: model.status === 1,
         sync_official: model.sync_official === 1,
+        registration_no: model.registration_no || '',
+        license_no: model.license_no || '',
         price: '',
         ratio: '',
         cacheRatio: '',
@@ -381,6 +387,8 @@ export function ModelMutateDrawer({
         name_rule: 0,
         status: true,
         sync_official: true,
+        registration_no: '',
+        license_no: '',
         price: '',
         ratio: '',
         cacheRatio: '',
@@ -777,6 +785,46 @@ export function ModelMutateDrawer({
                     </FormControl>
                     <FormDescription>
                       {t('Press Enter or comma to add tags')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='registration_no'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Registration No.')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t('Model registration number')}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('Algorithm or model filing number')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='license_no'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('License No.')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t('Business license number')}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('Value-added telecom business license or equivalent')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

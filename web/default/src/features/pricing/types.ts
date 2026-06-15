@@ -70,6 +70,8 @@ export type PricingModel = {
   input_modalities?: Modality[]
   output_modalities?: Modality[]
   capabilities?: ModelCapability[]
+  registration_no?: string
+  license_no?: string
 }
 
 /** Input/output modalities supported by a model. */
