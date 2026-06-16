@@ -424,7 +424,15 @@ func downgradeUserGroupForSubscriptionTx(tx *gorm.DB, sub *UserSubscription, now
 	if err != nil {
 		return "", err
 	}
-	if currentGroup != upgradeGroup {
+	currentGroups := splitUserGroups(currentGroup)
+	hasGroup := false
+	for _, g := range currentGroups {
+		if g == upgradeGroup {
+			hasGroup = true
+			break
+		}
+	}
+	if !hasGroup {
 		return "", nil
 	}
 	var activeSub UserSubscription
@@ -436,15 +444,31 @@ func downgradeUserGroupForSubscriptionTx(tx *gorm.DB, sub *UserSubscription, now
 	if activeQuery.Error == nil && activeQuery.RowsAffected > 0 {
 		return "", nil
 	}
-	prevGroup := strings.TrimSpace(sub.PrevUserGroup)
-	if prevGroup == "" || prevGroup == currentGroup {
+	newGroups := make([]string, 0, len(currentGroups))
+	for _, g := range currentGroups {
+		if g != upgradeGroup {
+			newGroups = append(newGroups, g)
+		}
+	}
+	var newGroup string
+	if len(newGroups) > 0 {
+		newGroup = strings.Join(newGroups, ",")
+	} else {
+		prevGroup := strings.TrimSpace(sub.PrevUserGroup)
+		if prevGroup != "" {
+			newGroup = prevGroup
+		} else {
+			newGroup = "default"
+		}
+	}
+	if newGroup == currentGroup {
 		return "", nil
 	}
 	if err := tx.Model(&User{}).Where("id = ?", sub.UserId).
-		Update("group", prevGroup).Error; err != nil {
+		Update("group", newGroup).Error; err != nil {
 		return "", err
 	}
-	return prevGroup, nil
+	return newGroup, nil
 }
 
 func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *SubscriptionPlan, source string) (*UserSubscription, error) {
@@ -487,10 +511,24 @@ func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *Subscriptio
 		if err != nil {
 			return nil, err
 		}
-		if currentGroup != upgradeGroup {
+		currentGroups := splitUserGroups(currentGroup)
+		hasGroup := false
+		for _, g := range currentGroups {
+			if g == upgradeGroup {
+				hasGroup = true
+				break
+			}
+		}
+		if !hasGroup {
 			prevGroup = currentGroup
+			newGroup := currentGroup
+			if newGroup != "" {
+				newGroup += "," + upgradeGroup
+			} else {
+				newGroup = upgradeGroup
+			}
 			if err := tx.Model(&User{}).Where("id = ?", userId).
-				Update("group", upgradeGroup).Error; err != nil {
+				Update("group", newGroup).Error; err != nil {
 				return nil, err
 			}
 		}
@@ -583,7 +621,10 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		return err
 	}
 	if upgradeGroup != "" && logUserId > 0 {
-		_ = UpdateUserGroupCache(logUserId, upgradeGroup)
+		newGroup, _ := GetUserGroup(logUserId, true)
+		if newGroup != "" {
+			_ = UpdateUserGroupCache(logUserId, newGroup)
+		}
 	}
 	if logUserId > 0 {
 		msg := fmt.Sprintf("订阅购买成功，套餐: %s，支付金额: %.2f，支付方式: %s", logPlanTitle, logMoney, logPaymentMethod)
@@ -670,7 +711,10 @@ func AdminBindSubscription(userId int, planId int, sourceNote string) (string, e
 		return "", err
 	}
 	if strings.TrimSpace(plan.UpgradeGroup) != "" {
-		_ = UpdateUserGroupCache(userId, plan.UpgradeGroup)
+		newGroup, _ := GetUserGroup(userId, true)
+		if newGroup != "" {
+			_ = UpdateUserGroupCache(userId, newGroup)
+		}
 		return fmt.Sprintf("用户分组将升级到 %s", plan.UpgradeGroup), nil
 	}
 	return "", nil
@@ -772,7 +816,10 @@ func PurchaseSubscriptionWithBalance(userId int, planId int) error {
 		}
 	}
 	if upgradeGroup != "" {
-		_ = UpdateUserGroupCache(userId, upgradeGroup)
+		newGroup, _ := GetUserGroup(userId, true)
+		if newGroup != "" {
+			_ = UpdateUserGroupCache(userId, newGroup)
+		}
 	}
 	msg := fmt.Sprintf("使用余额购买订阅成功，套餐: %s，支付金额: %.2f，扣除额度: %d", logPlanTitle, logMoney, chargedQuota)
 	RecordLog(userId, LogTypeTopup, msg)
@@ -1061,14 +1108,37 @@ func ExpireDueSubscriptions(limit int) (int, error) {
 			if err != nil {
 				return err
 			}
-			if currentGroup != upgradeGroup || currentGroup == prevGroup {
+			currentGroups := splitUserGroups(currentGroup)
+			hasGroup := false
+			for _, g := range currentGroups {
+				if g == upgradeGroup {
+					hasGroup = true
+					break
+				}
+			}
+			if !hasGroup {
+				return nil
+			}
+			newGroups := make([]string, 0, len(currentGroups))
+			for _, g := range currentGroups {
+				if g != upgradeGroup {
+					newGroups = append(newGroups, g)
+				}
+			}
+			var newGroup string
+			if len(newGroups) > 0 {
+				newGroup = strings.Join(newGroups, ",")
+			} else {
+				newGroup = prevGroup
+			}
+			if newGroup == currentGroup {
 				return nil
 			}
 			if err := tx.Model(&User{}).Where("id = ?", userId).
-				Update("group", prevGroup).Error; err != nil {
+				Update("group", newGroup).Error; err != nil {
 				return err
 			}
-			cacheGroup = prevGroup
+			cacheGroup = newGroup
 			return nil
 		})
 		if err != nil {

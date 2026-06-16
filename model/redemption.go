@@ -170,7 +170,10 @@ func Redeem(key string, userId int) (quota int, err error) {
 		return 0, ErrRedeemFailed
 	}
 	if upgradeGroup != "" {
-		_ = UpdateUserGroupCache(userId, upgradeGroup)
+		newGroup, _ := GetUserGroup(userId, true)
+		if newGroup != "" {
+			_ = UpdateUserGroupCache(userId, newGroup)
+		}
 	}
 	if redemption.SubscriptionPlanId > 0 {
 		RecordLog(userId, LogTypeTopup, fmt.Sprintf("通过兑换码兑换订阅，兑换码ID %d，套餐ID %d，附加额度 %s", redemption.Id, redemption.SubscriptionPlanId, logger.LogQuota(redemption.Quota)))
