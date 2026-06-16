@@ -477,7 +477,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 /* Micro-interactions — Vercel-style subtle hover/active feedback */
 @media (prefers-reduced-motion: no-preference) {
-  [data-slot='card'] {
+  [data-slot='card']:not([data-card-hover='false']) {
     transition:
       transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
       box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -485,17 +485,13 @@ For commercial licensing, please contact support@quantumnous.com
   }
 
   @media (min-width: 641px) {
-    [data-slot='card']:hover {
-      transform: translateY(-2px);
-      box-shadow:
-        0 4px 16px oklch(0 0 0 / 0.04),
-        0 8px 32px oklch(0 0 0 / 0.03);
+    [data-slot='card']:not([data-card-hover='false']):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
     }
 
-    .dark [data-slot='card']:hover {
-      box-shadow:
-        0 4px 16px oklch(0 0 0 / 0.2),
-        0 8px 32px oklch(0 0 0 / 0.15);
+    .dark [data-slot='card']:not([data-card-hover='false']):hover {
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
     }
   }
 
