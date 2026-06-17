@@ -22,6 +22,9 @@ type RetryParam struct {
 	AllowedApiTypes map[int]bool
 	DeniedApiTypes  map[int]bool
 	resetNextTry    bool
+	// crossFormatFallback 标记当前 RetryParam 已经进入"跨格式 fallback"分支，
+	// 防止 fallback 选出的渠道在后续请求中再次触发二次 fallback，造成无限放宽。
+	crossFormatFallback bool
 }
 
 func (p *RetryParam) GetRetry() int {
@@ -163,6 +166,30 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			return nil, param.TokenGroup, err
 		}
 	}
+	// 跨格式 fallback：当首轮选不到渠道时，按入口格式放宽一次允许的 API 类型，
+	// 由对应适配器完成请求/响应的格式互转：
+	//   - OpenAI 系入口缺渠道 → 允许选 Anthropic（含 Moonshot）渠道，由 claude 适配器完成 OpenAI<->Claude 转换。
+	//   - Claude 入口缺 Anthropic 渠道 → 允许选 OpenAI2Claude 渠道，由 openai2claude 适配器完成 Claude<->OpenAI 转换。
+	if channel == nil && param.allowCrossFormatFallback() {
+		fallbackParam := *param
+		fallbackParam.crossFormatFallback = true
+		fallbackParam.AllowedApiTypes = crossFormatFallbackAllowed(param.AllowedApiTypes)
+		fallbackParam.DeniedApiTypes = crossFormatFallbackDenied(param.DeniedApiTypes)
+		if param.TokenGroup == "auto" {
+			// auto 分组在上方已遍历过；此处对当前 selectGroup 直接再尝试一次
+			if selectGroup != "" {
+				channel, _ = model.GetRandomSatisfiedChannelWithCondition(selectGroup, param.ModelName, param.GetRetry(), fallbackParam.channelSatisfied)
+			}
+		} else {
+			channel, err = model.GetRandomSatisfiedChannelWithCondition(param.TokenGroup, param.ModelName, param.GetRetry(), fallbackParam.channelSatisfied)
+			if err != nil {
+				return nil, param.TokenGroup, err
+			}
+		}
+		if channel != nil {
+			logger.LogInfo(param.Ctx, "cross-format fallback engaged: relayFormat=%s, model=%s, channelId=%d, channelType=%d", param.RelayFormat, param.ModelName, channel.Id, channel.Type)
+		}
+	}
 	return channel, selectGroup, nil
 }
 
@@ -178,6 +205,59 @@ func (p *RetryParam) channelSatisfied(channel *model.Channel) bool {
 		return !p.DeniedApiTypes[apiType]
 	}
 	return true
+}
+
+// allowCrossFormatFallback 判断当前 RetryParam 是否允许"跨格式 fallback"：
+//   - 已经在 fallback 分支（crossFormatFallback==true）时不再触发，避免无限放宽。
+//   - 当 DeniedApiTypes 中显式禁用了 Anthropic（典型 OpenAI 入口的特征）时，可以放开 Anthropic 试一次。
+//   - 当 AllowedApiTypes 中显式只允许 Anthropic 类（典型 Claude 入口的特征）时，可以放开 OpenAI2Claude 试一次。
+//   - 其他情况（例如 Gemini 入口）不动。
+func (p *RetryParam) allowCrossFormatFallback() bool {
+	if p == nil || p.crossFormatFallback {
+		return false
+	}
+	if len(p.DeniedApiTypes) > 0 && p.DeniedApiTypes[constant.APITypeAnthropic] {
+		return true
+	}
+	if len(p.AllowedApiTypes) > 0 && p.AllowedApiTypes[constant.APITypeAnthropic] && !p.AllowedApiTypes[constant.APITypeOpenAI2Claude] {
+		return true
+	}
+	return false
+}
+
+// crossFormatFallbackAllowed 在 fallback 时把允许列表扩展为目标格式的"反向桥"渠道。
+// 只在原本就是白名单模式（AllowedApiTypes 非空，例如 Claude 入口）下生效，避免覆盖 deny 模式语义。
+func crossFormatFallbackAllowed(original map[int]bool) map[int]bool {
+	if len(original) == 0 {
+		return nil
+	}
+	merged := make(map[int]bool, len(original)+1)
+	for k, v := range original {
+		merged[k] = v
+	}
+	// Claude 入口（Allowed 含 Anthropic）允许 fallback 选 OpenAI2Claude 桥渠道。
+	if merged[constant.APITypeAnthropic] {
+		merged[constant.APITypeOpenAI2Claude] = true
+	}
+	return merged
+}
+
+// crossFormatFallbackDenied 在 fallback 时把 deny 列表中"反向桥"目标 API 类型移除。
+// 只在原本就是黑名单模式（DeniedApiTypes 非空，例如 OpenAI 入口）下生效。
+func crossFormatFallbackDenied(original map[int]bool) map[int]bool {
+	if len(original) == 0 {
+		return nil
+	}
+	merged := make(map[int]bool, len(original))
+	for k, v := range original {
+		merged[k] = v
+	}
+	// OpenAI 系入口（Denied 含 Anthropic）允许 fallback 选 Anthropic / Moonshot 渠道；Gemini 仍保持禁用。
+	if merged[constant.APITypeAnthropic] {
+		delete(merged, constant.APITypeAnthropic)
+		delete(merged, constant.APITypeMoonshot)
+	}
+	return merged
 }
 
 func AllowedApiTypesForRelayFormat(relayFormat types.RelayFormat) map[int]bool {
