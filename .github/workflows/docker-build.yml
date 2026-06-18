@@ -104,6 +104,7 @@ jobs:
       - name: Upload tar to release
         uses: softprops/action-gh-release@v2
         with:
+          generate_release_notes: true
           tag_name: ${{ env.TAG }}
           files: xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar
           fail_on_unmatched_files: true

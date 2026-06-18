@@ -84,6 +84,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
+          generate_release_notes: true
           files: |
             xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip
             xinghai-api-${{ env.VERSION }}-${{ matrix.filename_suffix }}.zip.sha256
