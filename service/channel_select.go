@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -14,9 +15,9 @@ import (
 )
 
 type RetryParam struct {
-	Ctx              *gin.Context
-	TokenGroup       string
-	ModelName        string
+	Ctx             *gin.Context
+	TokenGroup      string
+	ModelName       string
 	Retry           *int
 	RelayFormat     types.RelayFormat
 	AllowedApiTypes map[int]bool
@@ -187,7 +188,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			}
 		}
 		if channel != nil {
-			logger.LogInfo(param.Ctx, "cross-format fallback engaged: relayFormat=%s, model=%s, channelId=%d, channelType=%d", param.RelayFormat, param.ModelName, channel.Id, channel.Type)
+			logger.LogInfo(param.Ctx, fmt.Sprintf("cross-format fallback engaged: relayFormat=%s, model=%s, channelId=%d, channelType=%d", param.RelayFormat, param.ModelName, channel.Id, channel.Type))
 		}
 	}
 	return channel, selectGroup, nil
