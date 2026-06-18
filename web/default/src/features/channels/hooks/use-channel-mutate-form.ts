@@ -70,17 +70,18 @@ export function useChannelMutateForm(props: UseChannelMutateFormParams) {
           data,
           props.currentRow.id
         )
-        const payloadWithKeyMode =
-          props.isMultiKeyChannel && data.key_mode
-            ? {
-                ...payload,
-                key_mode: data.key_mode,
-              }
-            : payload
+        const payloadWithKeyOptions = {
+          ...payload,
+          multi_key_mode: data.multi_key_mode,
+          multi_key_type: data.multi_key_type,
+          ...(props.isMultiKeyChannel && data.key_mode
+            ? { key_mode: data.key_mode }
+            : {}),
+        }
 
         const response = await updateChannel(
           props.currentRow.id,
-          payloadWithKeyMode
+          payloadWithKeyOptions
         )
         if (!response.success) {
           throw new Error(response.message || t(ERROR_MESSAGES.UPDATE_FAILED))

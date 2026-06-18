@@ -406,6 +406,10 @@ export function ChannelMutateDrawer({
         : ADD_MODE_OPTIONS.filter((option) => option.value === 'single'),
     [supportsMultiKeyAddMode]
   )
+  const editKeyModeOptions = useMemo(
+    () => addModeOptions.filter((option) => option.value !== 'batch'),
+    [addModeOptions]
+  )
 
   // Get all models list
   const allModelsList = useMemo(
@@ -641,6 +645,16 @@ export function ChannelMutateDrawer({
   useEffect(() => {
     if (isEditing || supportsMultiKeyAddMode) return
     if (multiKeyMode && multiKeyMode !== 'single') {
+      form.setValue('multi_key_mode', 'single', {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    }
+  }, [form, isEditing, multiKeyMode, supportsMultiKeyAddMode])
+
+  useEffect(() => {
+    if (!isEditing || supportsMultiKeyAddMode) return
+    if (multiKeyMode === 'multi_to_single') {
       form.setValue('multi_key_mode', 'single', {
         shouldDirty: true,
         shouldValidate: true,
@@ -1832,16 +1846,21 @@ export function ChannelMutateDrawer({
                     )}
 
                     <ChannelAuthSection>
-                      {!isEditing && (
-                        <FormField
-                          control={form.control}
-                          name='multi_key_mode'
-                          render={({ field }) => (
+                      <FormField
+                        control={form.control}
+                        name='multi_key_mode'
+                        render={({ field }) => {
+                          const modeOptions = isEditing
+                            ? editKeyModeOptions
+                            : addModeOptions
+                          return (
                             <FormItem>
-                              <FormLabel>{t('Add Mode')}</FormLabel>
+                              <FormLabel>
+                                {isEditing ? t('Key Mode') : t('Add Mode')}
+                              </FormLabel>
                               <Select
                                 items={[
-                                  ...addModeOptions.map((option) => ({
+                                  ...modeOptions.map((option) => ({
                                     value: option.value,
                                     label: t(option.label),
                                   })),
@@ -1856,7 +1875,7 @@ export function ChannelMutateDrawer({
                                 </FormControl>
                                 <SelectContent alignItemWithTrigger={false}>
                                   <SelectGroup>
-                                    {addModeOptions.map((option) => (
+                                    {modeOptions.map((option) => (
                                       <SelectItem
                                         key={option.value}
                                         value={option.value}
@@ -1868,17 +1887,21 @@ export function ChannelMutateDrawer({
                                 </SelectContent>
                               </Select>
                               <FormDescription>
-                                {t(
-                                  supportsMultiKeyAddMode
-                                    ? FIELD_DESCRIPTIONS.BATCH_ADD
-                                    : FIELD_DESCRIPTIONS.KEY
-                                )}
+                                {isEditing
+                                  ? t(
+                                      'Switch this channel between single-key and multi-key modes'
+                                    )
+                                  : t(
+                                      supportsMultiKeyAddMode
+                                        ? FIELD_DESCRIPTIONS.BATCH_ADD
+                                        : FIELD_DESCRIPTIONS.KEY
+                                    )}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
-                          )}
-                        />
-                      )}
+                          )
+                        }}
+                      />
 
                       <FormField
                         control={form.control}
@@ -1929,16 +1952,35 @@ export function ChannelMutateDrawer({
                                         {t(
                                           'Enter new key to update, or leave empty to keep current key'
                                         )}
-                                        {isMultiKeyChannel && (
-                                          <span className='text-warning mt-1 block'>
-                                            {t(
-                                              'Multi-key channel: Keys will be'
-                                            )}{' '}
-                                            {keyMode === 'replace'
-                                              ? t('replaced')
-                                              : t('appended')}
-                                          </span>
-                                        )}
+                                        {isMultiKeyChannel &&
+                                          multiKeyMode === 'multi_to_single' && (
+                                            <span className='text-warning mt-1 block'>
+                                              {t(
+                                                'Multi-key channel: Keys will be'
+                                              )}{' '}
+                                              {keyMode === 'replace'
+                                                ? t('replaced')
+                                                : t('appended')}
+                                            </span>
+                                          )}
+                                        {isEditing &&
+                                          multiKeyMode === 'single' &&
+                                          isMultiKeyChannel && (
+                                            <span className='text-warning mt-1 block'>
+                                              {t(
+                                                'Converting to single-key mode will keep the first existing key if no new key is entered'
+                                              )}
+                                            </span>
+                                          )}
+                                        {isEditing &&
+                                          multiKeyMode === 'multi_to_single' &&
+                                          !isMultiKeyChannel && (
+                                            <span className='text-warning mt-1 block'>
+                                              {t(
+                                                'Converting to multi-key mode supports one key per line'
+                                              )}
+                                            </span>
+                                          )}
                                       </>
                                     ) : isBatchMode ? (
                                       t(
@@ -2115,7 +2157,7 @@ export function ChannelMutateDrawer({
                         />
                       )}
 
-                      {!isEditing && multiKeyMode === 'multi_to_single' && (
+                      {multiKeyMode === 'multi_to_single' && (
                         <FormField
                           control={form.control}
                           name='multi_key_type'

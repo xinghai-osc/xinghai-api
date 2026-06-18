@@ -903,6 +903,7 @@ func DeleteChannelBatch(c *gin.Context) {
 type PatchChannel struct {
 	model.Channel
 	MultiKeyMode *string `json:"multi_key_mode"`
+	MultiKeyType *string `json:"multi_key_type"`
 	KeyMode      *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
 }
 
@@ -935,9 +936,36 @@ func UpdateChannel(c *gin.Context) {
 	// Always copy the original ChannelInfo so that fields like IsMultiKey and MultiKeySize are retained.
 	channel.ChannelInfo = originChannel.ChannelInfo
 
-	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
-	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
-		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
+	requestedMode := ""
+	if channel.MultiKeyMode != nil {
+		requestedMode = strings.TrimSpace(*channel.MultiKeyMode)
+	}
+	if requestedMode == string(constant.MultiKeyModeRandom) || requestedMode == string(constant.MultiKeyModePolling) {
+		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(requestedMode)
+		requestedMode = ""
+	}
+	if channel.MultiKeyType != nil && *channel.MultiKeyType != "" {
+		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyType)
+	}
+
+	if requestedMode == "single" {
+		channel.ChannelInfo = model.ChannelInfo{}
+		if strings.TrimSpace(channel.Key) == "" {
+			originKeys := originChannel.GetKeys()
+			if len(originKeys) > 0 {
+				channel.Key = strings.TrimSpace(originKeys[0])
+			}
+		}
+	}
+
+	if requestedMode == "multi_to_single" {
+		channel.ChannelInfo.IsMultiKey = true
+		if channel.ChannelInfo.MultiKeyMode == "" {
+			channel.ChannelInfo.MultiKeyMode = constant.MultiKeyModeRandom
+		}
+		if strings.TrimSpace(channel.Key) == "" {
+			channel.Key = strings.Join(originChannel.GetKeys(), "\n")
+		}
 	}
 
 	// 处理多key模式下的密钥追加/覆盖逻辑
@@ -947,22 +975,7 @@ func UpdateChannel(c *gin.Context) {
 			// 追加模式：将新密钥添加到现有密钥列表
 			if originChannel.Key != "" {
 				var newKeys []string
-				var existingKeys []string
-
-				// 解析现有密钥
-				if strings.HasPrefix(strings.TrimSpace(originChannel.Key), "[") {
-					// JSON数组格式
-					var arr []json.RawMessage
-					if err := json.Unmarshal([]byte(strings.TrimSpace(originChannel.Key)), &arr); err == nil {
-						existingKeys = make([]string, len(arr))
-						for i, v := range arr {
-							existingKeys[i] = string(v)
-						}
-					}
-				} else {
-					// 换行分隔格式
-					existingKeys = strings.Split(strings.Trim(originChannel.Key, "\n"), "\n")
-				}
+				existingKeys := originChannel.GetKeys()
 
 				// 处理 Vertex AI 的特殊情况
 				if channel.Type == constant.ChannelTypeVertexAi && channel.GetOtherSettings().VertexKeyType != dto.VertexKeyTypeAPIKey {
