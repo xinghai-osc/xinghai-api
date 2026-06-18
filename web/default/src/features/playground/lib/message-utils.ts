@@ -309,6 +309,44 @@ export function finalizeMessage(
   }
 }
 
+export function formatMessagesAsMarkdown(messages: Message[]): string {
+  return messages
+    .map((message) => {
+      const content = getCurrentVersion(message).content.trim()
+      const parts = [`## ${message.from === MESSAGE_ROLES.USER ? 'User' : 'Assistant'}`]
+
+      if (message.reasoning?.content.trim()) {
+        parts.push(`### Reasoning\n\n${message.reasoning.content.trim()}`)
+      }
+
+      if (content) {
+        parts.push(`### Response\n\n${content}`)
+      }
+
+      return parts.join('\n\n')
+    })
+    .join('\n\n---\n\n')
+}
+
+export function encodeMessagesForShare(messages: Message[]): string {
+  const json = JSON.stringify(messages)
+  const bytes = new TextEncoder().encode(json)
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
+  return btoa(binary)
+}
+
+export function decodeMessagesFromShare(value: string): Message[] {
+  const binary = atob(value)
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+  const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes))
+
+  if (!Array.isArray(parsed)) {
+    return []
+  }
+
+  return sanitizeMessagesOnLoad(parsed as Message[])
+}
+
 /**
  * Sanitize messages loaded from storage
  * Converts stuck loading/streaming messages to stable state

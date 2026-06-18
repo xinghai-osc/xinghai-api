@@ -42,6 +42,14 @@ export interface Message {
   errorCode?: string | null
 }
 
+export interface PlaygroundSession {
+  id: string
+  title: string
+  messages: Message[]
+  createdAt: number
+  updatedAt: number
+}
+
 // API payload types
 export interface ChatCompletionMessage {
   role: MessageRole

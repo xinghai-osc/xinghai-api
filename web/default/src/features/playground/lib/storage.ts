@@ -16,8 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { nanoid } from 'nanoid'
 import { STORAGE_KEYS } from '../constants'
-import type { PlaygroundConfig, ParameterEnabled, Message } from '../types'
+import type {
+  PlaygroundConfig,
+  ParameterEnabled,
+  Message,
+  PlaygroundSession,
+} from '../types'
 import { sanitizeMessagesOnLoad } from './message-utils'
 
 /**
@@ -118,6 +124,94 @@ export function saveMessages(messages: Message[]): void {
   }
 }
 
+export function createSession(messages: Message[] = []): PlaygroundSession {
+  const now = Date.now()
+  return {
+    id: nanoid(),
+    title: getSessionTitle(messages),
+    messages,
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+export function getSessionTitle(messages: Message[]): string {
+  const firstUserMessage = messages.find((message) => message.from === 'user')
+  const content = firstUserMessage?.versions[0]?.content.trim()
+
+  if (!content) {
+    return 'New conversation'
+  }
+
+  return content.length > 32 ? `${content.slice(0, 32)}...` : content
+}
+
+export function loadSessions(): PlaygroundSession[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.SESSIONS)
+    if (saved) {
+      const parsed: unknown = JSON.parse(saved)
+      if (Array.isArray(parsed)) {
+        return parsed.map((session) => {
+          const current = session as PlaygroundSession
+          const messages = sanitizeMessagesOnLoad(current.messages || [])
+          return {
+            ...current,
+            title: current.title || getSessionTitle(messages),
+            messages,
+            createdAt: current.createdAt || Date.now(),
+            updatedAt: current.updatedAt || Date.now(),
+          }
+        })
+      }
+    }
+
+    const legacyMessages = loadMessages()
+    if (legacyMessages?.length) {
+      const session = createSession(legacyMessages)
+      saveSessions([session])
+      saveActiveSessionId(session.id)
+      return [session]
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load sessions:', error)
+  }
+
+  const session = createSession()
+  saveSessions([session])
+  saveActiveSessionId(session.id)
+  return [session]
+}
+
+export function saveSessions(sessions: PlaygroundSession[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions))
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to save sessions:', error)
+  }
+}
+
+export function loadActiveSessionId(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION_ID)
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load active session:', error)
+  }
+  return null
+}
+
+export function saveActiveSessionId(sessionId: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION_ID, sessionId)
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to save active session:', error)
+  }
+}
+
 /**
  * Clear all playground data
  */
@@ -126,6 +220,8 @@ export function clearPlaygroundData(): void {
     localStorage.removeItem(STORAGE_KEYS.CONFIG)
     localStorage.removeItem(STORAGE_KEYS.PARAMETER_ENABLED)
     localStorage.removeItem(STORAGE_KEYS.MESSAGES)
+    localStorage.removeItem(STORAGE_KEYS.SESSIONS)
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION_ID)
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to clear playground data:', error)

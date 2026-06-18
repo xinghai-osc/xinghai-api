@@ -23,8 +23,12 @@ import {
   saveConfig,
   loadParameterEnabled,
   saveParameterEnabled,
-  loadMessages,
-  saveMessages,
+  createSession,
+  getSessionTitle,
+  loadActiveSessionId,
+  loadSessions,
+  saveActiveSessionId,
+  saveSessions,
 } from '../lib'
 import type {
   Message,
@@ -32,6 +36,7 @@ import type {
   ParameterEnabled,
   ModelOption,
   GroupOption,
+  PlaygroundSession,
 } from '../types'
 
 /**
@@ -51,9 +56,19 @@ export function usePlaygroundState() {
     }
   )
 
-  const [messages, setMessages] = useState<Message[]>(() => {
-    return loadMessages() || []
+  const [sessions, setSessions] = useState<PlaygroundSession[]>(() => {
+    return loadSessions()
   })
+
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => {
+    const savedSessionId = loadActiveSessionId()
+    const existingSession = sessions.find((session) => session.id === savedSessionId)
+    return existingSession?.id || sessions[0].id
+  })
+
+  const activeSession =
+    sessions.find((session) => session.id === activeSessionId) || sessions[0]
+  const messages = activeSession?.messages || []
 
   const [models, setModels] = useState<ModelOption[]>([])
   const [groups, setGroups] = useState<GroupOption[]>([])
@@ -85,20 +100,63 @@ export function usePlaygroundState() {
   // Update messages with automatic save
   const updateMessages = useCallback(
     (updater: Message[] | ((prev: Message[]) => Message[])) => {
-      setMessages((prev) => {
-        const newMessages =
-          typeof updater === 'function' ? updater(prev) : updater
-        saveMessages(newMessages)
-        return newMessages
+      setSessions((prev) => {
+        const updated = prev.map((session) => {
+          if (session.id !== activeSessionId) return session
+
+          const newMessages =
+            typeof updater === 'function' ? updater(session.messages) : updater
+          return {
+            ...session,
+            title: getSessionTitle(newMessages),
+            messages: newMessages,
+            updatedAt: Date.now(),
+          }
+        })
+        saveSessions(updated)
+        return updated
       })
     },
-    []
+    [activeSessionId]
   )
 
   // Clear all messages
   const clearMessages = useCallback(() => {
     updateMessages([])
   }, [updateMessages])
+
+  const createNewSession = useCallback((messages: Message[] = []) => {
+    const session = createSession(messages)
+    setSessions((prev) => {
+      const updated = [session, ...prev]
+      saveSessions(updated)
+      return updated
+    })
+    setActiveSessionId(session.id)
+    saveActiveSessionId(session.id)
+  }, [])
+
+  const switchSession = useCallback((sessionId: string) => {
+    setActiveSessionId(sessionId)
+    saveActiveSessionId(sessionId)
+  }, [])
+
+  const deleteSession = useCallback(
+    (sessionId: string) => {
+      setSessions((prev) => {
+        const remaining = prev.filter((session) => session.id !== sessionId)
+        const updated = remaining.length > 0 ? remaining : [createSession()]
+        const nextActiveSessionId =
+          activeSessionId === sessionId ? updated[0].id : activeSessionId
+
+        setActiveSessionId(nextActiveSessionId)
+        saveActiveSessionId(nextActiveSessionId)
+        saveSessions(updated)
+        return updated
+      })
+    },
+    [activeSessionId]
+  )
 
   // Reset config to defaults
   const resetConfig = useCallback(() => {
@@ -112,6 +170,8 @@ export function usePlaygroundState() {
     // State
     config,
     parameterEnabled,
+    sessions,
+    activeSessionId,
     messages,
     models,
     groups,
@@ -125,6 +185,9 @@ export function usePlaygroundState() {
     updateParameterEnabled,
     updateMessages,
     clearMessages,
+    createNewSession,
+    switchSession,
+    deleteSession,
     resetConfig,
   }
 }
