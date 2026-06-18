@@ -23,6 +23,7 @@ import { WorkerSettingsSection } from '../integrations/worker-settings-section'
 import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
+import { UserAgentPoolSection } from '../maintenance/user-agent-pool-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
@@ -135,6 +136,20 @@ const OPERATIONS_SECTIONS = [
             settings['perf_metrics_setting.bucket_time'] ?? 'hour',
           'perf_metrics_setting.retention_days':
             settings['perf_metrics_setting.retention_days'] ?? 0,
+        }}
+      />
+    ),
+  },
+  {
+    id: 'user-agent-pool',
+    titleKey: 'User-Agent Pool',
+    build: (settings: OperationsSettings) => (
+      <UserAgentPoolSection
+        defaultValues={{
+          'user_agent_pool_setting.enabled':
+            settings['user_agent_pool_setting.enabled'] ?? false,
+          'user_agent_pool_setting.pools':
+            settings['user_agent_pool_setting.pools'] ?? '[]',
         }}
       />
     ),

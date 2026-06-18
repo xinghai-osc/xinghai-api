@@ -12,6 +12,7 @@ import (
 	"time"
 
 	common2 "github.com/QuantumNous/new-api/common"
+	channelconstant "github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/constant"
@@ -53,6 +54,20 @@ func SetupApiRequestHeader(info *common.RelayInfo, c *gin.Context, req *http.Hea
 		if info.IsStream && c.Request.Header.Get("Accept") == "" {
 			req.Set("Accept", "text/event-stream")
 		}
+	}
+	applyUserAgentPoolHeader(info, req)
+}
+
+func applyUserAgentPoolHeader(info *common.RelayInfo, req *http.Header) {
+	if info == nil || req == nil || info.ChannelMeta == nil {
+		return
+	}
+	userAgent := operation_setting.GetUserAgentPoolSetting().RandomUserAgent(
+		info.ChannelType,
+		channelconstant.GetChannelTypeName(info.ChannelType),
+	)
+	if userAgent != "" {
+		req.Set("User-Agent", userAgent)
 	}
 }
 

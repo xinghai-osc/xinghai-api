@@ -5,10 +5,83 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/QuantumNous/new-api/constant"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSetupApiRequestHeader_UsesMatchingUserAgentPool(t *testing.T) {
+	setting := operation_setting.GetUserAgentPoolSetting()
+	original := *setting
+	t.Cleanup(func() { *setting = original })
+	*setting = operation_setting.UserAgentPoolSetting{
+		Enabled: true,
+		Pools: []operation_setting.UserAgentPool{
+			{
+				Name:         "openai",
+				ChannelTypes: []int{constant.ChannelTypeOpenAI},
+				UserAgents:   []string{"openai-ua"},
+			},
+			{
+				Name:         "gemini",
+				ChannelNames: []string{"Gemini"},
+				UserAgents:   []string{"gemini-ua"},
+			},
+		},
+	}
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+
+	header := http.Header{}
+	SetupApiRequestHeader(&relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{ChannelType: constant.ChannelTypeGemini},
+	}, ctx, &header)
+
+	require.Equal(t, "gemini-ua", header.Get("User-Agent"))
+}
+
+func TestApplyHeaderOverrideToRequest_CanOverrideUserAgentPool(t *testing.T) {
+	setting := operation_setting.GetUserAgentPoolSetting()
+	original := *setting
+	t.Cleanup(func() { *setting = original })
+	*setting = operation_setting.UserAgentPoolSetting{
+		Enabled: true,
+		Pools: []operation_setting.UserAgentPool{
+			{
+				ChannelTypes: []int{constant.ChannelTypeOpenAI},
+				UserAgents:   []string{"pool-ua"},
+			},
+		},
+	}
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType: constant.ChannelTypeOpenAI,
+			HeadersOverride: map[string]any{
+				"User-Agent": "override-ua",
+			},
+		},
+	}
+	upstreamReq := httptest.NewRequest(http.MethodPost, "https://example.com/v1/chat/completions", nil)
+	SetupApiRequestHeader(info, ctx, &upstreamReq.Header)
+	require.Equal(t, "pool-ua", upstreamReq.Header.Get("User-Agent"))
+
+	headers, err := processHeaderOverride(info, ctx)
+	require.NoError(t, err)
+	applyHeaderOverrideToRequest(upstreamReq, headers)
+
+	require.Equal(t, "override-ua", upstreamReq.Header.Get("User-Agent"))
+}
 
 func TestProcessHeaderOverride_ChannelTestSkipsPassthroughRules(t *testing.T) {
 	t.Parallel()
