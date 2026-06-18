@@ -33,11 +33,12 @@ type PersonalRankingTotal struct {
 
 func GetRankingQuotaTotals(startTime int64, endTime int64) ([]RankingQuotaTotal, error) {
 	var rows []RankingQuotaTotal
+	usageExpr := rankingUsageExpr()
 	query := DB.Table("quota_data").
-		Select("model_name, sum(token_used) as total_tokens").
+		Select(fmt.Sprintf("model_name, sum(%s) as total_tokens", usageExpr)).
 		Where("model_name <> ''").
 		Group("model_name").
-		Having("sum(token_used) > 0").
+		Having(fmt.Sprintf("sum(%s) > 0", usageExpr)).
 		Order("total_tokens DESC")
 	query = applyRankingQuotaTimeRange(query, startTime, endTime)
 	err := query.Find(&rows).Error
@@ -49,12 +50,13 @@ func GetRankingQuotaBuckets(startTime int64, endTime int64, bucketSize int64) ([
 		bucketSize = 3600
 	}
 	bucketExpr := rankingBucketExpr(bucketSize)
+	usageExpr := rankingUsageExpr()
 	var rows []RankingQuotaBucket
 	query := DB.Table("quota_data").
-		Select(fmt.Sprintf("model_name, %s as bucket, sum(token_used) as tokens", bucketExpr)).
+		Select(fmt.Sprintf("model_name, %s as bucket, sum(%s) as tokens", bucketExpr, usageExpr)).
 		Where("model_name <> ''").
 		Group(fmt.Sprintf("model_name, %s", bucketExpr)).
-		Having("sum(token_used) > 0").
+		Having(fmt.Sprintf("sum(%s) > 0", usageExpr)).
 		Order("bucket ASC")
 	query = applyRankingQuotaTimeRange(query, startTime, endTime)
 	err := query.Find(&rows).Error
@@ -112,6 +114,10 @@ func rankingBucketExpr(bucketSize int64) string {
 		return fmt.Sprintf("FLOOR(quota_data.created_at / %d) * %d", bucketSize, bucketSize)
 	}
 	return fmt.Sprintf("(quota_data.created_at / %d) * %d", bucketSize, bucketSize)
+}
+
+func rankingUsageExpr() string {
+	return "CASE WHEN token_used > 0 THEN token_used ELSE quota END"
 }
 
 func applyRankingQuotaTimeRange(query *gorm.DB, startTime int64, endTime int64) *gorm.DB {
