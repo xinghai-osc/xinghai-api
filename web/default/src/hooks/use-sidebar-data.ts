@@ -21,6 +21,7 @@ import {
   Activity,
   Box,
   CreditCard,
+  Crown,
   FileText,
   FlaskConical,
   ImageIcon,
@@ -104,6 +105,11 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           title: t('Wallet'),
           url: '/wallet',
           icon: Wallet,
+        },
+        {
+          title: t('Subscription'),
+          url: '/subscriptions/purchase',
+          icon: Crown,
         },
         {
           title: t('Profile'),
