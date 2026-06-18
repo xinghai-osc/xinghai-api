@@ -39,8 +39,9 @@ type PlaygroundProps = {
   initialTab?: string
 }
 
-export function Playground(_props: PlaygroundProps = {}) {
+export function Playground(props: PlaygroundProps = {}) {
   const { t } = useTranslation()
+  const [activeTab, setActiveTab] = useState(props.initialTab ?? 'chat')
   const {
     config,
     parameterEnabled,
@@ -248,129 +249,176 @@ export function Playground(_props: PlaygroundProps = {}) {
   const hasMessages = messages.length > 0
 
   return (
-    <div className='relative flex size-full overflow-hidden'>
-      <aside className='hidden w-64 shrink-0 border-r bg-muted/20 p-3 md:flex md:flex-col'>
-        <div className='mb-3 flex items-center justify-between gap-2'>
-          <h2 className='text-sm font-medium'>{t('Conversations')}</h2>
-          <Button
-            size='icon-sm'
-            variant='outline'
-            onClick={() => createNewSession()}
-            disabled={isGenerating}
-            aria-label={t('New Conversation')}
-          >
-            <MessageSquarePlus />
-          </Button>
-        </div>
-        <div className='min-h-0 flex-1 space-y-1 overflow-y-auto'>
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className='group flex items-center gap-1 rounded-lg hover:bg-muted'
-            >
-              <button
-                type='button'
-                className={`min-w-0 flex-1 truncate rounded-lg px-3 py-2 text-left text-sm ${
-                  session.id === activeSessionId
-                    ? 'bg-muted font-medium text-foreground'
-                    : 'text-muted-foreground'
-                }`}
-                onClick={() => switchSession(session.id)}
-                disabled={isGenerating}
-              >
-                {session.title === 'New conversation'
-                  ? t('New conversation')
-                  : session.title}
-              </button>
+    <Tabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+      className='size-full gap-0 overflow-hidden'
+    >
+      <div className='flex shrink-0 justify-center border-b bg-background/95 px-4 py-2'>
+        <TabsList className='grid w-full max-w-md grid-cols-3'>
+          <TabsTrigger value='chat'>
+            <MessageSquare />
+            {t('Chat')}
+          </TabsTrigger>
+          <TabsTrigger value='image'>
+            <ImageIcon />
+            {t('Image')}
+          </TabsTrigger>
+          <TabsTrigger value='speech'>
+            <Mic2 />
+            {t('Speech')}
+          </TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent value='chat' className='min-h-0 overflow-hidden'>
+        <div className='relative flex size-full overflow-hidden'>
+          <aside className='hidden w-64 shrink-0 border-r bg-muted/20 p-3 md:flex md:flex-col'>
+            <div className='mb-3 flex items-center justify-between gap-2'>
+              <h2 className='text-sm font-medium'>{t('Conversations')}</h2>
               <Button
-                size='icon-xs'
-                variant='ghost'
-                onClick={() => deleteSession(session.id)}
+                size='icon-sm'
+                variant='outline'
+                onClick={() => createNewSession()}
                 disabled={isGenerating}
-                aria-label={t('Delete Conversation')}
-                className='opacity-0 group-hover:opacity-100 max-md:opacity-100'
+                aria-label={t('New Conversation')}
               >
-                <Trash2 />
+                <MessageSquarePlus />
               </Button>
             </div>
-          ))}
-        </div>
-      </aside>
+            <div className='min-h-0 flex-1 space-y-1 overflow-y-auto'>
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className='group flex items-center gap-1 rounded-lg hover:bg-muted'
+                >
+                  <button
+                    type='button'
+                    className={`min-w-0 flex-1 truncate rounded-lg px-3 py-2 text-left text-sm ${
+                      session.id === activeSessionId
+                        ? 'bg-muted font-medium text-foreground'
+                        : 'text-muted-foreground'
+                    }`}
+                    onClick={() => switchSession(session.id)}
+                    disabled={isGenerating}
+                  >
+                    {session.title === 'New conversation'
+                      ? t('New conversation')
+                      : session.title}
+                  </button>
+                  <Button
+                    size='icon-xs'
+                    variant='ghost'
+                    onClick={() => deleteSession(session.id)}
+                    disabled={isGenerating}
+                    aria-label={t('Delete Conversation')}
+                    className='opacity-0 group-hover:opacity-100 max-md:opacity-100'
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </aside>
 
-      <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-        <div className='mx-auto flex w-full max-w-4xl justify-end gap-2 px-4 py-2'>
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={() => createNewSession()}
-            disabled={isGenerating}
-            className='md:hidden'
-          >
-            <MessageSquarePlus />
-            {t('New Conversation')}
-          </Button>
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={handleExportMarkdown}
-            disabled={!hasMessages}
-          >
-            <Download />
-            {t('Export Markdown')}
-          </Button>
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={handleShareConversation}
-            disabled={!hasMessages}
-          >
-            <Link2 />
-            {t('Share Link')}
-          </Button>
-          <Button
-            size='sm'
-            variant='destructive'
-            onClick={handleClearMessages}
-            disabled={!hasMessages || isGenerating}
-          >
-            <Trash2 />
-            {t('Clear Conversation')}
-          </Button>
-        </div>
+          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+            <div className='mx-auto flex w-full max-w-4xl justify-end gap-2 px-4 py-2'>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => createNewSession()}
+                disabled={isGenerating}
+                className='md:hidden'
+              >
+                <MessageSquarePlus />
+                {t('New Conversation')}
+              </Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={handleExportMarkdown}
+                disabled={!hasMessages}
+              >
+                <Download />
+                {t('Export Markdown')}
+              </Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={handleShareConversation}
+                disabled={!hasMessages}
+              >
+                <Link2 />
+                {t('Share Link')}
+              </Button>
+              <Button
+                size='sm'
+                variant='destructive'
+                onClick={handleClearMessages}
+                disabled={!hasMessages || isGenerating}
+              >
+                <Trash2 />
+                {t('Clear Conversation')}
+              </Button>
+            </div>
 
-        {/* Full-width scroll container: scrolling works even over side whitespace */}
-        <div className='flex flex-1 flex-col overflow-hidden'>
-          <PlaygroundChat
-            messages={messages}
-            onCopyMessage={handleCopyMessage}
-            onRegenerateMessage={handleRegenerateMessage}
-            onEditMessage={handleEditMessage}
-            onDeleteMessage={handleDeleteMessage}
-            isGenerating={isGenerating}
-            editingKey={editingMessageKey}
-            onCancelEdit={handleEditOpenChange}
-            onSaveEdit={(newContent) => applyEdit(newContent, false)}
-            onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
-          />
-        </div>
+            <div className='flex flex-1 flex-col overflow-hidden'>
+              <PlaygroundChat
+                messages={messages}
+                onCopyMessage={handleCopyMessage}
+                onRegenerateMessage={handleRegenerateMessage}
+                onEditMessage={handleEditMessage}
+                onDeleteMessage={handleDeleteMessage}
+                isGenerating={isGenerating}
+                editingKey={editingMessageKey}
+                onCancelEdit={handleEditOpenChange}
+                onSaveEdit={(newContent) => applyEdit(newContent, false)}
+                onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
+              />
+            </div>
 
-        {/* Input area: center content and constrain to the same container width */}
-        <div className='mx-auto w-full max-w-4xl'>
-          <PlaygroundInput
-            disabled={isGenerating}
-            groups={groups}
-            groupValue={config.group}
-            isGenerating={isGenerating}
-            isModelLoading={isLoadingModels}
-            modelValue={config.model}
-            models={models}
-            onGroupChange={(value) => updateConfig('group', value)}
-            onModelChange={(value) => updateConfig('model', value)}
-            onStop={stopGeneration}
-            onSubmit={handleSendMessage}
-          />
+            <div className='mx-auto w-full max-w-4xl'>
+              <PlaygroundInput
+                disabled={isGenerating}
+                groups={groups}
+                groupValue={config.group}
+                isGenerating={isGenerating}
+                isModelLoading={isLoadingModels}
+                modelValue={config.model}
+                models={models}
+                onGroupChange={(value) => updateConfig('group', value)}
+                onModelChange={(value) => updateConfig('model', value)}
+                onStop={stopGeneration}
+                onSubmit={handleSendMessage}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </TabsContent>
+
+      <TabsContent value='image' className='min-h-0 overflow-hidden'>
+        <PlaygroundImageGenerator
+          groups={groups}
+          groupValue={config.group}
+          isModelLoading={isLoadingModels}
+          modelValue={config.model}
+          models={models}
+          onGroupChange={(value) => updateConfig('group', value)}
+          onModelChange={(value) => updateConfig('model', value)}
+        />
+      </TabsContent>
+
+      <TabsContent value='speech' className='min-h-0 overflow-hidden'>
+        <PlaygroundSpeechGenerator
+          groups={groups}
+          groupValue={config.group}
+          isModelLoading={isLoadingModels}
+          modelValue={config.model}
+          models={models}
+          onGroupChange={(value) => updateConfig('group', value)}
+          onModelChange={(value) => updateConfig('model', value)}
+        />
+      </TabsContent>
+    </Tabs>
   )
 }

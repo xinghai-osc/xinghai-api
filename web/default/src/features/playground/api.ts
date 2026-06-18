@@ -25,6 +25,7 @@ import type {
   ImageGenerationResponse,
   ModelOption,
   GroupOption,
+  SpeechGenerationRequest,
 } from './types'
 
 /**
@@ -49,6 +50,16 @@ export async function generateImage(
   const res = await api.post(endpoint, payload, {
     skipErrorHandler: true,
   } as Record<string, unknown>)
+  return res.data
+}
+
+export async function generateSpeech(
+  payload: SpeechGenerationRequest
+): Promise<Blob> {
+  const res = await api.post(API_ENDPOINTS.SPEECH_GENERATION, payload, {
+    responseType: 'blob',
+    skipErrorHandler: true,
+  })
   return res.data
 }
 

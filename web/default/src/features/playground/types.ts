@@ -139,6 +139,16 @@ export interface ImageGenerationResponse {
   data?: ImageData[]
 }
 
+export interface SpeechGenerationRequest {
+  model: string
+  group?: string
+  input: string
+  voice: string
+  instructions?: string
+  response_format?: string
+  speed?: number
+}
+
 // Configuration types
 export interface PlaygroundConfig {
   model: string

@@ -20,6 +20,10 @@ func PlaygroundImage(c *gin.Context) {
 	PlaygroundRelay(c, types.RelayFormatOpenAIImage)
 }
 
+func PlaygroundSpeech(c *gin.Context) {
+	PlaygroundRelay(c, types.RelayFormatOpenAIAudio)
+}
+
 func PlaygroundRelay(c *gin.Context, relayFormat types.RelayFormat) {
 	var newAPIError *types.NewAPIError
 

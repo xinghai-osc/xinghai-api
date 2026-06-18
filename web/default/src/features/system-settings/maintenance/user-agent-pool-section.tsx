@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -116,17 +116,11 @@ export function UserAgentPoolSection(props: UserAgentPoolSectionProps) {
     defaultValues: formDefaults,
   })
 
-  const baselineRef = useRef<FlatUserAgentPoolDefaults>({
-    'user_agent_pool_setting.enabled': props.defaultValues[
-      'user_agent_pool_setting.enabled'
-    ],
-    'user_agent_pool_setting.pools': JSON.stringify(
-      parsePools(props.defaultValues['user_agent_pool_setting.pools'] || '[]')
-    ),
-  })
-  const baselineSerializedRef = useRef<string>(
-    JSON.stringify(baselineRef.current)
+  const [initialBaseline] = useState(() =>
+    normalizeFormValues(buildFormDefaults(props.defaultValues))
   )
+  const baselineRef = useRef<FlatUserAgentPoolDefaults>(initialBaseline)
+  const baselineSerializedRef = useRef<string>(JSON.stringify(initialBaseline))
 
   useEffect(() => {
     const normalized = normalizeFormValues(buildFormDefaults(props.defaultValues))
@@ -137,35 +131,42 @@ export function UserAgentPoolSection(props: UserAgentPoolSectionProps) {
     form.reset(buildFormDefaults(props.defaultValues))
   }, [props.defaultValues, form])
 
-  const onSubmit = async (values: UserAgentPoolFormValues) => {
-    const normalized = normalizeFormValues(values)
-    const changedKeys = (
-      Object.keys(normalized) as Array<keyof FlatUserAgentPoolDefaults>
-    ).filter((key) => normalized[key] !== baselineRef.current[key])
+  const onSubmit = useCallback(
+    async (values: UserAgentPoolFormValues) => {
+      const normalized = normalizeFormValues(values)
+      const changedKeys = (
+        Object.keys(normalized) as Array<keyof FlatUserAgentPoolDefaults>
+      ).filter((key) => normalized[key] !== baselineRef.current[key])
 
-    if (changedKeys.length === 0) {
-      toast.info(t('No changes to save'))
-      return
-    }
+      if (changedKeys.length === 0) {
+        toast.info(t('No changes to save'))
+        return
+      }
 
-    for (const key of changedKeys) {
-      await updateOption.mutateAsync({
-        key,
-        value: normalized[key],
-      })
-    }
+      for (const key of changedKeys) {
+        await updateOption.mutateAsync({
+          key,
+          value: normalized[key],
+        })
+      }
 
-    baselineRef.current = normalized
-    baselineSerializedRef.current = JSON.stringify(normalized)
-    form.reset(buildFormDefaults(normalized))
-  }
+      baselineRef.current = normalized
+      baselineSerializedRef.current = JSON.stringify(normalized)
+      form.reset(buildFormDefaults(normalized))
+    },
+    [form, t, updateOption]
+  )
+
+  const submitForm = useCallback(() => {
+    void form.handleSubmit(onSubmit)()
+  }, [form, onSubmit])
 
   return (
     <SettingsSection title={t('User-Agent Pool Settings')}>
       <Form {...form}>
-        <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
+        <SettingsForm onSubmit={submitForm}>
           <SettingsPageFormActions
-            onSave={form.handleSubmit(onSubmit)}
+            onSave={submitForm}
             isSaving={updateOption.isPending}
           />
 
