@@ -17,10 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Link } from '@tanstack/react-router'
+import { Crown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getSelf } from '@/lib/api'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { Button } from '@/components/ui/button'
+import { TitledCard } from '@/components/ui/titled-card'
 import { SectionPageLayout } from '@/components/layout'
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
@@ -28,7 +32,6 @@ import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
 import { TransferDialog } from './components/dialogs/transfer-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
-import { SubscriptionPlansCard } from './components/subscription-plans-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
 import { DEFAULT_DISCOUNT_RATE } from './constants'
 import {
@@ -72,7 +75,6 @@ export function Wallet(props: WalletProps) {
   const [creemDialogOpen, setCreemDialogOpen] = useState(false)
   const [selectedCreemProduct, setSelectedCreemProduct] =
     useState<CreemProduct | null>(null)
-  const [showSubscriptionPanel, setShowSubscriptionPanel] = useState(true)
 
   const { status } = useStatus()
   const { currency } = useSystemConfig()
@@ -250,13 +252,6 @@ export function Wallet(props: WalletProps) {
     return topupInfo?.discount?.[topupAmount] || DEFAULT_DISCOUNT_RATE
   }, [topupInfo, topupAmount])
 
-  const handleSubscriptionAvailabilityChange = useCallback(
-    (available: boolean) => {
-      setShowSubscriptionPanel(available)
-    },
-    []
-  )
-
   return (
     <>
       <SectionPageLayout>
@@ -265,13 +260,7 @@ export function Wallet(props: WalletProps) {
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
             <WalletStatsCard user={user} loading={userLoading} />
 
-            <div
-              className={
-                showSubscriptionPanel
-                  ? 'grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
-                  : 'grid gap-4'
-              }
-            >
+            <div className='grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)] xl:items-start'>
               <div id='wallet-add-funds' className='scroll-mt-4'>
                 <RechargeFormCard
                   topupInfo={topupInfo}
@@ -306,12 +295,16 @@ export function Wallet(props: WalletProps) {
                 />
               </div>
 
-              <SubscriptionPlansCard
-                topupInfo={topupInfo}
-                onAvailabilityChange={handleSubscriptionAvailabilityChange}
-                userQuota={user?.quota}
-                onPurchaseSuccess={fetchUser}
-              />
+              <TitledCard
+                title={t('Subscription Plans')}
+                description={t('Subscribe to a plan for model access')}
+                icon={<Crown className='h-4 w-4' />}
+                disableHoverEffect
+              >
+                <Button className='w-full' render={<Link to='/subscriptions/purchase' />}>
+                  {t('Subscribe Now')}
+                </Button>
+              </TitledCard>
             </div>
 
             <AffiliateRewardsCard
