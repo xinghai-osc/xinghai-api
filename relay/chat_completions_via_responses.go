@@ -147,6 +147,42 @@ func chatCompletionsViaResponses(c *gin.Context, info *relaycommon.RelayInfo, ad
 	httpResp = resp.(*http.Response)
 	info.IsStream = info.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
 	if httpResp.StatusCode != http.StatusOK {
+		if httpResp.StatusCode == http.StatusNotFound {
+			service.CloseResponseBodyGracefully(httpResp)
+			info.RelayMode = savedRelayMode
+			info.RequestURLPath = savedRequestURLPath
+
+			body, size, closer, err := relaycommon.NewOutboundJSONBody(chatJSON)
+			if err != nil {
+				return nil, types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+			}
+			defer closer.Close()
+			info.UpstreamRequestBodySize = size
+
+			resp, err = adaptor.DoRequest(c, info, body)
+			if err != nil {
+				return nil, types.NewOpenAIError(err, types.ErrorCodeDoRequestFailed, http.StatusInternalServerError)
+			}
+			if resp == nil {
+				return nil, types.NewOpenAIError(nil, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+			}
+
+			httpResp = resp.(*http.Response)
+			info.IsStream = info.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
+			if httpResp.StatusCode != http.StatusOK {
+				newApiErr := service.RelayErrorHandler(c.Request.Context(), httpResp, false)
+				service.ResetStatusCode(newApiErr, statusCodeMappingStr)
+				return nil, newApiErr
+			}
+
+			usage, newApiErr := adaptor.DoResponse(c, httpResp, info)
+			if newApiErr != nil {
+				service.ResetStatusCode(newApiErr, statusCodeMappingStr)
+				return nil, newApiErr
+			}
+			return usage.(*dto.Usage), nil
+		}
+
 		newApiErr := service.RelayErrorHandler(c.Request.Context(), httpResp, false)
 		service.ResetStatusCode(newApiErr, statusCodeMappingStr)
 		return nil, newApiErr
