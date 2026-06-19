@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/relay/channel"
@@ -16,6 +17,7 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/openai"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
+	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
@@ -104,10 +106,14 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 	if err != nil {
 		return nil, err
 	}
-	if converter != dto.AdvancedCustomConverterNone {
+	switch converter {
+	case dto.AdvancedCustomConverterNone:
+		return a.convertOpenAICompatibleResponsesRequest(c, info, request)
+	case dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions:
+		return service.ResponsesRequestToChatCompletionsRequest(&request)
+	default:
 		return nil, fmt.Errorf("converter %q does not support OpenAI Responses requests", converter)
 	}
-	return a.convertOpenAICompatibleResponsesRequest(c, info, request)
 }
 
 func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.EmbeddingRequest) (any, error) {
@@ -221,6 +227,11 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 			return openai.OaiResponsesToChatStreamHandler(c, info, resp)
 		}
 		return openai.OaiResponsesToChatHandler(c, info, resp)
+	case dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions:
+		if info.IsStream {
+			return a.chatCompletionsToResponsesStreamResponse(c, resp, info)
+		}
+		return a.chatCompletionsToResponsesResponse(c, resp, info)
 	default:
 		return nil, types.NewOpenAIError(fmt.Errorf("unsupported advanced custom converter: %s", a.converter), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
@@ -247,6 +258,114 @@ func (a *Adaptor) doNativeResponse(c *gin.Context, resp *http.Response, info *re
 	default:
 		return a.openaiAdaptor.DoResponse(c, resp, info)
 	}
+}
+
+func (a *Adaptor) chatCompletionsToResponsesResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+	defer service.CloseResponseBodyGracefully(resp)
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+	}
+	var chatResp dto.OpenAITextResponse
+	if err := common.Unmarshal(responseBody, &chatResp); err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+	}
+	if oaiError := chatResp.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
+		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
+	}
+
+	responsesResp, usage, err := service.ChatCompletionsResponseToResponsesResponse(&chatResp)
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+	}
+	responseBody, err = common.Marshal(responsesResp)
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeJsonMarshalFailed, http.StatusInternalServerError)
+	}
+	service.IOCopyBytesGracefully(c, resp, responseBody)
+	return usage, nil
+}
+
+func (a *Adaptor) chatCompletionsToResponsesStreamResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+	defer service.CloseResponseBodyGracefully(resp)
+
+	usage := &dto.Usage{}
+	var responseText strings.Builder
+	responseID := helper.GetResponseID(c)
+	createdAt := common.GetTimestamp()
+	model := info.UpstreamModelName
+
+	header := dto.ResponsesStreamResponse{
+		Type: "response.created",
+		Response: &dto.OpenAIResponsesResponse{
+			ID:        responseID,
+			Object:    "response",
+			CreatedAt: int(createdAt),
+			Model:     model,
+		},
+	}
+	if data, err := common.Marshal(header); err == nil {
+		helper.ResponseChunkData(c, header, string(data))
+	}
+
+	var streamErr *types.NewAPIError
+	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
+		var chunk dto.ChatCompletionsStreamResponse
+		if err := common.UnmarshalJsonStr(data, &chunk); err != nil {
+			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			sr.Stop(streamErr)
+			return
+		}
+		if chunk.Model != "" {
+			model = chunk.Model
+		}
+		if chunk.Created != 0 {
+			createdAt = chunk.Created
+		}
+		if chunk.Usage != nil {
+			usage = chunk.Usage
+		}
+		for _, choice := range chunk.Choices {
+			if content := choice.Delta.GetContentString(); content != "" {
+				responseText.WriteString(content)
+				streamResp := dto.ResponsesStreamResponse{Type: "response.output_text.delta", Delta: content}
+				if data, err := common.Marshal(streamResp); err == nil {
+					helper.ResponseChunkData(c, streamResp, string(data))
+				}
+			}
+		}
+	})
+	if streamErr != nil {
+		return nil, streamErr
+	}
+	if usage == nil || usage.TotalTokens == 0 {
+		usage = service.ResponseText2Usage(c, responseText.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
+	}
+	completed := dto.ResponsesStreamResponse{
+		Type: "response.completed",
+		Response: &dto.OpenAIResponsesResponse{
+			ID:        responseID,
+			Object:    "response",
+			CreatedAt: int(createdAt),
+			Model:     model,
+			Usage:     usage,
+			Output: []dto.ResponsesOutput{
+				{
+					Type:   "message",
+					Status: "completed",
+					Role:   "assistant",
+					Content: []dto.ResponsesOutputContent{
+						{Type: "output_text", Text: responseText.String()},
+					},
+				},
+			},
+		},
+	}
+	if data, err := common.Marshal(completed); err == nil {
+		helper.ResponseChunkData(c, completed, string(data))
+	}
+	return usage, nil
 }
 
 func (a *Adaptor) resolveForConversion(c *gin.Context, info *relaycommon.RelayInfo) (string, error) {
