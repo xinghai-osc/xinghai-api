@@ -604,7 +604,8 @@ func GetUserModels(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	var updatedUser model.User
 	err := json.NewDecoder(c.Request.Body).Decode(&updatedUser)
-	if err != nil || updatedUser.Id == 0 {
+	updatedUser.Username = strings.TrimSpace(updatedUser.Username)
+	if err != nil || updatedUser.Id == 0 || updatedUser.Username == "" {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
@@ -623,6 +624,15 @@ func UpdateUser(c *gin.Context) {
 	myRole := c.GetInt("role")
 	if !canManageTargetRole(myRole, originUser.Role) {
 		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+	var usernameCount int64
+	if err := model.DB.Unscoped().Model(&model.User{}).Where("username = ? AND id <> ?", updatedUser.Username, updatedUser.Id).Count(&usernameCount).Error; err != nil {
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	if usernameCount > 0 {
+		common.ApiErrorI18n(c, i18n.MsgUserExists)
 		return
 	}
 	if !canManageTargetRole(myRole, updatedUser.Role) {

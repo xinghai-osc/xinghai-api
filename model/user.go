@@ -582,6 +582,13 @@ func (user *User) Edit(updatePassword bool) error {
 	if err = DB.Model(user).Updates(updates).Error; err != nil {
 		return err
 	}
+	user.Username = newUser.Username
+	user.DisplayName = newUser.DisplayName
+	user.Group = newUser.Group
+	user.Remark = newUser.Remark
+	if updatePassword {
+		user.Password = newUser.Password
+	}
 
 	// Update cache
 	return updateUserCache(*user)
