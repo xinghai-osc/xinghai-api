@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -52,6 +52,7 @@ import {
   sideDrawerFormClassName,
   sideDrawerHeaderClassName,
 } from '@/components/drawer-layout'
+import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import {
@@ -63,7 +64,7 @@ import {
   deleteUserSubscription,
 } from '../../api'
 import { formatQuota } from '@/lib/format'
-import { formatTimestamp } from '../../lib'
+import { formatDuration, formatResetPeriod, formatTimestamp } from '../../lib'
 import type { PlanRecord, UserSubscriptionRecord } from '../../types'
 
 interface Props {
@@ -143,6 +144,28 @@ export function UserSubscriptionsDialog(props: Props) {
     })
     return map
   }, [plans])
+
+  const selectedPlan = useMemo(
+    () => plans.find((p) => String(p.plan.id) === selectedPlanId)?.plan,
+    [plans, selectedPlanId]
+  )
+
+  const selectedPlanInfo = useMemo(() => {
+    if (!selectedPlan) return []
+    const totalAmount = Number(selectedPlan.total_amount || 0)
+    return [
+      `${t('Validity Period')}: ${formatDuration(selectedPlan, t)}`,
+      formatResetPeriod(selectedPlan, t) !== t('No Reset')
+        ? `${t('Quota Reset')}: ${formatResetPeriod(selectedPlan, t)}`
+        : null,
+      totalAmount > 0
+        ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
+        : `${t('Total Quota')}: ${t('Unlimited')}`,
+      selectedPlan.max_purchase_per_user > 0
+        ? `${t('Purchase Limit')}: ${selectedPlan.max_purchase_per_user}`
+        : null,
+    ].filter(Boolean) as string[]
+  }, [selectedPlan, t])
 
   const loadData = useCallback(async () => {
     if (!props.user?.id) return
@@ -263,43 +286,86 @@ export function UserSubscriptionsDialog(props: Props) {
           </SheetHeader>
 
           <div className={sideDrawerFormClassName()}>
-            <div className='flex gap-2'>
-              <Select
-                items={[
-                  ...plans.map((p) => ({
-                    value: String(p.plan.id),
-                    label: (
-                      <>
-                        {p.plan.title}($
-                        {Number(p.plan.price_amount || 0).toFixed(2)})
-                      </>
-                    ),
-                  })),
-                ]}
-                value={selectedPlanId}
-                onValueChange={(v) => v !== null && setSelectedPlanId(v)}
-              >
-                <SelectTrigger className='flex-1'>
-                  <SelectValue placeholder={t('Select subscription plan')} />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false}>
-                  <SelectGroup>
-                    {plans.map((p) => (
-                      <SelectItem key={p.plan.id} value={String(p.plan.id)}>
-                        {p.plan.title} ($
-                        {Number(p.plan.price_amount || 0).toFixed(2)})
-                      </SelectItem>
+            <div className='space-y-3 rounded-lg border p-3'>
+              <div className='flex gap-2'>
+                <Select
+                  items={[
+                    ...plans.map((p) => ({
+                      value: String(p.plan.id),
+                      label: (
+                        <>
+                          {p.plan.title}($
+                          {Number(p.plan.price_amount || 0).toFixed(2)})
+                        </>
+                      ),
+                    })),
+                  ]}
+                  value={selectedPlanId}
+                  onValueChange={(v) => v !== null && setSelectedPlanId(v)}
+                >
+                  <SelectTrigger className='flex-1'>
+                    <SelectValue placeholder={t('Select subscription plan')} />
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    <SelectGroup>
+                      {plans.map((p) => (
+                        <SelectItem key={p.plan.id} value={String(p.plan.id)}>
+                          {p.plan.title} ($
+                          {Number(p.plan.price_amount || 0).toFixed(2)})
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleCreate}
+                  disabled={creating || !selectedPlanId}
+                >
+                  <Plus className='mr-1 h-4 w-4' />
+                  {t('Add subscription')}
+                </Button>
+              </div>
+
+              {selectedPlan && (
+                <div className='space-y-2 text-sm'>
+                  <div className='flex items-start justify-between gap-3'>
+                    <div className='min-w-0'>
+                      <div className='truncate font-medium'>
+                        {selectedPlan.title}
+                      </div>
+                      {selectedPlan.subtitle && (
+                        <div className='text-muted-foreground truncate text-xs'>
+                          {selectedPlan.subtitle}
+                        </div>
+                      )}
+                    </div>
+                    <div className='text-primary shrink-0 font-semibold'>
+                      ${Number(selectedPlan.price_amount || 0).toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div className='grid gap-1.5 sm:grid-cols-2'>
+                    {selectedPlanInfo.map((label) => (
+                      <div
+                        key={label}
+                        className='text-muted-foreground flex items-center gap-2 text-xs'
+                      >
+                        <Check className='text-primary h-3 w-3 shrink-0' />
+                        <span>{label}</span>
+                      </div>
                     ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleCreate}
-                disabled={creating || !selectedPlanId}
-              >
-                <Plus className='mr-1 h-4 w-4' />
-                {t('Add subscription')}
-              </Button>
+                    {selectedPlan.upgrade_group && (
+                      <div className='text-muted-foreground flex items-center gap-2 text-xs'>
+                        <Check className='text-primary h-3 w-3 shrink-0' />
+                        <span className='flex items-center gap-1.5'>
+                          {t('Upgrade Group')}:
+                          <GroupBadge group={selectedPlan.upgrade_group} />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <StaticDataTable

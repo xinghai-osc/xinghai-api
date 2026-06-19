@@ -18,6 +18,7 @@ type RetryParam struct {
 	Ctx             *gin.Context
 	TokenGroup      string
 	ModelName       string
+	RequestPath     string
 	Retry           *int
 	RelayFormat     types.RelayFormat
 	AllowedApiTypes map[int]bool
@@ -124,7 +125,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			}
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityRetry: %d", autoGroup, priorityRetry)
 
-			channel, _ = model.GetRandomSatisfiedChannelWithCondition(autoGroup, param.ModelName, priorityRetry, param.channelSatisfied)
+			channel, _ = model.GetRandomSatisfiedChannelWithCondition(autoGroup, param.ModelName, priorityRetry, param.RequestPath, param.channelSatisfied)
 			if channel == nil {
 				// Current group has no available channel for this model, try next group
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
@@ -162,7 +163,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			break
 		}
 	} else {
-		channel, err = model.GetRandomSatisfiedChannelWithCondition(param.TokenGroup, param.ModelName, param.GetRetry(), param.channelSatisfied)
+		channel, err = model.GetRandomSatisfiedChannelWithCondition(param.TokenGroup, param.ModelName, param.GetRetry(), param.RequestPath, param.channelSatisfied)
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}
@@ -179,10 +180,10 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 		if param.TokenGroup == "auto" {
 			// auto 分组在上方已遍历过；此处对当前 selectGroup 直接再尝试一次
 			if selectGroup != "" {
-				channel, _ = model.GetRandomSatisfiedChannelWithCondition(selectGroup, param.ModelName, param.GetRetry(), fallbackParam.channelSatisfied)
+				channel, _ = model.GetRandomSatisfiedChannelWithCondition(selectGroup, param.ModelName, param.GetRetry(), fallbackParam.RequestPath, fallbackParam.channelSatisfied)
 			}
 		} else {
-			channel, err = model.GetRandomSatisfiedChannelWithCondition(param.TokenGroup, param.ModelName, param.GetRetry(), fallbackParam.channelSatisfied)
+			channel, err = model.GetRandomSatisfiedChannelWithCondition(param.TokenGroup, param.ModelName, param.GetRetry(), fallbackParam.RequestPath, fallbackParam.channelSatisfied)
 			if err != nil {
 				return nil, param.TokenGroup, err
 			}

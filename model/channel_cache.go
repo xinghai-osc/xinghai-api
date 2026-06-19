@@ -11,12 +11,16 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 )
 
 var group2model2channels map[string]map[string][]int // enabled channel
 var channelsIDM map[int]*Channel                     // all channels include disabled
+// channel2advancedCustomConfig caches parsed Advanced Custom (type 58) configs so
+// path-aware selection avoids re-parsing JSON per request. Refreshed on full sync.
+var channel2advancedCustomConfig map[int]*dto.AdvancedCustomConfig
 var channelSyncLock sync.RWMutex
 
 func InitChannelCache() {
@@ -24,10 +28,16 @@ func InitChannelCache() {
 		return
 	}
 	newChannelId2channel := make(map[int]*Channel)
+	newChannel2advancedCustomConfig := make(map[int]*dto.AdvancedCustomConfig)
 	var channels []*Channel
 	DB.Find(&channels)
 	for _, channel := range channels {
 		newChannelId2channel[channel.Id] = channel
+		if channel.Type == constant.ChannelTypeAdvancedCustom {
+			if config := channel.GetOtherSettings().AdvancedCustom; config != nil {
+				newChannel2advancedCustomConfig[channel.Id] = config
+			}
+		}
 	}
 	var abilities []*Ability
 	DB.Find(&abilities)
@@ -82,6 +92,7 @@ func InitChannelCache() {
 		}
 	}
 	channelsIDM = newChannelId2channel
+	channel2advancedCustomConfig = newChannel2advancedCustomConfig
 	channelSyncLock.Unlock()
 	common.SysLog("channels synced from database")
 }
@@ -94,26 +105,26 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
-	return GetRandomSatisfiedChannelWithCondition(group, model, retry, nil)
+func GetRandomSatisfiedChannel(group string, model string, retry int, requestPath string) (*Channel, error) {
+	return GetRandomSatisfiedChannelWithCondition(group, model, retry, requestPath, nil)
 }
 
-func GetRandomSatisfiedChannelWithCondition(group string, model string, retry int, condition func(*Channel) bool) (*Channel, error) {
+func GetRandomSatisfiedChannelWithCondition(group string, model string, retry int, requestPath string, condition func(*Channel) bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannelWithCondition(group, model, retry, condition)
+		return GetChannelWithCondition(group, model, retry, requestPath, condition)
 	}
 
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
 
 	// First, try to find channels with the exact model name.
-	channels := filterChannelsByCondition(group2model2channels[group][model], condition)
+	channels := filterChannels(group2model2channels[group][model], requestPath, condition)
 
 	// If no channels found, try to find channels with the normalized model name.
 	if len(channels) == 0 {
 		normalizedModel := ratio_setting.FormatMatchingModelName(model)
-		channels = filterChannelsByCondition(group2model2channels[group][normalizedModel], condition)
+		channels = filterChannels(group2model2channels[group][normalizedModel], requestPath, condition)
 	}
 
 	if len(channels) == 0 {
@@ -195,16 +206,29 @@ func GetRandomSatisfiedChannelWithCondition(group string, model string, retry in
 	return nil, errors.New("channel not found")
 }
 
-func filterChannelsByCondition(channelIds []int, condition func(*Channel) bool) []int {
-	if len(channelIds) == 0 || condition == nil {
-		return channelIds
+// filterChannels restricts candidates by request path and optional caller condition.
+// Caller must hold channelSyncLock (read lock). The cached slice is never mutated.
+func filterChannels(channels []int, requestPath string, condition func(*Channel) bool) []int {
+	if len(channels) == 0 {
+		return channels
 	}
-	filtered := make([]int, 0, len(channelIds))
-	for _, channelId := range channelIds {
+	filtered := make([]int, 0, len(channels))
+	for _, channelId := range channels {
 		channel, ok := channelsIDM[channelId]
-		if ok && condition(channel) {
+		if !ok {
 			filtered = append(filtered, channelId)
+			continue
 		}
+		if condition != nil && !condition(channel) {
+			continue
+		}
+		if requestPath != "" && channel.Type == constant.ChannelTypeAdvancedCustom {
+			config := channel2advancedCustomConfig[channelId]
+			if config == nil || !config.SupportsPath(requestPath) {
+				continue
+			}
+		}
+		filtered = append(filtered, channelId)
 	}
 	return filtered
 }
