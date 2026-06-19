@@ -1,6 +1,7 @@
 package claude
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -328,4 +329,46 @@ func TestRequestOpenAI2ClaudeMessage_ClaudeOpus48ThinkingUsesAdaptiveHighEffort(
 	require.Nil(t, claudeRequest.Temperature)
 	require.Nil(t, claudeRequest.TopP)
 	require.Nil(t, claudeRequest.TopK)
+}
+
+func TestRequestOpenAI2ClaudeMessage_PreservesTextCacheControl(t *testing.T) {
+	cacheControl := json.RawMessage(`{"type":"ephemeral"}`)
+	request := dto.GeneralOpenAIRequest{
+		Model: "claude-3-5-sonnet",
+		Messages: []dto.Message{
+			{
+				Role: "system",
+				Content: []any{
+					map[string]any{
+						"type":          "text",
+						"text":          "system prompt",
+						"cache_control": cacheControl,
+					},
+				},
+			},
+			{
+				Role: "user",
+				Content: []any{
+					map[string]any{
+						"type":          "text",
+						"text":          "cached user prompt",
+						"cache_control": cacheControl,
+					},
+				},
+			},
+		},
+	}
+
+	claudeRequest, err := RequestOpenAI2ClaudeMessage(nil, request)
+	require.NoError(t, err)
+	systemContent, ok := claudeRequest.System.([]dto.ClaudeMediaMessage)
+	require.True(t, ok)
+	require.Len(t, systemContent, 1)
+	require.JSONEq(t, `{"type":"ephemeral"}`, string(systemContent[0].CacheControl))
+
+	require.Len(t, claudeRequest.Messages, 1)
+	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	require.True(t, ok)
+	require.Len(t, content, 1)
+	require.JSONEq(t, `{"type":"ephemeral"}`, string(content[0].CacheControl))
 }

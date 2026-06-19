@@ -1,6 +1,7 @@
 package advancedcustom
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -277,6 +278,45 @@ func TestAdaptorMatchesGeminiIncomingPathTemplate(t *testing.T) {
 			assert.Equal(t, tt.wantRequestPath, parsedURL.Path)
 		})
 	}
+}
+
+func TestAdaptorOpenAIToAnthropicPreservesTextCacheControl(t *testing.T) {
+	adaptor := &Adaptor{}
+	info := advancedCustomRelayInfo(&dto.AdvancedCustomConfig{
+		Routes: []dto.AdvancedCustomRoute{
+			{
+				IncomingPath: "/v1/chat/completions",
+				UpstreamPath: "https://upstream.example/v1/messages",
+				Converter:    dto.AdvancedCustomConverterOpenAIChatCompletionsToAnthropicMessages,
+			},
+		},
+	})
+	cacheControl := json.RawMessage(`{"type":"ephemeral"}`)
+	request := &dto.GeneralOpenAIRequest{
+		Model: "claude-3-5-sonnet",
+		Messages: []dto.Message{
+			{
+				Role: "user",
+				Content: []any{
+					map[string]any{
+						"type":          "text",
+						"text":          "cached prompt",
+						"cache_control": cacheControl,
+					},
+				},
+			},
+		},
+	}
+
+	converted, err := adaptor.ConvertOpenAIRequest(advancedCustomGinContext("/v1/chat/completions"), info, request)
+	require.NoError(t, err)
+	claudeRequest, ok := converted.(*dto.ClaudeRequest)
+	require.True(t, ok)
+	require.Len(t, claudeRequest.Messages, 1)
+	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	require.True(t, ok)
+	require.Len(t, content, 1)
+	require.JSONEq(t, `{"type":"ephemeral"}`, string(content[0].CacheControl))
 }
 
 func advancedCustomRelayInfo(config *dto.AdvancedCustomConfig) *relaycommon.RelayInfo {
