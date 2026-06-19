@@ -4219,6 +4219,8 @@
     "Worker地址": "Địa chỉ Worker",
     "Worker密钥": "Khóa Worker",
     "开启后，亲和到的渠道被禁用，或不再适用于当前分组/模型时，仍保留这条亲和；关闭时会删除并重新选择渠道。": "Khi bật, giữ mục ưu ái ngay cả khi kênh ưu ái bị tắt hoặc không còn dùng được cho nhóm/mô hình hiện tại. Khi tắt, mục đó sẽ bị xóa và kênh khác sẽ được chọn.",
-    "渠道禁用后保留亲和": "Giữ ưu ái khi kênh bị tắt"
+    "渠道禁用后保留亲和": "Giữ ưu ái khi kênh bị tắt",
+    "MjProxy 任务记录": "Hồ sơ tác vụ MjProxy",
+    "当前未开启 MjProxy 回调，部分项目可能无法获得绘图结果，可在运营设置中开启。": "Gọi lại MjProxy hiện tại chưa được bật, một số dự án có thể không nhận được kết quả vẽ, có thể bật trong cài đặt vận hành."
   }
 }

@@ -276,7 +276,7 @@
     "AILS": "AILS",
     "AK/SK mode: use AccessKey|SecretAccessKey|Region": "AK/SKモード: AccessKey | SecretAccessKey | Regionを使用",
     "Algorithm or model filing number": "アルゴリズムまたはモデルの届出番号",
-    "Ali": "Ali",
+    "Ali": "Alibaba Bailian",
     "Alipay": "Alipay",
     "All": "すべて",
     "All categories": "すべてのカテゴリ",
@@ -1907,7 +1907,7 @@
     "footer.columns.docs.links.installation": "インストールガイド",
     "footer.columns.docs.links.quickStart": "クイックスタート",
     "footer.columns.docs.title": "ドキュメント",
-    "footer.columns.related.links.midjourney": "Midjourney-Proxy",
+    "footer.columns.related.links.midjourney": "MjProxy",
     "footer.columns.related.links.newApiKeyTool": "new-api-key-tool",
     "footer.columns.related.links.oneApi": "1つのAPI",
     "footer.columns.related.title": "関連プロジェクト",
@@ -4945,6 +4945,13 @@
     "Use one available reset credit to refresh the current Codex usage windows.": "利用可能なリセット回数を1回使用して、現在の Codex 使用量ウィンドウを更新します。",
     "Used by route auth templates": "ルート認証テンプレートで使用",
     "Used reset credits cannot be restored.": "使用済みのリセット回数は復元できません。",
-    "View issued reset credits, grant dates, and expiration.": "発行済みリセット回数、付与日時、有効期限を表示します。"
+    "View issued reset credits, grant dates, and expiration.": "発行済みリセット回数、付与日時、有効期限を表示します。",
+    "Filter by MjProxy task ID": "MjProxyタスクIDでフィルター",
+    "History of MjProxy-style image tasks.": "MjProxyスタイルの画像タスクの履歴。",
+    "MjProxy": "MjProxy",
+    "MjProxyPlus": "MjProxyPlus",
+    "Removes MjProxy flags such as --fast, --relax, and --turbo from user prompts.": "ユーザー プロンプトから --fast、--relax、--turbo などの MjProxy フラグを削除します。",
+    "Required to expose MjProxy-style image generation to end users.": "エンドユーザーに MjProxy スタイルの画像生成を公開するために必要です。",
+    "When enabled, MjProxy callbacks are accepted (reveals server IP).": "有効にすると、MjProxy のコールバックを受け入れます (サーバーの IP を公開します)。"
   }
 }
