@@ -50,10 +50,12 @@ import {
   formatTimestamp,
   getMultiKeyStatusConfig,
   getMultiKeyConfirmMessage,
+  handleTestChannel,
   isDestructiveAction,
 } from '../../lib'
 import type {
   KeyStatus,
+  KeyTestResult,
   MultiKeyConfirmAction,
 } from '../../types'
 import { useChannels } from '../channels-provider'
@@ -89,6 +91,9 @@ export function MultiKeyManageDialog({
   const [confirmAction, setConfirmAction] =
     useState<MultiKeyConfirmAction | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
+  const [testResults, setTestResults] = useState<
+    Record<number, KeyTestResult>
+  >({})
   // Reset and load data when dialog opens
   useEffect(() => {
     if (open && currentRow) {
@@ -146,6 +151,34 @@ export function MultiKeyManageDialog({
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
     loadKeyStatus(newPage, pageSize)
+  }
+
+  const handleTestKey = async (keyIndex: number): Promise<void> => {
+    if (!currentRow) return
+
+    setTestResults((prev) => ({
+      ...prev,
+      [keyIndex]: { status: 'testing' },
+    }))
+
+    await handleTestChannel(
+      currentRow.id,
+      {
+        channelName: `${currentRow.name} #${keyIndex + 1}`,
+        keyIndex,
+      },
+      (success, responseTime, error, errorCode) => {
+        setTestResults((prev) => ({
+          ...prev,
+          [keyIndex]: {
+            status: success ? 'success' : 'error',
+            responseTime,
+            error,
+            errorCode,
+          },
+        }))
+      }
+    )
   }
 
   const performAction = async (): Promise<void> => {
@@ -394,8 +427,9 @@ export function MultiKeyManageDialog({
                       <MultiKeyTableRowActions
                         keyIndex={key.index}
                         status={key.status}
+                        testResult={testResults[key.index]}
                         onAction={setConfirmAction}
-                        onTest={() => {}}
+                        onTest={handleTestKey}
                       />
                     ),
                   },
