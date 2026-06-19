@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"html"
 	"net/http"
 	"strconv"
 	"strings"
@@ -117,6 +118,82 @@ type OptionUpdateRequest struct {
 	Value any    `json:"value"`
 }
 
+type announcementEmailItem struct {
+	Content     string `json:"content"`
+	Extra       string `json:"extra"`
+	PublishDate string `json:"publishDate"`
+	Type        string `json:"type"`
+}
+
+func parseAnnouncementEmailItems(raw string) []announcementEmailItem {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var announcements []announcementEmailItem
+	if err := common.UnmarshalJsonStr(raw, &announcements); err != nil {
+		return nil
+	}
+	return announcements
+}
+
+func announcementEmailKey(item announcementEmailItem) string {
+	return item.Content + "\x00" + item.Extra + "\x00" + item.PublishDate + "\x00" + item.Type
+}
+
+func newAnnouncementEmailItems(oldRaw string, newRaw string) []announcementEmailItem {
+	oldItems := parseAnnouncementEmailItems(oldRaw)
+	oldKeys := make(map[string]int, len(oldItems))
+	for _, item := range oldItems {
+		oldKeys[announcementEmailKey(item)]++
+	}
+
+	newItems := parseAnnouncementEmailItems(newRaw)
+	items := make([]announcementEmailItem, 0)
+	for _, item := range newItems {
+		key := announcementEmailKey(item)
+		if oldKeys[key] > 0 {
+			oldKeys[key]--
+			continue
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
+func sendAnnouncementEmails(items []announcementEmailItem) {
+	if len(items) == 0 {
+		return
+	}
+	if common.SMTPServer == "" || common.SMTPAccount == "" {
+		common.SysLog("SMTP is not configured, skip announcement emails")
+		return
+	}
+	var users []model.User
+	if err := model.DB.Model(&model.User{}).
+		Select("email").
+		Where("status = ? AND email <> ?", common.UserStatusEnabled, "").
+		Find(&users).Error; err != nil {
+		common.SysError("failed to query announcement email users: " + err.Error())
+		return
+	}
+	if len(users) == 0 {
+		return
+	}
+
+	for _, item := range items {
+		subject := "系统公告"
+		content := "<p>" + html.EscapeString(item.Content) + "</p>"
+		if strings.TrimSpace(item.Extra) != "" {
+			content += "<p>" + html.EscapeString(item.Extra) + "</p>"
+		}
+		for _, user := range users {
+			if err := common.SendEmail(subject, user.Email, content); err != nil {
+				common.SysError(fmt.Sprintf("failed to send announcement email to user email %s: %v", common.MaskEmail(user.Email), err))
+			}
+		}
+	}
+}
+
 func UpdateOption(c *gin.Context) {
 	var option OptionUpdateRequest
 	err := common.DecodeJson(c.Request.Body, &option)
@@ -149,6 +226,7 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	}
+	announcementEmailItems := []announcementEmailItem(nil)
 	switch option.Key {
 	case "GitHubOAuthEnabled":
 		if option.Value == "true" && common.GitHubClientId == "" {
@@ -332,6 +410,10 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+		common.OptionMapRWMutex.RLock()
+		oldValue := common.Interface2String(common.OptionMap[option.Key])
+		common.OptionMapRWMutex.RUnlock()
+		announcementEmailItems = newAnnouncementEmailItems(oldValue, option.Value.(string))
 	case "console_setting.faq":
 		err = console_setting.ValidateConsoleSettings(option.Value.(string), "FAQ")
 		if err != nil {
@@ -355,6 +437,9 @@ func UpdateOption(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	if len(announcementEmailItems) > 0 {
+		go sendAnnouncementEmails(announcementEmailItems)
 	}
 	// 出于安全考虑只记录被修改的配置项名称，不记录配置值（可能含密钥等敏感信息）。
 	recordManageAudit(c, "option.update", map[string]interface{}{
