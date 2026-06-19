@@ -127,7 +127,6 @@ export function PlaygroundSpeechGenerator(props: PlaygroundSpeechGeneratorProps)
         ? audio
         : new Blob([audio], { type: getAudioMimeType(responseFormat) })
       const audioUrl = URL.createObjectURL(typedAudio)
-      audioUrlsRef.current.push(audioUrl)
 
       setTurns((current) => [
         ...current,

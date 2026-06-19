@@ -17,14 +17,25 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Link2, MessageSquarePlus, Trash2 } from 'lucide-react'
+import {
+  Download,
+  ImageIcon,
+  Link2,
+  MessageSquare,
+  MessageSquarePlus,
+  Mic2,
+  Trash2,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getUserModels, getUserGroups, type UserGroupsResult } from './api'
 import { PlaygroundChat } from './components/playground-chat'
+import { PlaygroundImageGenerator } from './components/playground-image-generator'
 import { PlaygroundInput } from './components/playground-input'
+import { PlaygroundSpeechGenerator } from './components/playground-speech-generator'
 import { usePlaygroundState, useChatHandler } from './hooks'
 import {
   createUserMessage,
@@ -54,6 +65,7 @@ export function Playground(props: PlaygroundProps = {}) {
     setModels,
     setGroups,
     updateConfig,
+    updateParameterEnabled,
     clearMessages,
     createNewSession,
     switchSession,
@@ -386,8 +398,12 @@ export function Playground(props: PlaygroundProps = {}) {
                 isModelLoading={isLoadingModels}
                 modelValue={config.model}
                 models={models}
+                config={config}
+                parameterEnabled={parameterEnabled}
+                onConfigChange={updateConfig}
                 onGroupChange={(value) => updateConfig('group', value)}
                 onModelChange={(value) => updateConfig('model', value)}
+                onParameterEnabledChange={updateParameterEnabled}
                 onStop={stopGeneration}
                 onSubmit={handleSendMessage}
               />

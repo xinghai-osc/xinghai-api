@@ -31,6 +31,7 @@ import {
   NotepadTextIcon,
   CodeSquareIcon,
   GraduationCapIcon,
+  SlidersHorizontalIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -40,6 +41,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Switch } from '@/components/ui/switch'
 import {
   PromptInput,
   PromptInputButton,
@@ -50,7 +61,12 @@ import {
 } from '@/components/ai-elements/prompt-input'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { ModelGroupSelector } from '@/components/model-group-selector'
-import type { ModelOption, GroupOption } from '../types'
+import type {
+  ModelOption,
+  GroupOption,
+  PlaygroundConfig,
+  ParameterEnabled,
+} from '../types'
 
 interface PlaygroundInputProps {
   onSubmit: (text: string) => void
@@ -64,7 +80,29 @@ interface PlaygroundInputProps {
   groups: GroupOption[]
   groupValue: string
   onGroupChange: (value: string) => void
+  config: PlaygroundConfig
+  parameterEnabled: ParameterEnabled
+  onConfigChange: <K extends keyof PlaygroundConfig>(
+    key: K,
+    value: PlaygroundConfig[K]
+  ) => void
+  onParameterEnabledChange: (key: keyof ParameterEnabled, value: boolean) => void
 }
+
+type NumberParameterKey = Exclude<keyof ParameterEnabled, 'seed'>
+
+const numberParameters: Array<{
+  key: NumberParameterKey
+  min?: number
+  max?: number
+  step: number
+}> = [
+  { key: 'temperature', min: 0, max: 2, step: 0.1 },
+  { key: 'top_p', min: 0, max: 1, step: 0.1 },
+  { key: 'max_tokens', min: 1, step: 1 },
+  { key: 'frequency_penalty', min: -2, max: 2, step: 0.1 },
+  { key: 'presence_penalty', min: -2, max: 2, step: 0.1 },
+]
 
 const suggestions = [
   { icon: BarChartIcon, text: 'Analyze data', color: '#76d0eb' },
@@ -87,6 +125,10 @@ export function PlaygroundInput({
   groups,
   groupValue,
   onGroupChange,
+  config,
+  parameterEnabled,
+  onConfigChange,
+  onParameterEnabledChange,
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -109,6 +151,25 @@ export function PlaygroundInput({
 
   const handleSuggestionClick = (suggestion: string) => {
     onSubmit(suggestion)
+  }
+
+  const handleNumberParameterChange = (
+    key: NumberParameterKey,
+    value: string
+  ) => {
+    const nextValue = key === 'max_tokens' ? Number.parseInt(value, 10) : Number(value)
+    if (!Number.isFinite(nextValue)) return
+    onConfigChange(key, nextValue)
+  }
+
+  const handleSeedChange = (value: string) => {
+    if (!value.trim()) {
+      onConfigChange('seed', null)
+      return
+    }
+
+    const nextValue = Number.parseInt(value, 10)
+    if (Number.isFinite(nextValue)) onConfigChange('seed', nextValue)
   }
 
   return (
@@ -183,6 +244,96 @@ export function PlaygroundInput({
           </PromptInputTools>
 
           <div className='flex items-center gap-1.5 md:gap-2'>
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <PromptInputButton
+                    className='border font-medium'
+                    disabled={disabled}
+                    variant='outline'
+                  />
+                }
+              >
+                <SlidersHorizontalIcon size={16} />
+                <span className='hidden sm:inline'>{t('Parameters')}</span>
+                <span className='sr-only sm:hidden'>{t('Parameters')}</span>
+              </PopoverTrigger>
+              <PopoverContent align='end' className='w-80 gap-3'>
+                <PopoverHeader>
+                  <PopoverTitle>{t('Parameters')}</PopoverTitle>
+                </PopoverHeader>
+
+                <div className='flex items-center justify-between gap-3'>
+                  <Label htmlFor='playground-stream'>{t('Stream')}</Label>
+                  <Switch
+                    id='playground-stream'
+                    checked={config.stream}
+                    disabled={disabled}
+                    onCheckedChange={(checked) =>
+                      onConfigChange('stream', checked)
+                    }
+                    size='sm'
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  {numberParameters.map((parameter) => (
+                    <div className='grid grid-cols-[1fr_auto] items-center gap-2' key={parameter.key}>
+                      <div className='flex items-center gap-2'>
+                        <Switch
+                          checked={parameterEnabled[parameter.key]}
+                          disabled={disabled}
+                          onCheckedChange={(checked) =>
+                            onParameterEnabledChange(parameter.key, checked)
+                          }
+                          size='sm'
+                        />
+                        <Label className='font-normal'>
+                          {t(parameter.key)}
+                        </Label>
+                      </div>
+                      <Input
+                        className='h-7 w-24'
+                        disabled={disabled || !parameterEnabled[parameter.key]}
+                        max={parameter.max}
+                        min={parameter.min}
+                        onChange={(event) =>
+                          handleNumberParameterChange(
+                            parameter.key,
+                            event.target.value
+                          )
+                        }
+                        step={parameter.step}
+                        type='number'
+                        value={config[parameter.key]}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className='grid grid-cols-[1fr_auto] items-center gap-2'>
+                  <div className='flex items-center gap-2'>
+                    <Switch
+                      checked={parameterEnabled.seed}
+                      disabled={disabled}
+                      onCheckedChange={(checked) =>
+                        onParameterEnabledChange('seed', checked)
+                      }
+                      size='sm'
+                    />
+                    <Label className='font-normal'>{t('seed')}</Label>
+                  </div>
+                  <Input
+                    className='h-7 w-24'
+                    disabled={disabled || !parameterEnabled.seed}
+                    onChange={(event) => handleSeedChange(event.target.value)}
+                    type='number'
+                    value={config.seed ?? ''}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <ModelGroupSelector
               selectedModel={modelValue}
               models={models}
