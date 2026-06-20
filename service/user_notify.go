@@ -109,51 +109,42 @@ func wrapEmailContent(title string, bodyContent string) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>%s</title>
-    <style>
-        body { margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-        .wrapper { width: 100%%; padding: 40px 20px; box-sizing: border-box; }
-        .container { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 40px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid #f1f5f9; }
-        .header { background: linear-gradient(135deg, #334155 0%%, #475569 100%%); padding: 32px; text-align: center; position: relative; }
-        .header::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 32px; background: url("data:image/svg+xml,%%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%%3E%%3Cpath fill='%%23ffffff' fill-opacity='1' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%%3E%%3C/path%%3E%%3C/svg%%3E") no-repeat bottom; background-size: cover; }
-        .header h1 { color: #ffffff; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-        .body { padding: 32px; color: #334155; font-size: 15px; line-height: 1.7; }
-        .body p { margin: 0 0 14px; }
-        .body a { color: #4f46e5; text-decoration: none; font-weight: 500; }
-        .body a:hover { text-decoration: underline; }
-        .body strong { color: #1e293b; }
-        .alert { background: #fefce8; border: 1px solid #fef08a; border-radius: 10px; padding: 16px 20px; font-size: 14px; color: #854d0e; margin: 16px 0; }
-        .alert-error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-        .alert-success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-        .alert-info { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
-        .footer { background: #f8fafc; padding: 20px 32px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
-        .footer p { margin: 0; }
-        .footer .brand { font-weight: 600; color: #64748b; }
-        @media (max-width: 480px) {
-            .wrapper { padding: 20px 12px; }
-            .header { padding: 24px; }
-            .body { padding: 24px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>%s</title>
+<style>
+body{margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{padding:40px 20px}
+.card{max-width:480px;margin:0 auto;background:#fff;border-radius:8px;border-top:4px solid #18181b;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.brand{padding:28px 32px 0;font-size:13px;font-weight:600;color:#18181b;letter-spacing:.3px}
+.body{padding:20px 32px 32px}
+.body h1{font-size:20px;font-weight:700;color:#18181b;margin:0 0 20px;line-height:1.3}
+.body p{font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 14px}
+.body a{color:#18181b;font-weight:500;text-decoration:underline}
+.body strong{color:#18181b}
+.muted{color:#71717a;font-size:13px}
+.divider{border-top:1px solid #f4f4f5;margin:20px 0}
+.alert{padding:12px 16px;border-radius:6px;font-size:13px;margin:16px 0;line-height:1.5}
+.alert-warning{background:#fffbeb;color:#92400e;border:1px solid #fef3c7}
+.alert-error{background:#fef2f2;color:#991b1b;border:1px solid #fee2e2}
+.alert-success{background:#f0fdf4;color:#166534;border:1px solid #dcfce7}
+.alert-info{background:#eff6ff;color:#1e40af;border:1px solid #dbeafe}
+.footer{padding:20px 32px 28px;font-size:12px;color:#a1a1aa;text-align:center}
+@media(max-width:480px){.wrap{padding:20px 12px}.body{padding:20px 24px 24px}}
+</style>
 </head>
 <body>
-    <div class="wrapper">
-        <div class="container">
-            <div class="header">
-                <h1>%s</h1>
-            </div>
-            <div class="body">
-                %s
-            </div>
-            <div class="footer">
-                <p>此邮件由 <span class="brand">%s</span> 自动发送，请勿直接回复。</p>
-            </div>
-        </div>
-    </div>
+<div class="wrap">
+<div class="card">
+<div class="brand">%s</div>
+<div class="body">
+%s
+</div>
+<div class="footer">此邮件由 %s 自动发送，请勿回复。</div>
+</div>
+</div>
 </body>
-</html>`, title, title, bodyContent, common.SystemName)
+</html>`, title, common.SystemName, bodyContent, common.SystemName)
 }
 
 func sendEmailNotify(userEmail string, data dto.Notify) error {
