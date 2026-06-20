@@ -27,6 +27,7 @@ jobs:
 
     permissions:
       contents: read
+      actions: write
 
     steps:
       - name: Check out (shallow)
@@ -77,6 +78,18 @@ jobs:
             type=registry,ref=calciumion/new-api:buildcache-${{ matrix.arch }},mode=max
           provenance: false
           sbom: false
+
+      - name: Export image as tar
+        run: |
+          docker pull calciumion/new-api:${{ env.VERSION }}-${{ matrix.arch }}
+          docker save calciumion/new-api:${{ env.VERSION }}-${{ matrix.arch }} > new-api-${{ env.VERSION }}-${{ matrix.arch }}.tar
+
+      - name: Upload tar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-api-${{ env.VERSION }}-${{ matrix.arch }}
+          path: new-api-${{ env.VERSION }}-${{ matrix.arch }}.tar
+          retention-days: 30
 
   create_manifests:
     name: Create multi-arch manifests (Docker Hub)

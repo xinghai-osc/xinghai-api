@@ -28,6 +28,7 @@ jobs:
       packages: write
       contents: read
       id-token: write
+      actions: write
     steps:
       - name: Check out (shallow)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -93,6 +94,18 @@ jobs:
             type=registry,ref=ghcr.io/${{ env.GHCR_REPOSITORY }}:buildcache-${{ matrix.arch }},mode=max
           provenance: mode=max
           sbom: true
+
+      - name: Export image as tar
+        run: |
+          docker pull calciumion/new-api:${{ env.VERSION }}-${{ matrix.arch }}
+          docker save calciumion/new-api:${{ env.VERSION }}-${{ matrix.arch }} > new-api-${{ env.VERSION }}-${{ matrix.arch }}.tar
+
+      - name: Upload tar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-api-${{ env.VERSION }}-${{ matrix.arch }}
+          path: new-api-${{ env.VERSION }}-${{ matrix.arch }}.tar
+          retention-days: 30
 
       - name: Install cosign
         uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3

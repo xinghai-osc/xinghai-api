@@ -96,7 +96,7 @@ jobs:
       - name: Export image as tar
         run: |
           docker pull xinghaiosc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }}
-          docker save xinghaiosc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }} | gzip > xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar.gz
+          docker save xinghaiosc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }} > xinghai-api-${{ env.TAG }}-${{ matrix.arch }}.tar
 
       - name: Upload tar artifact
         uses: actions/upload-artifact@v4

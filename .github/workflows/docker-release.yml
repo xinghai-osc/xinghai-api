@@ -47,6 +47,7 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/}"
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "$VERSION" > VERSION
           echo "Building Docker image for tag: $VERSION"
 
       - name: Set up Docker Buildx
