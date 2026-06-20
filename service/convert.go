@@ -90,6 +90,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 
 	// Convert messages
 	openAIMessages := make([]dto.Message, 0)
+	isOpenRouterClaude := isOpenRouter && strings.HasPrefix(info.UpstreamModelName, "anthropic/claude")
 
 	// Add system message if present
 	if claudeRequest.System != nil {
@@ -105,7 +106,6 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 				openAIMessage := dto.Message{
 					Role: "system",
 				}
-				isOpenRouterClaude := isOpenRouter && strings.HasPrefix(info.UpstreamModelName, "anthropic/claude")
 				if isOpenRouterClaude {
 					systemMediaMessages := make([]dto.MediaContent, 0, len(systems))
 					for _, system := range systems {
@@ -151,9 +151,11 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 				switch mediaMsg.Type {
 				case "text", "input_text":
 					message := dto.MediaContent{
-						Type:         "text",
-						Text:         mediaMsg.GetText(),
-						CacheControl: mediaMsg.CacheControl,
+						Type: "text",
+						Text: mediaMsg.GetText(),
+					}
+					if isOpenRouterClaude {
+						message.CacheControl = mediaMsg.CacheControl
 					}
 					mediaMessages = append(mediaMessages, message)
 				case "image":
