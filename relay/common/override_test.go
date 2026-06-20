@@ -2097,6 +2097,118 @@ func TestRemoveDisabledFieldsAllowSpeed(t *testing.T) {
 	assertJSONEqual(t, `{"speed":"fast","store":true}`, string(out))
 }
 
+func TestRemoveDisabledFieldsStripsCacheControlFromMessages(t *testing.T) {
+	input := `{
+		"model":"gpt-4o",
+		"messages":[
+			{"role":"user","content":"hello"},
+			{"role":"user","content":[
+				{"type":"text","text":"part1"},
+				{"type":"text","text":"part2","cache_control":{"type":"ephemeral"}}
+			]}
+		]
+	}`
+	settings := dto.ChannelOtherSettings{}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	require.NoError(t, err)
+	assertJSONEqual(t, `{
+		"model":"gpt-4o",
+		"messages":[
+			{"role":"user","content":"hello"},
+			{"role":"user","content":[
+				{"type":"text","text":"part1"},
+				{"type":"text","text":"part2"}
+			]}
+		]
+	}`, string(out))
+}
+
+func TestRemoveDisabledFieldsStripsCacheControlFromSystem(t *testing.T) {
+	input := `{
+		"model":"claude-3-5-sonnet",
+		"system":[
+			{"type":"text","text":"sys","cache_control":{"type":"ephemeral"}}
+		],
+		"messages":[{"role":"user","content":"hi"}]
+	}`
+	settings := dto.ChannelOtherSettings{}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	require.NoError(t, err)
+	assertJSONEqual(t, `{
+		"model":"claude-3-5-sonnet",
+		"system":[
+			{"type":"text","text":"sys"}
+		],
+		"messages":[{"role":"user","content":"hi"}]
+	}`, string(out))
+}
+
+func TestRemoveDisabledFieldsStripsCacheControlFromTools(t *testing.T) {
+	input := `{
+		"model":"claude-3-5-sonnet",
+		"tools":[
+			{"name":"get_weather","description":"Get weather","input_schema":{"type":"object"},"cache_control":{"type":"ephemeral"}}
+		],
+		"messages":[{"role":"user","content":"hi"}]
+	}`
+	settings := dto.ChannelOtherSettings{}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	require.NoError(t, err)
+	assertJSONEqual(t, `{
+		"model":"claude-3-5-sonnet",
+		"tools":[
+			{"name":"get_weather","description":"Get weather","input_schema":{"type":"object"}}
+		],
+		"messages":[{"role":"user","content":"hi"}]
+	}`, string(out))
+}
+
+func TestRemoveDisabledFieldsAllowCacheControl(t *testing.T) {
+	input := `{
+		"model":"gpt-4o",
+		"messages":[
+			{"role":"user","content":[
+				{"type":"text","text":"part1","cache_control":{"type":"ephemeral"}}
+			]}
+		]
+	}`
+	settings := dto.ChannelOtherSettings{
+		AllowCacheControl: true,
+	}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	require.NoError(t, err)
+	assertJSONEqual(t, input, string(out))
+}
+
+func TestRemoveDisabledFieldsCacheControlPassThroughEnabled(t *testing.T) {
+	input := `{
+		"model":"gpt-4o",
+		"messages":[
+			{"role":"user","content":[
+				{"type":"text","text":"part1","cache_control":{"type":"ephemeral"}}
+			]}
+		]
+	}`
+	settings := dto.ChannelOtherSettings{}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, true)
+	require.NoError(t, err)
+	assertJSONEqual(t, input, string(out))
+}
+
+func TestRemoveDisabledFieldsNoCacheControlKeepsBody(t *testing.T) {
+	input := `{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}`
+	settings := dto.ChannelOtherSettings{}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	require.NoError(t, err)
+	require.Equal(t, input, string(out))
+}
+
 func TestApplyParamOverrideWithRelayInfoRecordsOperationAuditInDebugMode(t *testing.T) {
 	originalDebugEnabled := common2.DebugEnabled
 	common2.DebugEnabled = true

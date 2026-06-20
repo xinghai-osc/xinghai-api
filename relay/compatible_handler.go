@@ -159,6 +159,11 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			return types.NewError(err, types.ErrorCodeJsonMarshalFailed, types.ErrOptionWithSkipRetry())
 		}
 
+		// 当上游支持 cache_control 时（Claude 格式或 OpenRouter），允许透传
+		if relaycommon.ShouldAllowCacheControl(info) {
+			info.ChannelOtherSettings.AllowCacheControl = true
+		}
+
 		// remove disabled fields for OpenAI API
 		jsonData, err = relaycommon.RemoveDisabledFields(jsonData, info.ChannelOtherSettings, info.ChannelSetting.PassThroughBodyEnabled)
 		if err != nil {

@@ -791,6 +791,7 @@ func FailTaskInfo(reason string) *TaskInfo {
 // store: 数据存储授权字段，涉及用户隐私（仅 OpenAI、Responses API 支持，默认允许透传，禁用后可能导致 Codex 无法使用）
 // safety_identifier: 安全标识符，用于向 OpenAI 报告违规用户（仅 OpenAI 支持，涉及用户隐私）
 // stream_options.include_obfuscation: 响应流混淆控制字段（仅 OpenAI Responses API 支持）
+// cache_control: 提示缓存控制字段（仅 Claude/OpenRouter 支持，默认过滤以避免上游校验错误）
 func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings, channelPassThroughEnabled bool) ([]byte, error) {
 	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || channelPassThroughEnabled {
 		return jsonData, nil
@@ -856,6 +857,11 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		}
 	}
 
+	// 默认移除 cache_control，除非明确允许（仅 Claude/OpenRouter 支持，其他上游会校验失败）
+	if !channelOtherSettings.AllowCacheControl {
+		removeCacheControlFromData(data)
+	}
+
 	jsonDataAfter, err := common.Marshal(data)
 	if err != nil {
 		common.SysError("RemoveDisabledFields Marshal error :" + err.Error())
@@ -880,7 +886,106 @@ func hasRemovableDisabledField(jsonData []byte, channelOtherSettings dto.Channel
 		(!channelOtherSettings.AllowSpeed && values[2].Exists()) ||
 		(channelOtherSettings.DisableStore && values[3].Exists()) ||
 		(!channelOtherSettings.AllowSafetyIdentifier && values[4].Exists()) ||
-		(!channelOtherSettings.AllowIncludeObfuscation && values[5].Exists())
+		(!channelOtherSettings.AllowIncludeObfuscation && values[5].Exists()) ||
+		(!channelOtherSettings.AllowCacheControl && hasCacheControlInBytes(jsonData))
+}
+
+// hasCacheControlInBytes 检查 JSON 数据中是否存在 cache_control 字段
+// 检查范围：messages[].content[]、system[]、tools[]
+func hasCacheControlInBytes(jsonData []byte) bool {
+	found := false
+	// 检查 messages[].content[] 中的 cache_control
+	gjson.GetBytes(jsonData, "messages").ForEach(func(_, msg gjson.Result) bool {
+		content := msg.Get("content")
+		if content.IsArray() {
+			content.ForEach(func(_, item gjson.Result) bool {
+				if item.Get("cache_control").Exists() {
+					found = true
+					return false
+				}
+				return true
+			})
+		}
+		return !found
+	})
+	if found {
+		return true
+	}
+	// 检查 system[] 中的 cache_control（Claude 格式）
+	gjson.GetBytes(jsonData, "system").ForEach(func(_, item gjson.Result) bool {
+		if item.Get("cache_control").Exists() {
+			found = true
+			return false
+		}
+		return true
+	})
+	if found {
+		return true
+	}
+	// 检查 tools[] 中的 cache_control（Claude 格式）
+	gjson.GetBytes(jsonData, "tools").ForEach(func(_, item gjson.Result) bool {
+		if item.Get("cache_control").Exists() {
+			found = true
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// removeCacheControlFromData 从已解析的 JSON map 中移除 cache_control 字段
+// 检查范围：messages[].content[]、system[]、tools[]
+func removeCacheControlFromData(data map[string]interface{}) {
+	// 移除 messages[].content[] 中的 cache_control
+	if messages, ok := data["messages"].([]interface{}); ok {
+		for _, msg := range messages {
+			if msgMap, ok := msg.(map[string]interface{}); ok {
+				if contentArr, ok := msgMap["content"].([]interface{}); ok {
+					for _, contentItem := range contentArr {
+						if contentMap, ok := contentItem.(map[string]interface{}); ok {
+							delete(contentMap, "cache_control")
+						}
+					}
+				}
+			}
+		}
+	}
+	// 移除 system[] 中的 cache_control（Claude 格式）
+	if systemArr, ok := data["system"].([]interface{}); ok {
+		for _, sysItem := range systemArr {
+			if sysMap, ok := sysItem.(map[string]interface{}); ok {
+				delete(sysMap, "cache_control")
+			}
+		}
+	}
+	// 移除 tools[] 中的 cache_control（Claude 格式）
+	if toolsArr, ok := data["tools"].([]interface{}); ok {
+		for _, toolItem := range toolsArr {
+			if toolMap, ok := toolItem.(map[string]interface{}); ok {
+				delete(toolMap, "cache_control")
+			}
+		}
+	}
+}
+
+// ShouldAllowCacheControl 判断当前请求的上游是否支持 cache_control 字段。
+// cache_control 仅在 Claude 格式（原生支持）和 OpenRouter 的 OpenAI 格式（扩展支持）中有效，
+// 其他上游（标准 OpenAI、自定义渠道等）不支持，透传会导致校验错误。
+// 应在调用 RemoveDisabledFields 之前调用此函数，若返回 true 则设置 AllowCacheControl=true。
+func ShouldAllowCacheControl(info *RelayInfo) bool {
+	if info == nil {
+		return false
+	}
+	finalFormat := info.GetFinalRequestRelayFormat()
+	// Claude 格式原生支持 cache_control
+	if finalFormat == types.RelayFormatClaude {
+		return true
+	}
+	// OpenRouter 在 OpenAI 格式中通过扩展支持 cache_control
+	if info.ChannelType == constant.ChannelTypeOpenRouter && finalFormat == types.RelayFormatOpenAI {
+		return true
+	}
+	return false
 }
 
 // RemoveGeminiDisabledFields removes disabled fields from Gemini request JSON data
