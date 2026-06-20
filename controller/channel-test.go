@@ -832,11 +832,11 @@ func shouldBanChannelByTestResult(result testResult, milliseconds int64, disable
 	return nil, false
 }
 
-func confirmChannelDisableByTests(channel *model.Channel, testUserID int, disableThreshold int64) (*types.NewAPIError, bool) {
+func confirmChannelDisableByTests(channel *model.Channel, testUserID int, disableThreshold int64, keyIndex int) (*types.NewAPIError, bool) {
 	var lastAPIError *types.NewAPIError
 	for i := 0; i < channelDisableConfirmationTestTimes; i++ {
 		tik := time.Now()
-		result := testChannel(channel, testUserID, "", "", shouldUseStreamForAutomaticChannelTest(channel))
+		result := testChannel(channel, testUserID, "", "", shouldUseStreamForAutomaticChannelTest(channel), keyIndex)
 		milliseconds := time.Since(tik).Milliseconds()
 		newAPIError, shouldBanChannel := shouldBanChannelByTestResult(result, milliseconds, disableThreshold)
 		if !shouldBanChannel {
@@ -970,11 +970,11 @@ func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
 
 			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
 				common.SysLog(fmt.Sprintf("通道「%s」（#%d）测试失败，禁用前开始复测 %d 次", channel.Name, channel.Id, channelDisableConfirmationTestTimes))
-				newAPIError, shouldBanChannel = confirmChannelDisableByTests(channel, testUserID, disableThreshold)
+				newAPIError, shouldBanChannel = confirmChannelDisableByTests(channel, testUserID, disableThreshold, common.GetContextKeyInt(result.context, constant.ContextKeyChannelMultiKeyIndex))
 			}
 
 			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
-				processChannelError(result.context, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError, false)
+				processChannelError(result.context, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.GetAutoBan(), common.GetContextKeyInt(result.context, constant.ContextKeyChannelMultiKeyIndex)), newAPIError, false)
 			}
 
 			// enable channel
