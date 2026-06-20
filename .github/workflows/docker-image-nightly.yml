@@ -69,8 +69,12 @@ jobs:
             calciumion/new-api:nightly-${{ matrix.arch }}
             calciumion/new-api:${{ steps.version.outputs.value }}-${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=nightly-${{ matrix.arch }}
+            type=registry,ref=calciumion/new-api:buildcache-${{ matrix.arch }}
+          cache-to: |
+            type=gha,scope=nightly-${{ matrix.arch }},mode=max
+            type=registry,ref=calciumion/new-api:buildcache-${{ matrix.arch }},mode=max
           provenance: false
           sbom: false
 

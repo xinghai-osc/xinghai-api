@@ -83,8 +83,14 @@ jobs:
             ghcr.io/${{ env.GHCR_REPOSITORY }}:alpha-${{ matrix.arch }}
             ghcr.io/${{ env.GHCR_REPOSITORY }}:${{ steps.version.outputs.value }}-${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=alpha-${{ matrix.arch }}
+            type=registry,ref=calciumion/new-api:buildcache-${{ matrix.arch }}
+            type=registry,ref=ghcr.io/${{ env.GHCR_REPOSITORY }}:buildcache-${{ matrix.arch }}
+          cache-to: |
+            type=gha,scope=alpha-${{ matrix.arch }},mode=max
+            type=registry,ref=calciumion/new-api:buildcache-${{ matrix.arch }},mode=max
+            type=registry,ref=ghcr.io/${{ env.GHCR_REPOSITORY }}:buildcache-${{ matrix.arch }},mode=max
           provenance: mode=max
           sbom: true
 
