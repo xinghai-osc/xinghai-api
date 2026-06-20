@@ -45,12 +45,7 @@ func GetPerfMetrics(c *gin.Context) {
 		return
 	}
 
-	hours := 24
-	if rawHours := c.Query("hours"); rawHours != "" {
-		if parsed, err := strconv.Atoi(rawHours); err == nil {
-			hours = parsed
-		}
-	}
+	hours := parsePerfMetricHours(c)
 
 	result, err := perfmetrics.Query(perfmetrics.QueryParams{
 		Model: modelName,
@@ -71,6 +66,47 @@ func GetPerfMetrics(c *gin.Context) {
 		"success": true,
 		"data":    result,
 	})
+}
+
+func DeletePerfMetricFailures(c *gin.Context) {
+	modelName := c.Query("model")
+	if modelName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "model is required",
+		})
+		return
+	}
+
+	deleted, err := perfmetrics.DeleteFailures(perfmetrics.QueryParams{
+		Model: modelName,
+		Group: c.Query("group"),
+		Hours: parsePerfMetricHours(c),
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"deleted": deleted,
+		},
+	})
+}
+
+func parsePerfMetricHours(c *gin.Context) int {
+	hours := 24
+	if rawHours := c.Query("hours"); rawHours != "" {
+		if parsed, err := strconv.Atoi(rawHours); err == nil {
+			hours = parsed
+		}
+	}
+	return hours
 }
 
 func filterActiveGroups(groups []perfmetrics.GroupResult) []perfmetrics.GroupResult {

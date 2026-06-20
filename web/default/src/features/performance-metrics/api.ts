@@ -17,7 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
-import type { PerformanceMetricsData, PerfSummaryAllData } from './types'
+import type {
+  DeletePerfFailuresData,
+  PerformanceMetricsData,
+  PerfSummaryAllData,
+} from './types'
 
 export async function getPerfMetricsSummary(
   hours = 24
@@ -38,5 +42,21 @@ export async function getPerfMetrics(
       hours,
     },
   })
+  return res.data
+}
+
+export async function deletePerfMetricFailures(
+  modelName: string,
+  hours = 24
+): Promise<DeletePerfFailuresData> {
+  const res = await api.delete<DeletePerfFailuresData>(
+    '/api/perf-metrics/failures',
+    {
+      params: {
+        model: modelName,
+        hours,
+      },
+    }
+  )
   return res.data
 }

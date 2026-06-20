@@ -16,17 +16,33 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, HeartPulse, Timer } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlertTriangle, HeartPulse, Timer, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
   StaticDataTable,
   staticDataTableClassNames as tableStyles,
 } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
-import { getPerfMetrics } from '@/features/performance-metrics/api'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  deletePerfMetricFailures,
+  getPerfMetrics,
+} from '@/features/performance-metrics/api'
+import { useIsAdmin } from '@/hooks/use-admin'
 import {
   formatLatency,
   formatThroughput,
@@ -161,10 +177,33 @@ function average(
 
 export function ModelDetailsPerformance(props: { model: PricingModel }) {
   const { t } = useTranslation()
+  const isAdmin = useIsAdmin()
+  const queryClient = useQueryClient()
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const metricsQuery = useQuery({
     queryKey: ['perf-metrics', props.model.model_name],
     queryFn: () => getPerfMetrics(props.model.model_name, 24),
     staleTime: 60 * 1000,
+  })
+  const deleteFailuresMutation = useMutation({
+    mutationFn: () => deletePerfMetricFailures(props.model.model_name, 24),
+    onSuccess: async (result) => {
+      toast.success(
+        t('Deleted {{count}} failed samples', {
+          count: result.data.deleted,
+        })
+      )
+      setDeleteDialogOpen(false)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['perf-metrics', props.model.model_name],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['perf-metrics-summary'] }),
+      ])
+    },
+    onError: () => {
+      toast.error(t('Failed to delete failed samples'))
+    },
   })
   const groups = useMemo(
     () => metricsQuery.data?.data.groups ?? [],
@@ -191,10 +230,57 @@ export function ModelDetailsPerformance(props: { model: PricingModel }) {
     return map
   }, [groups])
 
+  const deleteFailuresButton = isAdmin ? (
+    <Button
+      type='button'
+      variant='outline'
+      size='sm'
+      onClick={() => setDeleteDialogOpen(true)}
+      disabled={deleteFailuresMutation.isPending}
+    >
+      <Trash2 className='size-3.5' />
+      {t('Delete failed samples')}
+    </Button>
+  ) : null
+
+  const deleteFailuresDialog = (
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('Delete failed samples?')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t(
+              'This will remove failed request samples for this model in the last 24 hours. Success samples are kept.'
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleteFailuresMutation.isPending}>
+            {t('Cancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => deleteFailuresMutation.mutate()}
+            disabled={deleteFailuresMutation.isPending}
+          >
+            {deleteFailuresMutation.isPending
+              ? t('Processing...')
+              : t('Confirm delete')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
   if (metricsQuery.isLoading || performances.length === 0) {
     return (
-      <div className='text-muted-foreground rounded-lg border p-6 text-center text-sm'>
-        {t('Performance data is not yet available for this model.')}
+      <div className='flex flex-col gap-3 rounded-lg border p-6 text-center text-sm'>
+        <div className='text-muted-foreground'>
+          {t('Performance data is not yet available for this model.')}
+        </div>
+        {deleteFailuresButton && (
+          <div className='flex justify-center'>{deleteFailuresButton}</div>
+        )}
+        {deleteFailuresDialog}
       </div>
     )
   }
@@ -251,6 +337,7 @@ export function ModelDetailsPerformance(props: { model: PricingModel }) {
           icon={HeartPulse}
           title={t('Per-group performance')}
           description={t('Average latency, TTFT, TPS, and success rate')}
+          accent={deleteFailuresButton}
         />
         <StaticDataTable
           className='rounded-lg'
@@ -339,6 +426,8 @@ export function ModelDetailsPerformance(props: { model: PricingModel }) {
         />
         <UptimeTrendChart series={uptimeSeries} />
       </section>
+
+      {deleteFailuresDialog}
     </div>
   )
 }

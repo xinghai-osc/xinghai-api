@@ -122,6 +122,40 @@ func Query(params QueryParams) (QueryResult, error) {
 	return buildQueryResult(params.Model, merged), nil
 }
 
+func DeleteFailures(params QueryParams) (int64, error) {
+	if params.Model == "" {
+		return 0, nil
+	}
+	if params.Hours <= 0 {
+		params.Hours = 24
+	}
+	if params.Hours > 24*30 {
+		params.Hours = 24 * 30
+	}
+	endTs := time.Now().Unix()
+	startTs := endTs - int64(params.Hours)*3600
+
+	deleted, err := model.DeletePerfMetricFailures(params.Model, params.Group, startTs, endTs)
+	if err != nil {
+		return 0, err
+	}
+
+	hotBuckets.Range(func(key, value any) bool {
+		k := key.(bucketKey)
+		if k.model != params.Model || k.bucketTs < startTs || k.bucketTs > endTs {
+			return true
+		}
+		if params.Group != "" && k.group != params.Group {
+			return true
+		}
+		deleted += value.(*atomicBucket).deleteFailures()
+		deleteRedisFailures(k)
+		return true
+	})
+
+	return deleted, nil
+}
+
 func QuerySummaryAll(hours int, groups []string) (SummaryAllResult, error) {
 	if hours <= 0 {
 		hours = 24
@@ -403,6 +437,25 @@ func recordRedis(key bucketKey, sample Sample) {
 	}
 	pipe.Expire(ctx, redisKey, time.Hour)
 	_, _ = pipe.Exec(ctx)
+}
+
+func deleteRedisFailures(key bucketKey) {
+	if !common.RedisEnabled || common.RDB == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	redisKey := redisBucketKey(key)
+	values, err := common.RDB.HGetAll(ctx, redisKey).Result()
+	if err != nil || len(values) == 0 {
+		return
+	}
+	value := redisCounters(values)
+	if value.requestCount <= value.successCount {
+		return
+	}
+	_, _ = common.RDB.HSet(ctx, redisKey, "req", value.successCount).Result()
 }
 
 func mergeRedisActiveBuckets(merged map[bucketKey]counters, params QueryParams, startTs int64, endTs int64) {

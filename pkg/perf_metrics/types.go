@@ -151,3 +151,16 @@ func (b *atomicBucket) addCounters(c counters) {
 		b.generationMs.Add(c.generationMs)
 	}
 }
+
+func (b *atomicBucket) deleteFailures() int64 {
+	for {
+		requestCount := b.requestCount.Load()
+		successCount := b.successCount.Load()
+		if requestCount <= successCount {
+			return 0
+		}
+		if b.requestCount.CompareAndSwap(requestCount, successCount) {
+			return requestCount - successCount
+		}
+	}
+}

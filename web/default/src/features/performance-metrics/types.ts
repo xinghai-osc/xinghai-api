@@ -59,3 +59,11 @@ export type PerfSummaryAllData = {
     models: PerfModelSummary[]
   }
 }
+
+export type DeletePerfFailuresData = {
+  success: boolean
+  message?: string
+  data: {
+    deleted: number
+  }
+}

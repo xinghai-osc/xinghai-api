@@ -59,6 +59,33 @@ func GetPerfMetrics(modelName string, group string, startTs int64, endTs int64) 
 	return metrics, err
 }
 
+func DeletePerfMetricFailures(modelName string, group string, startTs int64, endTs int64) (int64, error) {
+	if modelName == "" {
+		return 0, nil
+	}
+
+	var deletedFailures int64
+	query := DB.Model(&PerfMetric{}).
+		Where("model_name = ? AND bucket_ts >= ? AND bucket_ts <= ? AND request_count > success_count", modelName, startTs, endTs)
+	if group != "" {
+		query = query.Where(commonGroupCol+" = ?", group)
+	}
+	if err := query.Select("COALESCE(SUM(request_count - success_count), 0)").Scan(&deletedFailures).Error; err != nil {
+		return 0, err
+	}
+	if deletedFailures == 0 {
+		return 0, nil
+	}
+
+	updates := map[string]interface{}{
+		"request_count": gorm.Expr("success_count"),
+	}
+	if err := query.Updates(updates).Error; err != nil {
+		return 0, err
+	}
+	return deletedFailures, nil
+}
+
 type PerfMetricSummary struct {
 	ModelName      string `json:"model_name"`
 	RequestCount   int64  `json:"request_count"`
