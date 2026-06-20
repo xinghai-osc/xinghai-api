@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/QuantumNous/new-api/setting/billing_setting"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -47,6 +49,8 @@ func GetExposedData() gin.H {
 		"cache_ratio":        GetCacheRatioCopy(),
 		"create_cache_ratio": GetCreateCacheRatioCopy(),
 		"model_price":        GetModelPriceCopy(),
+		billing_setting.BillingModeField: billing_setting.GetBillingModeCopy(),
+		billing_setting.BillingExprField: billing_setting.GetBillingExprCopy(),
 	}
 	exposedData.Store(&exposedCache{
 		data:      newData,
