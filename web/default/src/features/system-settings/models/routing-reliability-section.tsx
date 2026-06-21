@@ -68,6 +68,7 @@ const routingReliabilitySchema = z
         .number()
         .int()
         .min(1, 'Interval must be at least 1 minute'),
+      auto_test_channel_ids: z.string(),
     }),
   })
   .superRefine((values, ctx) => {
@@ -112,6 +113,7 @@ type RoutingReliabilitySectionProps = {
     AutomaticRetryStatusCodes: string
     'monitor_setting.auto_test_channel_enabled': boolean
     'monitor_setting.auto_test_channel_minutes': number
+    'monitor_setting.auto_test_channel_ids': string
   }
 }
 
@@ -129,6 +131,7 @@ type NormalizedRoutingReliabilityValues = {
   AutomaticRetryStatusCodes: string
   'monitor_setting.auto_test_channel_enabled': boolean
   'monitor_setting.auto_test_channel_minutes': number
+  'monitor_setting.auto_test_channel_ids': string
 }
 
 const buildFormDefaults = (
@@ -148,6 +151,8 @@ const buildFormDefaults = (
       defaults['monitor_setting.auto_test_channel_enabled'],
     auto_test_channel_minutes:
       defaults['monitor_setting.auto_test_channel_minutes'],
+    auto_test_channel_ids:
+      defaults['monitor_setting.auto_test_channel_ids'] ?? '',
   },
 })
 
@@ -171,6 +176,9 @@ const normalizeDefaults = (
     defaults['monitor_setting.auto_test_channel_enabled'],
   'monitor_setting.auto_test_channel_minutes':
     defaults['monitor_setting.auto_test_channel_minutes'],
+  'monitor_setting.auto_test_channel_ids': (
+    defaults['monitor_setting.auto_test_channel_ids'] ?? ''
+  ).trim(),
 })
 
 const normalizeFormValues = (
@@ -193,6 +201,8 @@ const normalizeFormValues = (
     values.monitor_setting.auto_test_channel_enabled,
   'monitor_setting.auto_test_channel_minutes':
     values.monitor_setting.auto_test_channel_minutes,
+  'monitor_setting.auto_test_channel_ids':
+    values.monitor_setting.auto_test_channel_ids.trim(),
 })
 
 export function RoutingReliabilitySection({
@@ -394,6 +404,30 @@ export function RoutingReliabilitySection({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name='monitor_setting.auto_test_channel_ids'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Channels to test')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={3}
+                      placeholder={t('Channel IDs, e.g. 1, 2, 3')}
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'Only the listed channel IDs will be tested. Separate IDs with commas, spaces, or new lines. Leave empty to test all channels.'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <Separator />
