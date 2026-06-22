@@ -828,6 +828,74 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 	return true
 }
 
+// UpdateMultiKeyStatus updates the status of a specific key in a multi-key channel.
+// Unlike UpdateChannelStatus, this does not early-return when the channel's overall
+// status matches the target status, because individual key statuses can differ.
+func UpdateMultiKeyStatus(channelId int, keyIndex int, status int, reason string) bool {
+	if common.MemoryCacheEnabled {
+		channelStatusLock.Lock()
+		defer channelStatusLock.Unlock()
+
+		channelCache, _ := CacheGetChannel(channelId)
+		if channelCache == nil {
+			return false
+		}
+		if !channelCache.ChannelInfo.IsMultiKey {
+			return false
+		}
+		keys := channelCache.GetKeys()
+		if keyIndex < 0 || keyIndex >= len(keys) {
+			return false
+		}
+		beforeStatus := channelCache.Status
+		pollingLock := GetChannelPollingLock(channelId)
+		pollingLock.Lock()
+		handlerMultiKeyUpdate(channelCache, keys[keyIndex], status, reason)
+		pollingLock.Unlock()
+		if beforeStatus != channelCache.Status {
+			CacheUpdateChannelStatus(channelId, channelCache.Status)
+		}
+	}
+
+	shouldUpdateAbilities := false
+	defer func() {
+		if shouldUpdateAbilities {
+			err := UpdateAbilityStatus(channelId, status == common.ChannelStatusEnabled)
+			if err != nil {
+				common.SysLog(fmt.Sprintf("failed to update ability status: channel_id=%d, error=%v", channelId, err))
+			}
+		}
+	}()
+	channel, err := GetChannelById(channelId, true)
+	if err != nil {
+		return false
+	}
+	if !channel.ChannelInfo.IsMultiKey {
+		return false
+	}
+	keys := channel.GetKeys()
+	if keyIndex < 0 || keyIndex >= len(keys) {
+		return false
+	}
+	beforeStatus := channel.Status
+	pollingLock := GetChannelPollingLock(channelId)
+	pollingLock.Lock()
+	handlerMultiKeyUpdate(channel, keys[keyIndex], status, reason)
+	pollingLock.Unlock()
+	if beforeStatus != channel.Status {
+		shouldUpdateAbilities = true
+	}
+	err = channel.SaveWithoutKey()
+	if err != nil {
+		common.SysLog(fmt.Sprintf("failed to update multi-key status: channel_id=%d, key_index=%d, status=%d, error=%v", channel.Id, keyIndex, status, err))
+		return false
+	}
+	if beforeStatus != channel.Status && channel.Status != common.ChannelStatusEnabled {
+		channel.ActivateBackupChannel()
+	}
+	return true
+}
+
 func EnableChannelByTag(tag string) error {
 	err := DB.Model(&Channel{}).Where("tag = ?", tag).Update("status", common.ChannelStatusEnabled).Error
 	if err != nil {

@@ -43,6 +43,14 @@ type testResult struct {
 	newAPIError *types.NewAPIError
 }
 
+type multiKeyTestResult struct {
+	successCount int
+	failCount    int
+	firstError   *types.NewAPIError
+	totalTime    int64
+	lastContext  *gin.Context
+}
+
 const channelDisableConfirmationTestTimes = 5
 
 func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointType string) string {
@@ -521,6 +529,57 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	}
 }
 
+// testMultiKeyChannel tests all keys of a multi-key channel one by one.
+// For each key: disable on failure (if AutoBan is enabled), enable on success.
+// The channel-level status is automatically updated by handlerMultiKeyUpdate:
+//   - If all keys fail, the channel is auto-disabled.
+//   - If any key succeeds, the channel is enabled (even if it was previously disabled).
+func testMultiKeyChannel(channel *model.Channel, testUserID int, testModel string, endpointType string, isStream bool) multiKeyTestResult {
+	keys := channel.GetKeys()
+	result := multiKeyTestResult{}
+	autoBan := channel.GetAutoBan()
+	var totalMilliseconds int64
+
+	for i := range keys {
+		tik := time.Now()
+		testRes := testChannel(channel, testUserID, testModel, endpointType, isStream, i)
+		tok := time.Now()
+		milliseconds := tok.Sub(tik).Milliseconds()
+		totalMilliseconds += milliseconds
+		result.lastContext = testRes.context
+
+		if testRes.localErr != nil || testRes.newAPIError != nil {
+			result.failCount++
+			if result.firstError == nil && testRes.newAPIError != nil {
+				result.firstError = testRes.newAPIError
+			}
+			if autoBan {
+				reason := ""
+				if testRes.localErr != nil {
+					reason = testRes.localErr.Error()
+				} else if testRes.newAPIError != nil {
+					reason = testRes.newAPIError.Error()
+				}
+				model.UpdateMultiKeyStatus(channel.Id, i, common.ChannelStatusAutoDisabled, reason)
+				common.SysLog(fmt.Sprintf("通道「%s」（#%d）多Key测试：第 %d 个Key测试失败，已禁用", channel.Name, channel.Id, i))
+			}
+		} else {
+			result.successCount++
+			model.UpdateMultiKeyStatus(channel.Id, i, common.ChannelStatusEnabled, "")
+			common.SysLog(fmt.Sprintf("通道「%s」（#%d）多Key测试：第 %d 个Key测试成功，已启用", channel.Name, channel.Id, i))
+		}
+
+		time.Sleep(common.RequestInterval)
+	}
+
+	if len(keys) > 0 {
+		result.totalTime = totalMilliseconds
+		go channel.UpdateResponseTime(totalMilliseconds / int64(len(keys)))
+	}
+
+	return result
+}
+
 func attachTestBillingRequestInput(info *relaycommon.RelayInfo, request dto.Request) error {
 	if info == nil {
 		return nil
@@ -887,6 +946,38 @@ func TestChannel(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// For multi-key channels without a specific key_index, test all keys
+	if channel.ChannelInfo.IsMultiKey && len(keyIndex) == 0 {
+		tik := time.Now()
+		result := testMultiKeyChannel(channel, testUserID, testModel, endpointType, isStream)
+		tok := time.Now()
+		consumedTime := float64(tok.Sub(tik).Milliseconds()) / 1000.0
+
+		if result.failCount > 0 && result.successCount == 0 {
+			message := fmt.Sprintf("所有Key测试失败（共%d个）", result.failCount)
+			if result.firstError != nil {
+				message = fmt.Sprintf("所有Key测试失败（共%d个）：%s", result.failCount, result.firstError.Error())
+			}
+			resp := gin.H{
+				"success": false,
+				"message": message,
+				"time":    consumedTime,
+			}
+			if result.firstError != nil {
+				resp["error_code"] = result.firstError.GetErrorCode()
+			}
+			c.JSON(http.StatusOK, resp)
+			return
+		}
+
+		message := fmt.Sprintf("测试完成：成功%d个，失败%d个", result.successCount, result.failCount)
+		c.JSON(http.StatusOK, gin.H{
+			"success": result.failCount == 0,
+			"message": message,
+			"time":    consumedTime,
+		})
+		return
+	}
 	tik := time.Now()
 	result := testChannel(channel, testUserID, testModel, endpointType, isStream, keyIndex...)
 	if result.localErr != nil {
@@ -960,6 +1051,30 @@ func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
 			if channel.Status == common.ChannelStatusManuallyDisabled {
 				continue
 			}
+
+			// For multi-key channels, test all keys: disable failed, enable successful
+			if channel.ChannelInfo.IsMultiKey {
+				beforeStatus := channel.Status
+				mkResult := testMultiKeyChannel(channel, testUserID, "", "", shouldUseStreamForAutomaticChannelTest(channel))
+
+				// Send notifications if channel-level status changed
+				if updatedChannel, err := model.CacheGetChannel(channel.Id); err == nil {
+					if beforeStatus == common.ChannelStatusEnabled && updatedChannel.Status == common.ChannelStatusAutoDisabled {
+						subject := fmt.Sprintf("通道「%s」（#%d）已被禁用", channel.Name, channel.Id)
+						content := fmt.Sprintf("通道「%s」（#%d）多Key测试全部失败，已被禁用", channel.Name, channel.Id)
+						service.NotifyRootUser(fmt.Sprintf("%s_%d_%d", dto.NotifyTypeChannelUpdate, channel.Id, common.ChannelStatusAutoDisabled), subject, content)
+					} else if beforeStatus == common.ChannelStatusAutoDisabled && updatedChannel.Status == common.ChannelStatusEnabled {
+						subject := fmt.Sprintf("通道「%s」（#%d）已被启用", channel.Name, channel.Id)
+						content := fmt.Sprintf("通道「%s」（#%d）多Key测试成功%d个Key，已被启用", channel.Name, channel.Id, mkResult.successCount)
+						service.NotifyRootUser(fmt.Sprintf("%s_%d_%d", dto.NotifyTypeChannelUpdate, channel.Id, common.ChannelStatusEnabled), subject, content)
+					}
+				}
+
+				common.SysLog(fmt.Sprintf("通道「%s」（#%d）多Key测试完成：成功%d个，失败%d个", channel.Name, channel.Id, mkResult.successCount, mkResult.failCount))
+				time.Sleep(common.RequestInterval)
+				continue
+			}
+
 			isChannelEnabled := channel.Status == common.ChannelStatusEnabled
 			tik := time.Now()
 			result := testChannel(channel, testUserID, "", "", shouldUseStreamForAutomaticChannelTest(channel))
