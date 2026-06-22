@@ -110,7 +110,7 @@ func parseRankingAvatarUrl(settingJson string) string {
 }
 
 func rankingBucketExpr(bucketSize int64) string {
-	if common.UsingMySQL {
+	if common.UsingMainDatabase(common.DatabaseTypeMySQL) {
 		return fmt.Sprintf("FLOOR(quota_data.created_at / %d) * %d", bucketSize, bucketSize)
 	}
 	return fmt.Sprintf("(quota_data.created_at / %d) * %d", bucketSize, bucketSize)

@@ -1015,12 +1015,7 @@ func TestChannel(c *gin.Context) {
 var testAllChannelsLock sync.Mutex
 var testAllChannelsRunning bool = false
 
-func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
-	testUserID, err := resolveChannelTestUserID(nil)
-	if err != nil {
-		return err
-	}
-
+func testChannels(channels []*model.Channel, testUserID int, notify bool, allowDisable bool, channelIDFilter map[int]bool) error {
 	testAllChannelsLock.Lock()
 	if testAllChannelsRunning {
 		testAllChannelsLock.Unlock()
@@ -1028,10 +1023,6 @@ func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
 	}
 	testAllChannelsRunning = true
 	testAllChannelsLock.Unlock()
-	channels, getChannelErr := model.GetAllChannels(0, 0, true, false)
-	if getChannelErr != nil {
-		return getChannelErr
-	}
 	var disableThreshold = int64(common.ChannelDisableThreshold * 1000)
 	if disableThreshold == 0 {
 		disableThreshold = 10000000 // a impossible value
@@ -1083,17 +1074,18 @@ func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
 
 			newAPIError, shouldBanChannel := shouldBanChannelByTestResult(result, milliseconds, disableThreshold)
 
-			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
+			// disable channel (retest before disabling to avoid false positives)
+			if allowDisable && isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
 				common.SysLog(fmt.Sprintf("通道「%s」（#%d）测试失败，禁用前开始复测 %d 次", channel.Name, channel.Id, channelDisableConfirmationTestTimes))
 				newAPIError, shouldBanChannel = confirmChannelDisableByTests(channel, testUserID, disableThreshold, common.GetContextKeyInt(result.context, constant.ContextKeyChannelMultiKeyIndex))
 			}
 
-			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
+			if allowDisable && isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
 				processChannelError(result.context, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.GetAutoBan(), common.GetContextKeyInt(result.context, constant.ContextKeyChannelMultiKeyIndex)), newAPIError, false)
 			}
 
 			// enable channel
-			if !isChannelEnabled && service.ShouldEnableChannel(newAPIError, channel.Status) {
+			if result.localErr == nil && !isChannelEnabled && service.ShouldEnableChannel(newAPIError, channel.Status) {
 				service.EnableChannel(channel.Id, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.Name)
 			}
 
@@ -1106,6 +1098,44 @@ func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
 		}
 	})
 	return nil
+}
+
+func selectChannelsForAutomaticTest(channels []*model.Channel, mode string) []*model.Channel {
+	selected := make([]*model.Channel, 0, len(channels))
+	for _, channel := range channels {
+		if channel.Status == common.ChannelStatusManuallyDisabled {
+			continue
+		}
+		if mode == operation_setting.ChannelTestModePassiveRecovery && channel.Status != common.ChannelStatusAutoDisabled {
+			continue
+		}
+		selected = append(selected, channel)
+	}
+	return selected
+}
+
+func testAllChannels(notify bool, channelIDFilter map[int]bool) error {
+	testUserID, err := resolveChannelTestUserID(nil)
+	if err != nil {
+		return err
+	}
+	channels, getChannelErr := model.GetAllChannels(0, 0, true, false)
+	if getChannelErr != nil {
+		return getChannelErr
+	}
+	return testChannels(selectChannelsForAutomaticTest(channels, operation_setting.ChannelTestModeScheduledAll), testUserID, notify, true, channelIDFilter)
+}
+
+func testAutoDisabledChannels(notify bool, channelIDFilter map[int]bool) error {
+	testUserID, err := resolveChannelTestUserID(nil)
+	if err != nil {
+		return err
+	}
+	channels, getChannelErr := model.GetAllChannels(0, 0, true, false)
+	if getChannelErr != nil {
+		return getChannelErr
+	}
+	return testChannels(selectChannelsForAutomaticTest(channels, operation_setting.ChannelTestModePassiveRecovery), testUserID, notify, false, channelIDFilter)
 }
 
 func TestAllChannels(c *gin.Context) {
@@ -1139,12 +1169,21 @@ func AutomaticallyTestChannels() {
 				monitorSetting := operation_setting.GetMonitorSetting()
 				channelIDFilter := operation_setting.ParseAutoTestChannelIds(monitorSetting.AutoTestChannelIds)
 				common.SysLog(fmt.Sprintf("automatically test channels with interval %f minutes", frequency))
-				if channelIDFilter == nil {
-					common.SysLog("automatically testing all channels")
+				if operation_setting.GetMonitorSetting().ChannelTestMode == operation_setting.ChannelTestModePassiveRecovery {
+					if channelIDFilter == nil {
+						common.SysLog("automatically testing auto-disabled channels")
+					} else {
+						common.SysLog(fmt.Sprintf("automatically testing %d selected auto-disabled channels", len(channelIDFilter)))
+					}
+					_ = testAutoDisabledChannels(false, channelIDFilter)
 				} else {
-					common.SysLog(fmt.Sprintf("automatically testing %d selected channels", len(channelIDFilter)))
+					if channelIDFilter == nil {
+						common.SysLog("automatically testing all channels")
+					} else {
+						common.SysLog(fmt.Sprintf("automatically testing %d selected channels", len(channelIDFilter)))
+					}
+					_ = testAllChannels(false, channelIDFilter)
 				}
-				_ = testAllChannels(false, channelIDFilter)
 				common.SysLog("automatically channel test finished")
 				if !operation_setting.GetMonitorSetting().AutoTestChannelEnabled {
 					break

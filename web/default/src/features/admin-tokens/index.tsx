@@ -27,7 +27,7 @@ export function AdminTokens() {
   const { t } = useTranslation()
   // Use loose-typed search/navigate to avoid coupling to routeTree.gen.ts
   const search = useSearch({ strict: false }) as Record<string, unknown>
-  const navigate = useNavigate({ from: '/_authenticated/admin/tokens/' })
+  const navigate = useNavigate()
 
   return (
     <AdminTokensProvider>

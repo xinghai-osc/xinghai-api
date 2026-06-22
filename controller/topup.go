@@ -132,14 +132,23 @@ type AmountRequest struct {
 	Amount int64 `json:"amount"`
 }
 
-func GetEpayClient() *epay.Client {
-	if operation_setting.PayAddress == "" || operation_setting.EpayId == "" || operation_setting.EpayKey == "" {
+func GetEpayClient(gatewayId string) *epay.Client {
+	gateway := operation_setting.GetEpayGatewayById(gatewayId)
+	if gateway == nil {
+		// Fallback to first configured gateway (covers empty gatewayId and
+		// legacy orders whose GatewayId was never set).
+		gateway = operation_setting.GetFirstEpayGateway()
+	}
+	if gateway == nil {
+		return nil
+	}
+	if gateway.PayAddress == "" || gateway.EpayId == "" || gateway.EpayKey == "" {
 		return nil
 	}
 	withUrl, err := epay.NewClient(&epay.Config{
-		PartnerID: operation_setting.EpayId,
-		Key:       operation_setting.EpayKey,
-	}, operation_setting.PayAddress)
+		PartnerID: gateway.EpayId,
+		Key:       gateway.EpayKey,
+	}, gateway.PayAddress)
 	if err != nil {
 		return nil
 	}
@@ -220,7 +229,8 @@ func RequestEpay(c *gin.Context) {
 	notifyUrl, _ := url.Parse(callBackAddress + "/api/user/epay/notify")
 	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
 	tradeNo = fmt.Sprintf("USR%dNO%s", id, tradeNo)
-	client := GetEpayClient()
+	gatewayId := operation_setting.GetPayMethodGatewayId(req.PaymentMethod)
+	client := GetEpayClient(gatewayId)
 	if client == nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置支付信息"})
 		return
@@ -252,6 +262,7 @@ func RequestEpay(c *gin.Context) {
 		TradeNo:         tradeNo,
 		PaymentMethod:   req.PaymentMethod,
 		PaymentProvider: model.PaymentProviderEpay,
+		GatewayId:       gatewayId,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
@@ -341,7 +352,16 @@ func EpayNotify(c *gin.Context) {
 		_, _ = c.Writer.Write([]byte("fail"))
 		return
 	}
-	client := GetEpayClient()
+	// Determine which gateway to use for verification. Try to look up the
+	// order by out_trade_no to find the stored GatewayId; fall back to the
+	// first configured gateway for legacy orders.
+	gatewayId := ""
+	if outTradeNo, ok := params["out_trade_no"]; ok && outTradeNo != "" {
+		if existingOrder := model.GetTopUpByTradeNo(outTradeNo); existingOrder != nil {
+			gatewayId = existingOrder.GatewayId
+		}
+	}
+	client := GetEpayClient(gatewayId)
 	if client == nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("易支付 client 未初始化 path=%q client_ip=%s", c.Request.RequestURI, c.ClientIP()))
 		_, err := c.Writer.Write([]byte("fail"))

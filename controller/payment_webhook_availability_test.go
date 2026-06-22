@@ -144,24 +144,23 @@ func TestWaffoPancakeWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 
 func TestEpayWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 	confirmPaymentComplianceForTest(t)
-	originalPayAddress := operation_setting.PayAddress
-	originalEpayID := operation_setting.EpayId
-	originalEpayKey := operation_setting.EpayKey
+	originalGateways := operation_setting.EpayGateways
 	originalPayMethods := operation_setting.PayMethods
 	t.Cleanup(func() {
-		operation_setting.PayAddress = originalPayAddress
-		operation_setting.EpayId = originalEpayID
-		operation_setting.EpayKey = originalEpayKey
+		operation_setting.EpayGateways = originalGateways
 		operation_setting.PayMethods = originalPayMethods
 	})
 
-	operation_setting.PayAddress = "https://pay.example.com"
-	operation_setting.EpayId = "epay_id"
-	operation_setting.EpayKey = ""
+	operation_setting.EpayGateways = []operation_setting.EpayGateway{{
+		Id:         "default",
+		PayAddress: "https://pay.example.com",
+		EpayId:     "epay_id",
+		EpayKey:    "",
+	}}
 	operation_setting.PayMethods = []map[string]string{{"type": "alipay"}}
 	require.False(t, isEpayWebhookEnabled())
 
-	operation_setting.EpayKey = "epay_key"
+	operation_setting.EpayGateways[0].EpayKey = "epay_key"
 	require.True(t, isEpayWebhookEnabled())
 
 	operation_setting.PayMethods = nil

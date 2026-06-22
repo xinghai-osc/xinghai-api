@@ -78,7 +78,8 @@ func SubscriptionRequestEpay(c *gin.Context) {
 	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
 	tradeNo = fmt.Sprintf("SUBUSR%dNO%s", userId, tradeNo)
 
-	client := GetEpayClient()
+	gatewayId := operation_setting.GetPayMethodGatewayId(req.PaymentMethod)
+	client := GetEpayClient(gatewayId)
 	if client == nil {
 		common.ApiErrorMsg(c, "当前管理员未配置支付信息")
 		return
@@ -91,6 +92,7 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		TradeNo:         tradeNo,
 		PaymentMethod:   req.PaymentMethod,
 		PaymentProvider: model.PaymentProviderEpay,
+		GatewayId:       gatewayId,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
@@ -141,7 +143,14 @@ func SubscriptionEpayNotify(c *gin.Context) {
 		return
 	}
 
-	client := GetEpayClient()
+	// Determine which gateway to use for verification from the order.
+	gatewayId := ""
+	if outTradeNo, ok := params["out_trade_no"]; ok && outTradeNo != "" {
+		if existingOrder := model.GetSubscriptionOrderByTradeNo(outTradeNo); existingOrder != nil {
+			gatewayId = existingOrder.GatewayId
+		}
+	}
+	client := GetEpayClient(gatewayId)
 	if client == nil {
 		_, _ = c.Writer.Write([]byte("fail"))
 		return
@@ -196,7 +205,14 @@ func SubscriptionEpayReturn(c *gin.Context) {
 		return
 	}
 
-	client := GetEpayClient()
+	// Determine which gateway to use for verification from the order.
+	gatewayId := ""
+	if outTradeNo, ok := params["out_trade_no"]; ok && outTradeNo != "" {
+		if existingOrder := model.GetSubscriptionOrderByTradeNo(outTradeNo); existingOrder != nil {
+			gatewayId = existingOrder.GatewayId
+		}
+	}
+	client := GetEpayClient(gatewayId)
 	if client == nil {
 		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
 		return

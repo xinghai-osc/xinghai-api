@@ -6,9 +6,25 @@ This file is the old version of the payment settings file. If you need to add ne
 package operation_setting
 
 import (
+	"strings"
+
 	"github.com/QuantumNous/new-api/common"
 )
 
+// EpayGateway represents a single EPay-protocol-compatible payment gateway.
+type EpayGateway struct {
+	Id         string `json:"id"`
+	Name       string `json:"name"`
+	PayAddress string `json:"pay_address"`
+	EpayId     string `json:"epay_id"`
+	EpayKey    string `json:"epay_key"`
+}
+
+// EpayGateways holds all configured EPay gateways. Operators can add multiple
+// gateways; each payment method selects which gateway to use via gateway_id.
+var EpayGateways = []EpayGateway{}
+
+// Legacy single-gateway variables — kept as migration source only.
 var PayAddress = ""
 var CustomCallbackAddress = ""
 var EpayId = ""
@@ -56,4 +72,87 @@ func ContainsPayMethod(method string) bool {
 		}
 	}
 	return false
+}
+
+// GetEpayGatewayById returns the gateway with the given id, or nil if not found.
+func GetEpayGatewayById(id string) *EpayGateway {
+	for i := range EpayGateways {
+		if EpayGateways[i].Id == id {
+			return &EpayGateways[i]
+		}
+	}
+	return nil
+}
+
+// GetFirstEpayGateway returns the first configured gateway, or nil if none.
+func GetFirstEpayGateway() *EpayGateway {
+	if len(EpayGateways) == 0 {
+		return nil
+	}
+	return &EpayGateways[0]
+}
+
+// GetPayMethodGatewayId returns the gateway_id associated with the given
+// payment method type. Returns "" if not specified or method not found.
+func GetPayMethodGatewayId(method string) string {
+	for _, payMethod := range PayMethods {
+		if payMethod["type"] == method {
+			return payMethod["gateway_id"]
+		}
+	}
+	return ""
+}
+
+// UpdateEpayGatewaysByJsonString parses the JSON array of gateways. When a
+// gateway has an empty epay_key, the existing key for that gateway id is
+// preserved (so the frontend can omit the key when not rotating it).
+func UpdateEpayGatewaysByJsonString(jsonString string) error {
+	var newGateways []EpayGateway
+	trimmed := strings.TrimSpace(jsonString)
+	if trimmed == "" || trimmed == "[]" {
+		EpayGateways = []EpayGateway{}
+		return nil
+	}
+	if err := common.Unmarshal([]byte(jsonString), &newGateways); err != nil {
+		return err
+	}
+	// Preserve existing keys for gateways whose key is empty in the new data.
+	existingKeyById := make(map[string]string, len(EpayGateways))
+	for _, g := range EpayGateways {
+		existingKeyById[g.Id] = g.EpayKey
+	}
+	for i := range newGateways {
+		if newGateways[i].EpayKey == "" {
+			newGateways[i].EpayKey = existingKeyById[newGateways[i].Id]
+		}
+	}
+	EpayGateways = newGateways
+	return nil
+}
+
+func EpayGateways2JsonString() string {
+	jsonBytes, err := common.Marshal(EpayGateways)
+	if err != nil {
+		return "[]"
+	}
+	return string(jsonBytes)
+}
+
+// MigrateEpayGatewaysFromLegacy populates EpayGateways from the legacy
+// single-gateway variables when EpayGateways is empty. This runs on startup
+// so existing deployments work without manual migration.
+func MigrateEpayGatewaysFromLegacy() {
+	if len(EpayGateways) > 0 {
+		return
+	}
+	if strings.TrimSpace(PayAddress) == "" || strings.TrimSpace(EpayId) == "" || strings.TrimSpace(EpayKey) == "" {
+		return
+	}
+	EpayGateways = []EpayGateway{{
+		Id:         "default",
+		Name:       "Default",
+		PayAddress: PayAddress,
+		EpayId:     EpayId,
+		EpayKey:    EpayKey,
+	}}
 }

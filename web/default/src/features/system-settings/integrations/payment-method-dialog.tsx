@@ -42,6 +42,7 @@ const createPaymentMethodDialogSchema = (t: (key: string) => string) =>
     type: z.string().min(1, t('Payment type key is required')),
     icon: z.string().optional(),
     min_topup: z.string().optional(),
+    gateway_id: z.string().optional(),
   })
 
 type PaymentMethodDialogFormValues = z.infer<
@@ -56,6 +57,12 @@ export type PaymentMethodData = {
   icon?: string
   min_topup?: string
   color?: string
+  gateway_id?: string
+}
+
+type EpayGatewayOption = {
+  id: string
+  name: string
 }
 
 type PaymentMethodDialogProps = {
@@ -63,6 +70,7 @@ type PaymentMethodDialogProps = {
   onOpenChange: (open: boolean) => void
   onSave: (data: PaymentMethodData) => void
   editData?: PaymentMethodData | null
+  epayGateways?: EpayGatewayOption[]
 }
 
 const PAYMENT_TYPE_ICON_NAMES: Record<string, string> = {
@@ -79,6 +87,7 @@ export function PaymentMethodDialog({
   onOpenChange,
   onSave,
   editData,
+  epayGateways = [],
 }: PaymentMethodDialogProps) {
   const { t } = useTranslation()
   const isEditMode = !!editData
@@ -112,6 +121,9 @@ export function PaymentMethodDialog({
   const getPaymentTypeOption = (value: string) =>
     paymentTypeOptions.find((option) => option.value === value)
 
+  // Types that use their own payment flow, not Epay.
+  const NON_EPAY_TYPES = new Set(['stripe', 'waffo_pancake'])
+
   const form = useForm<PaymentMethodDialogFormValues>({
     resolver: zodResolver(paymentMethodDialogSchema),
     defaultValues: {
@@ -119,10 +131,13 @@ export function PaymentMethodDialog({
       type: '',
       icon: '',
       min_topup: '',
+      gateway_id: '',
     },
   })
 
   const iconValue = form.watch('icon')
+  const typeValue = form.watch('type')
+  const isEpayType = !NON_EPAY_TYPES.has(typeValue)
 
   useEffect(() => {
     if (editData) {
@@ -131,6 +146,7 @@ export function PaymentMethodDialog({
         type: editData.type,
         icon: editData.icon ?? getDefaultIconName(editData.type),
         min_topup: editData.min_topup ?? '',
+        gateway_id: editData.gateway_id ?? '',
       })
     } else {
       form.reset({
@@ -138,6 +154,7 @@ export function PaymentMethodDialog({
         type: '',
         icon: '',
         min_topup: '',
+        gateway_id: '',
       })
     }
   }, [editData, form, open])
@@ -152,6 +169,10 @@ export function PaymentMethodDialog({
     }
     if (values.min_topup && values.min_topup.trim() !== '') {
       data.min_topup = values.min_topup
+    }
+    // Only include gateway_id for Epay types
+    if (!NON_EPAY_TYPES.has(values.type) && values.gateway_id) {
+      data.gateway_id = values.gateway_id
     }
     onSave(data)
     form.reset()
@@ -309,6 +330,40 @@ export function PaymentMethodDialog({
               </FormItem>
             )}
           />
+
+          {isEpayType && epayGateways.length > 0 && (
+            <FormField
+              control={form.control}
+              name='gateway_id'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Epay gateway')}</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      options={epayGateways.map((g) => ({
+                        label: g.name,
+                        value: g.id,
+                      }))}
+                      value={field.value ?? ''}
+                      onValueChange={(value) => {
+                        if (value === null) return
+                        field.onChange(value)
+                      }}
+                      placeholder={t('Select gateway (uses first if unset)')}
+                      searchPlaceholder={t('Search gateways...')}
+                      allowCustomValue
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'Bind this payment method to a specific Epay gateway. Leave unset to use the first gateway.'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </form>
       </Form>
     </Dialog>

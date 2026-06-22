@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	model.DB = db
 	model.LOG_DB = db
 
-	common.UsingSQLite = true
+	common.SetDatabaseTypes(common.DatabaseTypeSQLite, common.DatabaseTypeSQLite)
 	common.RedisEnabled = false
 	common.BatchUpdateEnabled = false
 	common.LogConsumeEnabled = true
@@ -46,6 +46,7 @@ func TestMain(m *testing.M) {
 		&model.SubscriptionPlan{},
 		&model.UserSubscription{},
 		&model.SubscriptionPreConsumeRecord{},
+		&model.SystemTask{},
 	); err != nil {
 		panic("failed to migrate: " + err.Error())
 	}
@@ -69,6 +70,7 @@ func truncate(t *testing.T) {
 		_ = model.DB.Exec("DELETE FROM subscription_pre_consume_records").Error
 		_ = model.DB.Exec("DELETE FROM user_subscriptions").Error
 		_ = model.DB.Exec("DELETE FROM subscription_plans").Error
+		_ = model.DB.Exec("DELETE FROM system_tasks").Error
 	})
 }
 
