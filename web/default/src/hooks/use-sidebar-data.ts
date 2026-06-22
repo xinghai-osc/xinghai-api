@@ -26,6 +26,7 @@ import {
   FlaskConical,
   ImageIcon,
   Key,
+  KeyRound,
   LayoutDashboard,
   ListTodo,
   MessageSquare,
@@ -136,6 +137,11 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           title: t('Users'),
           url: '/users',
           icon: Users,
+        },
+        {
+          title: t('API Key Management'),
+          url: '/admin/tokens',
+          icon: KeyRound,
         },
         {
           title: t('Redemption Codes'),

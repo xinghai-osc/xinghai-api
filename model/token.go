@@ -481,6 +481,99 @@ func GetTokenKeysByIds(ids []int, userId int) ([]Token, error) {
 	return tokens, err
 }
 
+// ============================================================================
+// Admin token queries (cross-user)
+// ============================================================================
+
+// GetAllTokensForAdmin returns all tokens (paginated), optionally filtered by userId.
+func GetAllTokensForAdmin(userId int, startIdx int, num int) ([]*Token, error) {
+	var tokens []*Token
+	var err error
+	query := DB.Model(&Token{})
+	if userId > 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	err = query.Order("id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
+	return tokens, err
+}
+
+// CountAllTokensForAdmin returns total token count, optionally filtered by userId.
+func CountAllTokensForAdmin(userId int) (int64, error) {
+	var total int64
+	query := DB.Model(&Token{})
+	if userId > 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	err := query.Count(&total).Error
+	return total, err
+}
+
+// SearchTokensForAdmin searches tokens across all users (or a specific user), by keyword and/or token.
+func SearchTokensForAdmin(userId int, keyword string, token string, offset int, limit int) (tokens []*Token, total int64, err error) {
+	if limit <= 0 || limit > searchHardLimit {
+		limit = searchHardLimit
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	if token != "" {
+		token = strings.TrimPrefix(token, "sk-")
+	}
+
+	baseQuery := DB.Model(&Token{})
+	if userId > 0 {
+		baseQuery = baseQuery.Where("user_id = ?", userId)
+	}
+
+	if keyword != "" {
+		keywordPattern, err := sanitizeLikePattern(keyword)
+		if err != nil {
+			return nil, 0, err
+		}
+		baseQuery = baseQuery.Where("name LIKE ? ESCAPE '!'", keywordPattern)
+	}
+	if token != "" {
+		tokenPattern, err := sanitizeLikePattern(token)
+		if err != nil {
+			return nil, 0, err
+		}
+		baseQuery = baseQuery.Where(commonKeyCol+" LIKE ? ESCAPE '!'", tokenPattern)
+	}
+
+	err = baseQuery.Count(&total).Error
+	if err != nil {
+		common.SysError("failed to count search tokens: " + err.Error())
+		return nil, 0, errors.New("搜索令牌失败")
+	}
+
+	err = baseQuery.Order("id desc").Offset(offset).Limit(limit).Find(&tokens).Error
+	if err != nil {
+		common.SysError("failed to search tokens: " + err.Error())
+		return nil, 0, errors.New("搜索令牌失败")
+	}
+	return tokens, total, nil
+}
+
+// GetTokenByIdForAdmin returns a token by id only (no user_id constraint), for admin use.
+func GetTokenByIdForAdmin(id int) (*Token, error) {
+	if id == 0 {
+		return nil, errors.New("id 为空！")
+	}
+	token := Token{Id: id}
+	err := DB.First(&token, "id = ?", id).Error
+	return &token, err
+}
+
+// GetTokenKeysByIdsForAdmin returns id+key for the given ids (no user_id constraint), for admin use.
+func GetTokenKeysByIdsForAdmin(ids []int) ([]Token, error) {
+	var tokens []Token
+	err := DB.Select("id", commonKeyCol).
+		Where("id IN (?)", ids).
+		Find(&tokens).Error
+	return tokens, err
+}
+
 // InvalidateUserTokensCache 清理指定用户所有令牌在 Redis 中的缓存，
 // 配合 InvalidateUserCache 使用，可在用户被禁用/删除时立即阻断其令牌的请求。
 // 下一次请求将从数据库重新加载令牌及用户状态，从而立即识别出被禁用的用户。

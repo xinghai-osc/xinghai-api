@@ -292,6 +292,17 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.POST("/batch/keys", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.GetTokenKeysBatch)
 		}
 
+		// Admin token management (cross-user, for viewing user-created keys)
+		adminTokenRoute := apiRouter.Group("/admin/token")
+		adminTokenRoute.Use(middleware.AdminAuth())
+		{
+			adminTokenRoute.GET("/", controller.AdminGetAllTokens)
+			adminTokenRoute.GET("/search", controller.AdminSearchTokens)
+			adminTokenRoute.GET("/:id", controller.AdminGetToken)
+			adminTokenRoute.POST("/:id/key", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AdminGetTokenKey)
+			adminTokenRoute.POST("/batch/keys", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AdminGetTokenKeysBatch)
+		}
+
 		usageRoute := apiRouter.Group("/usage")
 		usageRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{

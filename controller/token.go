@@ -357,3 +357,101 @@ func GetTokenKeysBatch(c *gin.Context) {
 	}
 	common.ApiSuccess(c, gin.H{"keys": keysMap})
 }
+
+// ============================================================================
+// Admin token management (cross-user)
+// ============================================================================
+
+// AdminGetAllTokens lists tokens across all users (or filtered by user_id query param).
+func AdminGetAllTokens(c *gin.Context) {
+	userId := 0
+	if uidStr := c.Query("user_id"); uidStr != "" {
+		userId, _ = strconv.Atoi(uidStr)
+	}
+	pageInfo := common.GetPageQuery(c)
+	tokens, err := model.GetAllTokensForAdmin(userId, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	total, _ := model.CountAllTokensForAdmin(userId)
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
+	common.ApiSuccess(c, pageInfo)
+}
+
+// AdminSearchTokens searches tokens across all users (or filtered by user_id query param).
+func AdminSearchTokens(c *gin.Context) {
+	userId := 0
+	if uidStr := c.Query("user_id"); uidStr != "" {
+		userId, _ = strconv.Atoi(uidStr)
+	}
+	keyword := c.Query("keyword")
+	token := c.Query("token")
+
+	pageInfo := common.GetPageQuery(c)
+
+	tokens, total, err := model.SearchTokensForAdmin(userId, keyword, token, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
+	common.ApiSuccess(c, pageInfo)
+}
+
+// AdminGetToken returns a single token by id (no user_id constraint).
+func AdminGetToken(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	token, err := model.GetTokenByIdForAdmin(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, buildMaskedTokenResponse(token))
+}
+
+// AdminGetTokenKey returns the full (unmasked) key for a token by id.
+func AdminGetTokenKey(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	token, err := model.GetTokenByIdForAdmin(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"key": token.GetFullKey(),
+	})
+}
+
+// AdminGetTokenKeysBatch returns full keys for multiple tokens by ids.
+func AdminGetTokenKeysBatch(c *gin.Context) {
+	tokenBatch := TokenBatch{}
+	if err := c.ShouldBindJSON(&tokenBatch); err != nil || len(tokenBatch.Ids) == 0 {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	if len(tokenBatch.Ids) > 100 {
+		common.ApiErrorI18n(c, i18n.MsgBatchTooMany, map[string]any{"Max": 100})
+		return
+	}
+	tokens, err := model.GetTokenKeysByIdsForAdmin(tokenBatch.Ids)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	keysMap := make(map[int]string)
+	for _, t := range tokens {
+		keysMap[t.Id] = t.GetFullKey()
+	}
+	common.ApiSuccess(c, gin.H{"keys": keysMap})
+}

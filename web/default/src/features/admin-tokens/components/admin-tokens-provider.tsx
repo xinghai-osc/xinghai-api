@@ -1,0 +1,185 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import { fetchAdminTokenKey, fetchAdminTokenKeysBatch } from '../api'
+import { ERROR_MESSAGES } from '../constants'
+import { type AdminApiKey } from '../types'
+
+type AdminTokensContextType = {
+  refreshTrigger: number
+  triggerRefresh: () => void
+  resolveRealKey: (id: number) => Promise<string | null>
+  resolveRealKeysBatch: (ids: number[]) => Promise<Record<number, string>>
+  resolvedKeys: Record<number, string>
+  loadingKeys: Record<number, boolean>
+  copiedKeyId: number | null
+  markKeyCopied: (id: number) => void
+  filterUserId: number | null
+  setFilterUserId: (userId: number | null) => void
+}
+
+const AdminTokensContext = React.createContext<AdminTokensContextType | null>(
+  null
+)
+
+export function AdminTokensProvider({
+  children,
+  initialUserId,
+}: {
+  children: React.ReactNode
+  initialUserId?: number
+}) {
+  const { t } = useTranslation()
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [resolvedKeys, setResolvedKeys] = useState<Record<number, string>>({})
+  const [loadingKeys, setLoadingKeys] = useState<Record<number, boolean>>({})
+  const pendingRequests = useRef<Record<number, Promise<string | null>>>({})
+  const [copiedKeyId, setCopiedKeyId] = useState<number | null>(null)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const [filterUserId, setFilterUserId] = useState<number | null>(
+    initialUserId ?? null
+  )
+
+  useEffect(() => {
+    return () => clearTimeout(copiedTimerRef.current)
+  }, [])
+
+  const markKeyCopied = useCallback((id: number) => {
+    setCopiedKeyId(id)
+    clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setCopiedKeyId(null), 2000)
+  }, [])
+
+  const triggerRefresh = useCallback(() => {
+    setRefreshTrigger((prev) => prev + 1)
+  }, [])
+
+  const resolveRealKey = useCallback(
+    async (id: number): Promise<string | null> => {
+      if (resolvedKeys[id]) return resolvedKeys[id]
+      if (id in pendingRequests.current) return pendingRequests.current[id]
+
+      const request = (async () => {
+        setLoadingKeys((prev) => ({ ...prev, [id]: true }))
+        try {
+          const res = await fetchAdminTokenKey(id)
+          if (res.success && res.data?.key) {
+            const fullKey = `sk-${res.data.key}`
+            setResolvedKeys((prev) => ({ ...prev, [id]: fullKey }))
+            return fullKey
+          }
+          toast.error(res.message || t(ERROR_MESSAGES.UNEXPECTED))
+          return null
+        } catch {
+          toast.error(t(ERROR_MESSAGES.UNEXPECTED))
+          return null
+        } finally {
+          delete pendingRequests.current[id]
+          setLoadingKeys((prev) => {
+            const next = { ...prev }
+            delete next[id]
+            return next
+          })
+        }
+      })()
+
+      pendingRequests.current[id] = request
+      return request
+    },
+    [resolvedKeys, t]
+  )
+
+  const resolveRealKeysBatch = useCallback(
+    async (ids: number[]): Promise<Record<number, string>> => {
+      const uncachedIds = ids.filter((id) => !resolvedKeys[id])
+      if (uncachedIds.length === 0) {
+        const result: Record<number, string> = {}
+        for (const id of ids) result[id] = resolvedKeys[id]
+        return result
+      }
+
+      for (const id of uncachedIds) {
+        setLoadingKeys((prev) => ({ ...prev, [id]: true }))
+      }
+
+      try {
+        const res = await fetchAdminTokenKeysBatch(uncachedIds)
+        if (res.success && res.data?.keys) {
+          const newKeys: Record<number, string> = {}
+          for (const [idStr, key] of Object.entries(res.data.keys)) {
+            newKeys[Number(idStr)] = `sk-${key}`
+          }
+          setResolvedKeys((prev) => ({ ...prev, ...newKeys }))
+
+          const result: Record<number, string> = { ...newKeys }
+          for (const id of ids) {
+            if (resolvedKeys[id]) result[id] = resolvedKeys[id]
+          }
+          return result
+        }
+        toast.error(res.message || t(ERROR_MESSAGES.UNEXPECTED))
+        return {}
+      } catch {
+        toast.error(t(ERROR_MESSAGES.UNEXPECTED))
+        return {}
+      } finally {
+        for (const id of uncachedIds) {
+          setLoadingKeys((prev) => {
+            const next = { ...prev }
+            delete next[id]
+            return next
+          })
+        }
+      }
+    },
+    [resolvedKeys, t]
+  )
+
+  return (
+    <AdminTokensContext
+      value={{
+        refreshTrigger,
+        triggerRefresh,
+        resolveRealKey,
+        resolveRealKeysBatch,
+        resolvedKeys,
+        loadingKeys,
+        copiedKeyId,
+        markKeyCopied,
+        filterUserId,
+        setFilterUserId,
+      }}
+    >
+      {children}
+    </AdminTokensContext>
+  )
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAdminTokens = () => {
+  const ctx = React.useContext(AdminTokensContext)
+  if (!ctx) {
+    throw new Error('useAdminTokens must be used within <AdminTokensContext>')
+  }
+  return ctx
+}
+
+export type { AdminApiKey }
