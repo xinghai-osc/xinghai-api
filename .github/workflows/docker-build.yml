@@ -84,12 +84,8 @@ jobs:
             xinghaiosc/xinghai-api:${{ env.TAG }}-${{ matrix.arch }}
             xinghaiosc/xinghai-api:latest-${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: |
-            type=gha,scope=build-${{ matrix.arch }}
-            type=registry,ref=xinghaiosc/xinghai-api:buildcache-${{ matrix.arch }}
-          cache-to: |
-            type=gha,scope=build-${{ matrix.arch }},mode=max
-            type=registry,ref=xinghaiosc/xinghai-api:buildcache-${{ matrix.arch }},mode=max
+          cache-from: type=gha,scope=build-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-${{ matrix.arch }},mode=max
           provenance: mode=max
           sbom: true
 

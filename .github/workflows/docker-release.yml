@@ -61,9 +61,7 @@ jobs:
           push: false
           load: true
           tags: xinghai-api:${{ env.VERSION }}-${{ matrix.arch }}
-          cache-from: |
-            type=gha,scope=release-${{ matrix.arch }}
-            type=registry,ref=xinghaiosc/xinghai-api:buildcache-${{ matrix.arch }}
+          cache-from: type=gha,scope=release-${{ matrix.arch }}
           cache-to: type=gha,scope=release-${{ matrix.arch }},mode=max
           provenance: false
           sbom: false
