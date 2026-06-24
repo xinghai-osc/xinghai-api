@@ -55,7 +55,7 @@ export function UpdateCheckerSection({
     setChecking(true)
     try {
       const response = await fetch(
-        'https://api.github.com/repos/Calcium-Ion/new-api/releases/latest',
+        'https://api.github.com/repos/xinghai-osc/xinghai-api/releases/latest',
         {
           headers: {
             Accept: 'application/vnd.github+json',
