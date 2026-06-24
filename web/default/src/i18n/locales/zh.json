@@ -5047,6 +5047,25 @@
     "Zero retention": "零数据保留",
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "Add Epay gateway": "添加易支付网关",
+    "Add gateway": "添加网关",
+    "Add multiple Epay gateways. In the payment methods tab, each method can be bound to a specific gateway via its gateway_id field.": "添加多个易支付网关。在支付方式标签页中，每种方式可通过 gateway_id 字段绑定到特定网关。",
+    "Bind this payment method to a specific Epay gateway. Leave unset to use the first gateway.": "将此支付方式绑定到特定的易支付网关。留空则使用第一个网关。",
+    "Configure one or more Epay-protocol-compatible payment gateways. Each payment method can be bound to a specific gateway.": "配置一个或多个兼容易支付协议的支付网关。每种支付方式可绑定到特定网关。",
+    "Display name to identify this gateway.": "用于标识此网关的显示名称。",
+    "Edit Epay gateway": "编辑易支付网关",
+    "Epay Gateways": "易支付网关",
+    "Epay gateway": "易支付网关",
+    "Epay gateways": "易支付网关",
+    "Gateway name": "网关名称",
+    "Gateway name is required": "网关名称为必填项",
+    "No Epay gateways configured. Click \"Add gateway\" to get started.": "尚未配置易支付网关。点击\"添加网关\"开始。",
+    "Preserved (not shown)": "已保留（不显示）",
+    "Search gateways...": "搜索网关...",
+    "Secret key": "密钥",
+    "Secret key from your Epay provider": "Epay 提供商的密钥",
+    "Select gateway (uses first if unset)": "选择网关（留空则使用第一个）",
+    "e.g., Primary Alipay Gateway": "例如，主支付宝网关"
   }
 }
