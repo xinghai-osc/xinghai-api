@@ -31,6 +31,7 @@ import {
   ListTodo,
   MessageSquare,
   Radio,
+  ServerCog,
   Settings,
   Ticket,
   User,
@@ -38,6 +39,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { ROLE } from '@/lib/roles'
 import { type SidebarData, type NavItem, type NavGroup } from '@/components/layout/types'
 import { useStatus } from '@/hooks/use-status'
 import { parseCustomSidebarItems, resolveIcon } from '@/features/system-settings/maintenance/custom-sidebar-config'
@@ -152,6 +154,12 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           title: t('Subscription Management'),
           url: '/subscriptions',
           icon: CreditCard,
+        },
+        {
+          title: t('System Info'),
+          url: '/system-info',
+          icon: ServerCog,
+          requiredRole: ROLE.SUPER_ADMIN,
         },
         {
           title: t('System Settings'),

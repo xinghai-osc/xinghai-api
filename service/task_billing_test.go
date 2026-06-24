@@ -47,6 +47,7 @@ func TestMain(m *testing.M) {
 		&model.UserSubscription{},
 		&model.SubscriptionPreConsumeRecord{},
 		&model.SystemTask{},
+		&model.SystemTaskLock{},
 	); err != nil {
 		panic("failed to migrate: " + err.Error())
 	}
@@ -65,12 +66,13 @@ func truncate(t *testing.T) {
 		model.DB.Exec("DELETE FROM users")
 		model.DB.Exec("DELETE FROM tokens")
 		model.DB.Exec("DELETE FROM logs")
-		_ = model.DB.Exec("DELETE FROM channels").Error
-		_ = model.DB.Exec("DELETE FROM top_ups").Error
-		_ = model.DB.Exec("DELETE FROM subscription_pre_consume_records").Error
-		_ = model.DB.Exec("DELETE FROM user_subscriptions").Error
-		_ = model.DB.Exec("DELETE FROM subscription_plans").Error
-		_ = model.DB.Exec("DELETE FROM system_tasks").Error
+		model.DB.Exec("DELETE FROM channels")
+		model.DB.Exec("DELETE FROM top_ups")
+		model.DB.Exec("DELETE FROM subscription_pre_consume_records")
+		model.DB.Exec("DELETE FROM user_subscriptions")
+		model.DB.Exec("DELETE FROM subscription_plans")
+		model.DB.Exec("DELETE FROM system_task_locks")
+		model.DB.Exec("DELETE FROM system_tasks")
 	})
 }
 
