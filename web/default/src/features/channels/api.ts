@@ -440,6 +440,48 @@ export async function deleteDisabledMultiKeys(
   }) as Promise<{ success: boolean; message?: string; data?: number }>
 }
 
+/**
+ * Check balance for a specific key in multi-key channel
+ */
+export async function checkMultiKeyBalance(
+  channelId: number,
+  keyIndex: number
+): Promise<{
+  success: boolean
+  message?: string
+  data?: { index: number; balance: number }
+}> {
+  return manageMultiKeys({
+    channel_id: channelId,
+    action: 'check_key_balance',
+    key_index: keyIndex,
+  }) as Promise<{
+    success: boolean
+    message?: string
+    data?: { index: number; balance: number }
+  }>
+}
+
+/**
+ * Check balance for all keys in multi-key channel
+ */
+export async function checkAllMultiKeyBalances(
+  channelId: number
+): Promise<{
+  success: boolean
+  message?: string
+  data?: Array<{ index: number; balance: number; error?: string }>
+}> {
+  return manageMultiKeys({
+    channel_id: channelId,
+    action: 'check_all_keys_balance',
+  }) as Promise<{
+    success: boolean
+    message?: string
+    data?: Array<{ index: number; balance: number; error?: string }>
+  }>
+}
+
 // ============================================================================
 // Tag Operations
 // ============================================================================

@@ -227,6 +227,7 @@ export interface KeyStatus {
   disabled_time?: number
   reason?: string
   key_preview?: string
+  balance?: number
 }
 
 export type MultiKeyConfirmAction = {
@@ -314,6 +315,8 @@ export interface MultiKeyManageParams {
     | 'disable_all_keys'
     | 'delete_key'
     | 'delete_disabled_keys'
+    | 'check_key_balance'
+    | 'check_all_keys_balance'
   key_index?: number
   page?: number
   page_size?: number

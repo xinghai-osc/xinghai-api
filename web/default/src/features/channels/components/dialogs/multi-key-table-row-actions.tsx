@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Loader2 } from 'lucide-react'
+import { Loader2, DollarSign } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import type { KeyTestResult, MultiKeyConfirmAction } from '../../types'
@@ -25,16 +25,20 @@ type MultiKeyTableRowActionsProps = {
   keyIndex: number
   status: number
   testResult?: KeyTestResult
+  isQueryingBalance?: boolean
   onAction: (action: MultiKeyConfirmAction) => void
   onTest: (keyIndex: number) => void
+  onQueryBalance?: (keyIndex: number) => void
 }
 
 export function MultiKeyTableRowActions({
   keyIndex,
   status,
   testResult,
+  isQueryingBalance,
   onAction,
   onTest,
+  onQueryBalance,
 }: MultiKeyTableRowActionsProps) {
   const { t } = useTranslation()
   const isEnabled = status === 1
@@ -51,6 +55,20 @@ export function MultiKeyTableRowActions({
         {isTesting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
         {t('Test')}
       </Button>
+      {onQueryBalance && (
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => onQueryBalance(keyIndex)}
+          disabled={isQueryingBalance}
+        >
+          {isQueryingBalance && (
+            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+          )}
+          {!isQueryingBalance && <DollarSign className='mr-2 h-4 w-4' />}
+          {t('Balance')}
+        </Button>
+      )}
       {isEnabled ? (
         <Button
           variant='outline'

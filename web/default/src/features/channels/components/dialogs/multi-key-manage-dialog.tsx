@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Loader2, RefreshCw, Trash2, Power, PowerOff } from 'lucide-react'
+import { Loader2, RefreshCw, Trash2, Power, PowerOff, DollarSign } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -43,11 +43,14 @@ import {
   enableAllMultiKeys,
   disableAllMultiKeys,
   deleteDisabledMultiKeys,
+  checkMultiKeyBalance,
+  checkAllMultiKeyBalances,
 } from '../../api'
 import { MULTI_KEY_FILTER_OPTIONS } from '../../constants'
 import {
   channelsQueryKeys,
   formatTimestamp,
+  formatBalance,
   getMultiKeyStatusConfig,
   getMultiKeyConfirmMessage,
   handleTestChannel,
@@ -94,11 +97,22 @@ export function MultiKeyManageDialog({
   const [testResults, setTestResults] = useState<
     Record<number, KeyTestResult>
   >({})
+  const [balanceResults, setBalanceResults] = useState<Record<number, number>>(
+    {}
+  )
+  const [queryingBalanceKeys, setQueryingBalanceKeys] = useState<
+    Record<number, boolean>
+  >({})
+  const [isQueryingAllBalances, setIsQueryingAllBalances] = useState(false)
+
   // Reset and load data when dialog opens
   useEffect(() => {
     if (open && currentRow) {
       setCurrentPage(1)
       setStatusFilter(null)
+      setBalanceResults({})
+      setQueryingBalanceKeys({})
+      setIsQueryingAllBalances(false)
       loadKeyStatus(1, pageSize, null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,6 +193,66 @@ export function MultiKeyManageDialog({
         }))
       }
     )
+  }
+
+  const handleQueryKeyBalance = async (keyIndex: number): Promise<void> => {
+    if (!currentRow) return
+
+    setQueryingBalanceKeys((prev) => ({ ...prev, [keyIndex]: true }))
+    try {
+      const response = await checkMultiKeyBalance(currentRow.id, keyIndex)
+      if (response.success && response.data) {
+        setBalanceResults((prev) => ({
+          ...prev,
+          [keyIndex]: response.data!.balance,
+        }))
+      } else {
+        toast.error(response.message || t('Failed to query balance'))
+      }
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('Failed to query balance')
+      )
+    } finally {
+      setQueryingBalanceKeys((prev) => ({ ...prev, [keyIndex]: false }))
+    }
+  }
+
+  const handleQueryAllBalances = async (): Promise<void> => {
+    if (!currentRow) return
+
+    setIsQueryingAllBalances(true)
+    try {
+      const response = await checkAllMultiKeyBalances(currentRow.id)
+      if (response.success && response.data) {
+        const newBalances: Record<number, number> = {}
+        for (const item of response.data) {
+          newBalances[item.index] = item.balance
+        }
+        setBalanceResults(newBalances)
+        const errorCount = response.data.filter((item) => item.error).length
+        if (errorCount > 0) {
+          toast.success(
+            t('Balance queried successfully') +
+              ` (${errorCount} ${t('failed')})`
+          )
+        } else {
+          toast.success(t('Balance queried successfully'))
+        }
+      } else {
+        toast.error(response.message || t('Failed to query balance'))
+      }
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('Failed to query balance')
+      )
+    } finally {
+      setIsQueryingAllBalances(false)
+    }
   }
 
   const performAction = async (): Promise<void> => {
@@ -340,6 +414,21 @@ export function MultiKeyManageDialog({
                 <RefreshCw className='h-4 w-4' />
               </Button>
 
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleQueryAllBalances}
+                disabled={isQueryingAllBalances || isLoading}
+              >
+                {isQueryingAllBalances && (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                )}
+                {!isQueryingAllBalances && (
+                  <DollarSign className='mr-2 h-4 w-4' />
+                )}
+                {t('Query All Balances')}
+              </Button>
+
               {manualDisabledCount + autoDisabledCount > 0 && (
                 <Button
                   variant='default'
@@ -388,8 +477,14 @@ export function MultiKeyManageDialog({
             ) : (
               <StaticDataTable
                 className='rounded-none border-0'
-                tableClassName='min-w-[800px]'
-                data={keys}
+                tableClassName='min-w-[900px]'
+                data={keys.map((k) => ({
+                  ...k,
+                  balance:
+                    balanceResults[k.index] !== undefined
+                      ? balanceResults[k.index]
+                      : k.balance,
+                }))}
                 getRowKey={(key) => key.index}
                 columns={[
                   {
@@ -406,9 +501,19 @@ export function MultiKeyManageDialog({
                     cell: (key) => renderStatusBadge(key.status),
                   },
                   {
+                    id: 'balance',
+                    header: t('Balance'),
+                    className: 'w-40',
+                    cellClassName: 'text-sm',
+                    cell: (key) =>
+                      key.balance !== undefined && key.balance !== null
+                        ? formatBalance(key.balance)
+                        : '-',
+                  },
+                  {
                     id: 'reason',
                     header: t('Disabled Reason'),
-                    className: 'min-w-[200px]',
+                    className: 'min-w-[160px]',
                     cellClassName: 'max-w-xs truncate text-sm',
                     cell: (key) => key.reason || '-',
                   },
@@ -422,14 +527,16 @@ export function MultiKeyManageDialog({
                   {
                     id: 'actions',
                     header: t('Actions'),
-                    className: 'w-44 text-right',
+                    className: 'w-56 text-right',
                     cell: (key) => (
                       <MultiKeyTableRowActions
                         keyIndex={key.index}
                         status={key.status}
                         testResult={testResults[key.index]}
+                        isQueryingBalance={queryingBalanceKeys[key.index]}
                         onAction={setConfirmAction}
                         onTest={handleTestKey}
+                        onQueryBalance={handleQueryKeyBalance}
                       />
                     ),
                   },

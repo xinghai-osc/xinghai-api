@@ -356,7 +356,7 @@ func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
 	return availableBalanceUsd, nil
 }
 
-func updateChannelBalance(channel *model.Channel) (float64, error) {
+func queryChannelBalance(channel *model.Channel) (float64, error) {
 	baseURL := constant.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
 		channel.BaseURL = &baseURL
@@ -421,6 +421,14 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 		return 0, err
 	}
 	balance := subscription.HardLimitUSD - usage.TotalUsage/100
+	return balance, nil
+}
+
+func updateChannelBalance(channel *model.Channel) (float64, error) {
+	balance, err := queryChannelBalance(channel)
+	if err != nil {
+		return 0, err
+	}
 	channel.UpdateBalance(balance)
 	return balance, nil
 }

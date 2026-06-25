@@ -1343,8 +1343,8 @@ func CopyChannel(c *gin.Context) {
 // MultiKeyManageRequest represents the request for multi-key management operations
 type MultiKeyManageRequest struct {
 	ChannelId int    `json:"channel_id"`
-	Action    string `json:"action"`              // "disable_key", "enable_key", "delete_key", "delete_disabled_keys", "get_key_status"
-	KeyIndex  *int   `json:"key_index,omitempty"` // for disable_key, enable_key, and delete_key actions
+	Action    string `json:"action"`              // "disable_key", "enable_key", "delete_key", "delete_disabled_keys", "get_key_status", "check_key_balance", "check_all_keys_balance"
+	KeyIndex  *int   `json:"key_index,omitempty"` // for disable_key, enable_key, delete_key, and check_key_balance actions
 	Page      int    `json:"page,omitempty"`      // for get_key_status pagination
 	PageSize  int    `json:"page_size,omitempty"` // for get_key_status pagination
 	Status    *int   `json:"status,omitempty"`    // for get_key_status filtering: 1=enabled, 2=manual_disabled, 3=auto_disabled, nil=all
@@ -1364,11 +1364,12 @@ type MultiKeyStatusResponse struct {
 }
 
 type KeyStatus struct {
-	Index        int    `json:"index"`
-	Status       int    `json:"status"` // 1: enabled, 2: disabled
-	DisabledTime int64  `json:"disabled_time,omitempty"`
-	Reason       string `json:"reason,omitempty"`
-	KeyPreview   string `json:"key_preview"` // first 10 chars of key for identification
+	Index        int     `json:"index"`
+	Status       int     `json:"status"` // 1: enabled, 2: disabled
+	DisabledTime int64   `json:"disabled_time,omitempty"`
+	Reason       string  `json:"reason,omitempty"`
+	KeyPreview   string  `json:"key_preview"` // first 10 chars of key for identification
+	Balance      float64 `json:"balance,omitempty"`
 }
 
 // ManageMultiKeys handles multi-key management operations
@@ -1828,6 +1829,83 @@ func ManageMultiKeys(c *gin.Context) {
 			"success": true,
 			"message": fmt.Sprintf("已删除 %d 个自动禁用的密钥", deletedCount),
 			"data":    deletedCount,
+		})
+		return
+
+	case "check_key_balance":
+		if request.KeyIndex == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "未指定要查询余额的密钥索引",
+			})
+			return
+		}
+
+		keyIndex := *request.KeyIndex
+		if keyIndex < 0 || keyIndex >= channel.ChannelInfo.MultiKeySize {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "密钥索引超出范围",
+			})
+			return
+		}
+
+		keys := channel.GetKeys()
+		if keyIndex >= len(keys) {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "密钥索引超出范围",
+			})
+			return
+		}
+
+		tempChannel := *channel
+		tempChannel.Key = keys[keyIndex]
+		balance, err := queryChannelBalance(&tempChannel)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": fmt.Sprintf("查询余额失败: %s", err.Error()),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"index":   keyIndex,
+				"balance": balance,
+			},
+		})
+		return
+
+	case "check_all_keys_balance":
+		keys := channel.GetKeys()
+		type BalanceResult struct {
+			Index   int     `json:"index"`
+			Balance float64 `json:"balance"`
+			Error   string  `json:"error,omitempty"`
+		}
+		results := make([]BalanceResult, 0, len(keys))
+		for i, key := range keys {
+			tempChannel := *channel
+			tempChannel.Key = key
+			balance, err := queryChannelBalance(&tempChannel)
+			result := BalanceResult{
+				Index:   i,
+				Balance: balance,
+			}
+			if err != nil {
+				result.Error = err.Error()
+			}
+			results = append(results, result)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    results,
 		})
 		return
 
