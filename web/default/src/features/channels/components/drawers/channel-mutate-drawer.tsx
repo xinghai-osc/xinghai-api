@@ -2768,7 +2768,12 @@ export function ChannelMutateDrawer({
                                   let keyPlaceholder = t(
                                     getKeyPromptForType(currentType)
                                   )
-                                  if (isEditing) {
+                                  if (isEditing && isMultiKeyChannel) {
+                                    keyPlaceholder =
+                                      keyMode === 'replace'
+                                        ? t('Replace all existing keys')
+                                        : t('Append to existing keys')
+                                  } else if (isEditing) {
                                     keyPlaceholder = t(
                                       'Leave empty to keep existing key'
                                     )
@@ -2807,26 +2812,18 @@ export function ChannelMutateDrawer({
                                   let keyDescription: ReactNode = t(
                                     FIELD_DESCRIPTIONS.KEY
                                   )
-                                  if (isEditing) {
-                                    let keyModeDescription = t(
-                                      'Append mode: New keys will be added to the end of the existing key list'
-                                    )
-                                    if (keyMode === 'replace') {
-                                      keyModeDescription = t(
-                                        'Replace mode: Will completely replace all existing keys'
-                                      )
-                                    }
-                                    keyDescription = (
-                                      <>
-                                        {t(
-                                          'Enter new key to update, or leave empty to keep current key'
-                                        )}
-                                        {isMultiKeyChannel && (
-                                          <span className='text-warning mt-1 block'>
-                                            {keyModeDescription}
-                                          </span>
-                                        )}
-                                      </>
+                                  if (isEditing && isMultiKeyChannel) {
+                                    keyDescription =
+                                      keyMode === 'replace'
+                                        ? t(
+                                            'Replace mode: Will completely replace all existing keys'
+                                          )
+                                        : t(
+                                            'Append mode: New keys will be added to the end of the existing key list'
+                                          )
+                                  } else if (isEditing) {
+                                    keyDescription = t(
+                                      'Enter new key to update, or leave empty to keep current key'
                                     )
                                   } else if (isBatchMode) {
                                     keyDescription = t(
