@@ -497,6 +497,14 @@ func WaffoPancakeWebhook(c *gin.Context) {
 			return
 		}
 		logger.LogInfo(c.Request.Context(), fmt.Sprintf("Waffo Pancake 订阅完成 trade_no=%s event_id=%s order_id=%s client_ip=%s", tradeNo, event.ID, event.Data.OrderID, c.ClientIP()))
+		// Notify admin
+		if order := model.GetSubscriptionOrderByTradeNo(tradeNo); order != nil {
+			if plan, _ := model.GetSubscriptionPlanById(order.PlanId); plan != nil {
+				if user, _ := model.GetUserById(order.UserId, false); user != nil {
+					service.NotifyAdminSubscription(user.Id, user.Username, plan.Title, fmt.Sprintf("%.2f", order.Money), order.PaymentMethod)
+				}
+			}
+		}
 		c.String(http.StatusOK, "OK")
 		return
 	}
@@ -524,5 +532,11 @@ func WaffoPancakeWebhook(c *gin.Context) {
 	}
 
 	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Waffo Pancake 充值成功 trade_no=%s event_id=%s order_id=%s client_ip=%s", tradeNo, event.ID, event.Data.OrderID, c.ClientIP()))
+	// Notify admin
+	if topUp := model.GetTopUpByTradeNo(tradeNo); topUp != nil {
+		if user, _ := model.GetUserById(topUp.UserId, false); user != nil {
+			service.NotifyAdminTopUp(user.Id, user.Username, fmt.Sprintf("%.2f", topUp.Money), topUp.PaymentMethod, topUp.TradeNo)
+		}
+	}
 	c.String(http.StatusOK, "OK")
 }

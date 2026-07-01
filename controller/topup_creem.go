@@ -12,6 +12,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
 	"io"
 	"net/http"
@@ -304,6 +305,14 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 	defer UnlockOrder(referenceId)
 	if err := model.CompleteSubscriptionOrder(referenceId, common.GetJsonString(event), model.PaymentProviderCreem, ""); err == nil {
 		logger.LogInfo(c.Request.Context(), fmt.Sprintf("Creem 订阅订单处理成功 trade_no=%s creem_order_id=%s", referenceId, event.Object.Order.Id))
+		// Notify admin
+		if order := model.GetSubscriptionOrderByTradeNo(referenceId); order != nil {
+			if plan, _ := model.GetSubscriptionPlanById(order.PlanId); plan != nil {
+				if user, _ := model.GetUserById(order.UserId, false); user != nil {
+					service.NotifyAdminSubscription(user.Id, user.Username, plan.Title, fmt.Sprintf("%.2f", order.Money), order.PaymentMethod)
+				}
+			}
+		}
 		c.Status(http.StatusOK)
 		return
 	} else if err != nil && !errors.Is(err, model.ErrSubscriptionOrderNotFound) {
@@ -355,6 +364,10 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 	}
 
 	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Creem 充值成功 trade_no=%s creem_order_id=%s quota=%d money=%.2f client_ip=%s", referenceId, event.Object.Order.Id, topUp.Amount, topUp.Money, c.ClientIP()))
+	// Notify admin
+	if user, _ := model.GetUserById(topUp.UserId, false); user != nil {
+		service.NotifyAdminTopUp(user.Id, user.Username, fmt.Sprintf("%.2f", topUp.Money), topUp.PaymentMethod, topUp.TradeNo)
+	}
 	c.Status(http.StatusOK)
 }
 

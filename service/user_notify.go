@@ -22,6 +22,20 @@ func NotifyRootUser(t string, subject string, content string) {
 	}
 }
 
+func NotifyAdminTopUp(userId int, username string, amount string, paymentMethod string, tradeNo string) {
+	subject := fmt.Sprintf("用户充值成功 - %s", username)
+	content := fmt.Sprintf("用户 %s (ID: %d) 完成了一笔充值\n充值金额：%s\n支付方式：%s\n订单号：%s",
+		username, userId, amount, paymentMethod, tradeNo)
+	NotifyRootUser(dto.NotifyTypeTopUpSuccess, subject, content)
+}
+
+func NotifyAdminSubscription(userId int, username string, planTitle string, money string, paymentMethod string) {
+	subject := fmt.Sprintf("用户购买订阅成功 - %s", username)
+	content := fmt.Sprintf("用户 %s (ID: %d) 购买了一个订阅套餐\n套餐名称：%s\n支付金额：%s\n支付方式：%s",
+		username, userId, planTitle, money, paymentMethod)
+	NotifyRootUser(dto.NotifyTypeSubscriptionPurchase, subject, content)
+}
+
 func NotifyUpstreamModelUpdateWatchers(subject string, content string) {
 	var users []model.User
 	if err := model.DB.

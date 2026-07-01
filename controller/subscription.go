@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/gin-gonic/gin"
@@ -112,6 +114,12 @@ func SubscriptionRequestBalancePay(c *gin.Context) {
 	if err := model.PurchaseSubscriptionWithBalance(userId, req.PlanId); err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	// Notify admin
+	if user, _ := model.GetUserById(userId, false); user != nil {
+		if plan, _ := model.GetSubscriptionPlanById(req.PlanId); plan != nil {
+			service.NotifyAdminSubscription(user.Id, user.Username, plan.Title, fmt.Sprintf("%.2f", plan.PriceAmount), model.PaymentMethodBalance)
+		}
 	}
 	common.ApiSuccess(c, nil)
 }
@@ -367,6 +375,12 @@ func AdminBindSubscription(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	// Notify admin
+	if user, _ := model.GetUserById(req.UserId, false); user != nil {
+		if plan, _ := model.GetSubscriptionPlanById(req.PlanId); plan != nil {
+			service.NotifyAdminSubscription(user.Id, user.Username, plan.Title, fmt.Sprintf("%.2f", plan.PriceAmount), "admin")
+		}
 	}
 	if msg != "" {
 		common.ApiSuccess(c, gin.H{"message": msg})

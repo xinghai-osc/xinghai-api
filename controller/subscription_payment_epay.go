@@ -174,6 +174,15 @@ func SubscriptionEpayNotify(c *gin.Context) {
 		return
 	}
 
+	// Notify admin
+	if order := model.GetSubscriptionOrderByTradeNo(verifyInfo.ServiceTradeNo); order != nil {
+		if plan, _ := model.GetSubscriptionPlanById(order.PlanId); plan != nil {
+			if user, _ := model.GetUserById(order.UserId, false); user != nil {
+				service.NotifyAdminSubscription(user.Id, user.Username, plan.Title, fmt.Sprintf("%.2f", order.Money), order.PaymentMethod)
+			}
+		}
+	}
+
 	_, _ = c.Writer.Write([]byte("success"))
 }
 
