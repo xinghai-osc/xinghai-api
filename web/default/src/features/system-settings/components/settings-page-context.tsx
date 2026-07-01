@@ -16,16 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-/* eslint-disable react-refresh/only-export-components */
+import { RotateCcw, Save } from 'lucide-react'
 import {
   createContext,
   useContext,
   type ComponentProps,
   type ReactNode,
+  type RefObject,
 } from 'react'
-import { RotateCcw, Save } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+
 import { Button } from '@/components/ui/button'
 
 type SettingsPageContextValue = {
@@ -108,6 +109,7 @@ type SettingsPageFormActionsProps = {
   savingLabel?: string
   resetLabel?: string
   resetVariant?: ComponentProps<typeof Button>['variant']
+  saveButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
 export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
@@ -131,6 +133,7 @@ export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
         </Button>
       )}
       <Button
+        ref={props.saveButtonRef}
         type='button'
         size='sm'
         onClick={props.onSave}

@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Loader2, DollarSign } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+
 import { Button } from '@/components/ui/button'
 import type { KeyTestResult, MultiKeyConfirmAction } from '../../types'
 
@@ -97,9 +98,7 @@ export function MultiKeyTableRowActions({
         }}
         disabled={!canDelete}
         title={
-          canDelete
-            ? undefined
-            : t('No permission to perform this action')
+          canDelete ? undefined : t('No permission to perform this action')
         }
       >
         {t('Delete')}

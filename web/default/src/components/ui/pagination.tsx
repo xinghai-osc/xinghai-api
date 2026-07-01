@@ -16,16 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import * as React from 'react'
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   MoreHorizontalCircle01Icon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
   return (
@@ -133,7 +133,6 @@ function PaginationEllipsis({
   className,
   ...props
 }: React.ComponentProps<'span'>) {
-  const { t } = useTranslation()
   return (
     <span
       aria-hidden
@@ -145,7 +144,7 @@ function PaginationEllipsis({
       {...props}
     >
       <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} />
-      <span className='sr-only'>{t('More pages')}</span>
+      <span className='sr-only'>More pages</span>
     </span>
   )
 }

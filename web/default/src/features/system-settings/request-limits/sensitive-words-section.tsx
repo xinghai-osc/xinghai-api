@@ -16,11 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect } from 'react'
-import * as z from 'zod'
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import * as z from 'zod'
+
 import {
   Form,
   FormControl,
@@ -32,7 +33,7 @@ import {
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
+
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -45,9 +46,6 @@ import { useUpdateOption } from '../hooks/use-update-option'
 const sensitiveSchema = z.object({
   CheckSensitiveEnabled: z.boolean(),
   CheckSensitiveOnPromptEnabled: z.boolean(),
-  CheckSensitiveOnCompletionEnabled: z.boolean(),
-  SensitiveBlockResponse: z.string().optional(),
-  SensitiveWordResponses: z.string().optional(),
   SensitiveWords: z.string().optional(),
 })
 
@@ -137,74 +135,7 @@ export function SensitiveWordsSection({
                 </SettingsSwitchItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name='CheckSensitiveOnCompletionEnabled'
-              render={({ field }) => (
-                <SettingsSwitchItem>
-                  <SettingsSwitchContent>
-                    <FormLabel>{t('Inspect model outputs')}</FormLabel>
-                    <FormDescription>
-                      {t(
-                        'When enabled, model outputs are scanned and replaced with the configured block response when keywords are detected.'
-                      )}
-                    </FormDescription>
-                  </SettingsSwitchContent>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </SettingsSwitchItem>
-              )}
-            />
           </div>
-
-          <FormField
-            control={form.control}
-            name='SensitiveBlockResponse'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Block response')}</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder={t('Sensitive words detected')}
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  {t(
-                    'This content is returned when prompts or model outputs contain blocked keywords.'
-                  )}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name='SensitiveWordResponses'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Keyword-specific responses')}</FormLabel>
-                <FormControl>
-                  <Textarea
-                    rows={8}
-                    placeholder={t('keyword=>Custom response')}
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  {t(
-                    'Configure one mapping per line using keyword=>response. When multiple keywords match, the first matched keyword response is used; otherwise the default block response is returned.'
-                  )}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <FormField
             control={form.control}

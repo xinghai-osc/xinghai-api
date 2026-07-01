@@ -568,7 +568,9 @@ function normalizeAdvancedCustomRoute(
   return nextRoute
 }
 
-function getAdvancedCustomRouteUpstreamPath(route: AdvancedCustomRoute): string {
+function getAdvancedCustomRouteUpstreamPath(
+  route: AdvancedCustomRoute
+): string {
   return (route.upstream_path || '').trim()
 }
 

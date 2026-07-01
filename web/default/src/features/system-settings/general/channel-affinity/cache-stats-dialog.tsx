@@ -24,6 +24,7 @@ import { formatTimestampToDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/dialog'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+
 import { deleteAffinityCache, getAffinityUsageCache } from './api'
 
 function formatRate(hit: number, total: number): string {

@@ -39,8 +39,8 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { ROLE } from '@/lib/roles'
 import { type SidebarData, type NavItem, type NavGroup } from '@/components/layout/types'
+import { ROLE } from '@/lib/roles'
 import { useStatus } from '@/hooks/use-status'
 import { parseCustomSidebarItems, resolveIcon } from '@/features/system-settings/maintenance/custom-sidebar-config'
 
