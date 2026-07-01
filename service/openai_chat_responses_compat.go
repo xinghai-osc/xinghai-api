@@ -17,20 +17,12 @@ func ChatCompletionsResponseToResponsesResponse(resp *dto.OpenAITextResponse, id
 	return relayconvert.ChatCompletionsResponseToResponsesResponse(resp, id)
 }
 
-func ResponsesRequestToChatCompletionsRequest(req *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, error) {
-	return openaicompat.ResponsesRequestToChatCompletionsRequest(req)
-}
-
 func ResponsesResponseToChatCompletionsResponse(resp *dto.OpenAIResponsesResponse, id string) (*dto.OpenAITextResponse, *dto.Usage, error) {
 	return relayconvert.ResponsesResponseToChatCompletionsResponse(resp, id)
 }
 
 func ResponsesFinishReasonFromStatus(resp *dto.OpenAIResponsesResponse) (string, bool) {
 	return relayconvert.ResponsesFinishReasonFromStatus(resp)
-}
-
-func ChatCompletionsResponseToResponsesResponse(resp *dto.OpenAITextResponse) (*dto.OpenAIResponsesResponse, *dto.Usage, error) {
-	return openaicompat.ChatCompletionsResponseToResponsesResponse(resp)
 }
 
 func ExtractOutputTextFromResponses(resp *dto.OpenAIResponsesResponse) string {
