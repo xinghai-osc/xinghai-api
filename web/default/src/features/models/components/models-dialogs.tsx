@@ -22,6 +22,7 @@ import { PrefillGroupManagement } from './dialogs/prefill-group-management'
 import { SyncWizardDialog } from './dialogs/sync-wizard-dialog'
 import { UpstreamConflictDialog } from './dialogs/upstream-conflict-dialog'
 import { VendorMutateDialog } from './dialogs/vendor-mutate-dialog'
+import { VendorManagementDialog } from './dialogs/vendor-management-dialog'
 import { ModelMutateDrawer } from './drawers/model-mutate-drawer'
 import { useModels } from './models-provider'
 
@@ -72,6 +73,12 @@ export function ModelsDialogs() {
       {/* Prefill Groups Management */}
       <PrefillGroupManagement
         open={open === 'prefill-groups'}
+        onOpenChange={(v) => !v && setOpen(null)}
+      />
+
+      {/* Vendor Management Dialog */}
+      <VendorManagementDialog
+        open={open === 'manage-vendors'}
         onOpenChange={(v) => !v && setOpen(null)}
       />
 

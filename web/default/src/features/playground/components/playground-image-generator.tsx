@@ -57,6 +57,9 @@ interface PlaygroundImageGeneratorProps {
   onModelChange: (value: string) => void
   onGroupChange: (value: string) => void
   isModelLoading?: boolean
+  onStop?: () => void
+  onSubmit?: (text: string) => void
+  hasMessages?: boolean
 }
 
 interface ImageContextItem {
