@@ -90,6 +90,10 @@ func (instance *SystemInstance) ToResponse(now int64) SystemInstanceResponse {
 	}
 }
 
+func DeleteSystemInstance(nodeName string) error {
+	return DB.Where("node_name = ?", nodeName).Delete(&SystemInstance{}).Error
+}
+
 func marshalSystemInstanceInfo(v any) (string, error) {
 	if v == nil {
 		return "", nil

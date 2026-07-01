@@ -26,3 +26,10 @@ export async function listSystemInstances() {
   )
   return res.data
 }
+
+export async function deleteSystemInstance(nodeName: string) {
+  const res = await api.delete<{ success: boolean; message: string }>(
+    `/api/system-info/instances/${encodeURIComponent(nodeName)}`
+  )
+  return res.data
+}

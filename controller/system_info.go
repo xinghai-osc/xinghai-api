@@ -28,3 +28,24 @@ func ListSystemInstances(c *gin.Context) {
 		"data":    responses,
 	})
 }
+
+func DeleteSystemInstance(c *gin.Context) {
+	nodeName := c.Param("node_name")
+	if nodeName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "node_name is required",
+		})
+		return
+	}
+
+	if err := model.DeleteSystemInstance(nodeName); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}

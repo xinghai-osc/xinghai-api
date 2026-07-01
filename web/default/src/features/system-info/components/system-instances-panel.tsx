@@ -16,9 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, RefreshCw, ServerCog } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlertTriangle, RefreshCw, ServerCog, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ErrorState } from '@/components/error-state'
@@ -50,7 +51,7 @@ import {
 import { formatTimestampRelative, formatTimestampToDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-import { listSystemInstances } from '../api'
+import { deleteSystemInstance, listSystemInstances } from '../api'
 import type { SystemInstance, SystemInstanceStatus } from '../types'
 
 const INSTANCE_POLL_INTERVAL_MS = 30_000
@@ -209,6 +210,8 @@ function ResourceCell(props: ResourceCellProps) {
 
 type SystemInstancesTableProps = {
   instances: SystemInstance[]
+  onDelete?: (nodeName: string) => void
+  deletingNode?: string | null
 }
 
 function SystemInstancesList(props: SystemInstancesTableProps) {
@@ -244,6 +247,9 @@ function SystemInstancesList(props: SystemInstancesTableProps) {
             </TableHead>
             <TableHead className='h-9 w-[170px] pr-4 text-xs'>
               {t('Last Seen')}
+            </TableHead>
+            <TableHead className='h-9 w-[60px] pr-4 text-xs'>
+              <span className='sr-only'>{t('Actions')}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -414,6 +420,19 @@ function SystemInstancesList(props: SystemInstancesTableProps) {
                     i18n.language
                   )}
                 </TableCell>
+                <TableCell className='py-2.5 pr-4 align-middle'>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    className='size-7 text-muted-foreground hover:text-destructive'
+                    disabled={props.deletingNode === instance.node_name}
+                    onClick={() => props.onDelete?.(instance.node_name)}
+                    aria-label={t('Delete instance')}
+                  >
+                    <Trash2 className='size-3.5' aria-hidden='true' />
+                  </Button>
+                </TableCell>
               </TableRow>
             )
           })}
@@ -425,6 +444,9 @@ function SystemInstancesList(props: SystemInstancesTableProps) {
 
 export function SystemInstancesPanel() {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [deletingNode, setDeletingNode] = useState<string | null>(null)
+
   const instancesQuery = useQuery({
     queryKey: ['system-info', 'instances'],
     queryFn: async () => {
@@ -437,6 +459,24 @@ export function SystemInstancesPanel() {
     staleTime: 30 * 1000,
     retry: false,
     refetchInterval: INSTANCE_POLL_INTERVAL_MS,
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (nodeName: string) => {
+      const res = await deleteSystemInstance(nodeName)
+      if (!res.success) {
+        throw new Error(res.message || t('Failed to delete instance.'))
+      }
+    },
+    onMutate: (nodeName) => {
+      setDeletingNode(nodeName)
+    },
+    onSettled: () => {
+      setDeletingNode(null)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['system-info', 'instances'] })
+    },
   })
 
   const instances = instancesQuery.data ?? []
@@ -519,7 +559,11 @@ export function SystemInstancesPanel() {
           </div>
         ) : (
           <div className='p-4 sm:p-5'>
-            <SystemInstancesList instances={instances} />
+            <SystemInstancesList
+              instances={instances}
+              onDelete={(nodeName) => deleteMutation.mutate(nodeName)}
+              deletingNode={deletingNode}
+            />
           </div>
         )}
       </div>
