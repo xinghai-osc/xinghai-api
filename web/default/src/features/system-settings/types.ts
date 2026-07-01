@@ -392,6 +392,7 @@ export type SecuritySettings = {
   CheckSensitiveEnabled: boolean
   CheckSensitiveOnPromptEnabled: boolean
   CheckSensitiveOnCompletionEnabled: boolean
+  StopOnSensitiveEnabled: boolean
   SensitiveBlockResponse: string
   SensitiveWordResponses: string
   SensitiveWords: string

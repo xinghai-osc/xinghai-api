@@ -1,0 +1,10 @@
+{
+  "Add keywords one at a time or paste multiple lines. Remove a keyword by clicking the X on its tag.": "Add keywords one at a time or paste multiple lines. Remove a keyword by clicking the X on its tag.",
+  "Hide from users": "Hide from users",
+  "Hidden from users - click to show": "Hidden from users - click to show",
+  "Show to users": "Show to users",
+  "Visible to users - click to hide": "Visible to users - click to hide",
+  "Model mapping values must be strings or {target, visible} objects": "Model mapping values must be strings or {target, visible} objects",
+  "No keywords added yet": "No keywords added yet",
+  "Stop generation on match": "Stop generation on match"
+}

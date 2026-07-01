@@ -51,6 +51,7 @@ const SECURITY_SECTIONS = [
           CheckSensitiveOnPromptEnabled: settings.CheckSensitiveOnPromptEnabled,
           CheckSensitiveOnCompletionEnabled:
             settings.CheckSensitiveOnCompletionEnabled,
+          StopOnSensitiveEnabled: settings.StopOnSensitiveEnabled,
           SensitiveBlockResponse: settings.SensitiveBlockResponse,
           SensitiveWordResponses: settings.SensitiveWordResponses,
           SensitiveWords: settings.SensitiveWords,

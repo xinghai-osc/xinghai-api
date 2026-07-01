@@ -33,6 +33,7 @@ const defaultSecuritySettings: SecuritySettings = {
   CheckSensitiveEnabled: false,
   CheckSensitiveOnPromptEnabled: false,
   CheckSensitiveOnCompletionEnabled: false,
+  StopOnSensitiveEnabled: true,
   SensitiveBlockResponse: '',
   SensitiveWordResponses: '',
   SensitiveWords: '',

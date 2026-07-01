@@ -1,5 +1,13 @@
 {
+  "Add keywords one at a time or paste multiple lines. Remove a keyword by clicking the X on its tag.": "Add keywords one at a time or paste multiple lines. Remove a keyword by clicking the X on its tag.",
+  "Hidden from users - click to show": "Hidden from users - click to show",
+  "Show to users": "Show to users",
+  "Visible to users - click to hide": "Visible to users - click to hide",
+  "Model mapping values must be strings or {target, visible} objects": "Model mapping values must be strings or {target, visible} objects",
+  "This message is shown when a sensitive word is detected and no keyword-specific response is configured.": "This message is shown when a sensitive word is detected and no keyword-specific response is configured.",
   "View API keys created by this user. Click a key to reveal the full value.": "View API keys created by this user. Click a key to reveal the full value.",
+  "When enabled, model responses are scanned before being returned to the user.": "When enabled, model responses are scanned before being returned to the user.",
+  "When enabled, the response is immediately stopped when a sensitive word is detected. When disabled, sensitive words in the output are replaced with placeholders instead.": "When enabled, the response is immediately stopped when a sensitive word is detected. When disabled, sensitive words in the output are replaced with placeholders instead.",
   "Add multiple Epay gateways. In the payment methods tab, each method can be bound to a specific gateway via its gateway_id field.": "Add multiple Epay gateways. In the payment methods tab, each method can be bound to a specific gateway via its gateway_id field.",
   "Bind this payment method to a specific Epay gateway. Leave unset to use the first gateway.": "Bind this payment method to a specific Epay gateway. Leave unset to use the first gateway.",
   "Configure one or more Epay-protocol-compatible payment gateways. Each payment method can be bound to a specific gateway.": "Configure one or more Epay-protocol-compatible payment gateways. Each payment method can be bound to a specific gateway.",
