@@ -279,7 +279,7 @@ func (a *Adaptor) chatCompletionsToResponsesResponse(c *gin.Context, resp *http.
 		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
 	}
 
-	responsesResp, usage, err := service.ChatCompletionsResponseToResponsesResponse(&chatResp)
+	responsesResp, usage, err := service.ChatCompletionsResponseToResponsesResponse(&chatResp, helper.GetResponseID(c))
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
