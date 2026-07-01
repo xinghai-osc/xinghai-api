@@ -176,9 +176,9 @@ func Redeem(key string, userId int) (quota int, err error) {
 		}
 	}
 	if redemption.SubscriptionPlanId > 0 {
-		RecordLog(userId, LogTypeTopup, fmt.Sprintf("通过兑换码兑换订阅，兑换码ID %d，套餐ID %d，附加额度 %s", redemption.Id, redemption.SubscriptionPlanId, logger.LogQuota(redemption.Quota)))
+		RecordTopupLog(userId, fmt.Sprintf("通过兑换码兑换订阅，兑换码ID %d，套餐ID %d，附加额度 %s", redemption.Id, redemption.SubscriptionPlanId, logger.LogQuota(redemption.Quota)), "", "redemption", "redemption")
 	} else {
-		RecordLog(userId, LogTypeTopup, fmt.Sprintf("通过兑换码充值 %s，兑换码ID %d", logger.LogQuota(redemption.Quota), redemption.Id))
+		RecordTopupLog(userId, fmt.Sprintf("通过兑换码充值 %s，兑换码ID %d", logger.LogQuota(redemption.Quota), redemption.Id), "", "redemption", "redemption")
 	}
 	return redemption.Quota, nil
 }
