@@ -16,6 +16,7 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/relay/channel/gemini"
 	"github.com/QuantumNous/new-api/relay/channel/ollama"
+	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
 
 	"github.com/gin-gonic/gin"
@@ -150,21 +151,15 @@ func normalizeChannelModelMapping(channel *model.Channel) map[string]string {
 	if rawMapping == "" || rawMapping == "{}" {
 		return nil
 	}
-	parsed := make(map[string]string)
-	if err := common.UnmarshalJsonStr(rawMapping, &parsed); err != nil {
+	parsed := helper.ParseModelMapping(rawMapping)
+	if len(parsed) == 0 {
 		return nil
 	}
 	normalized := make(map[string]string, len(parsed))
-	for source, target := range parsed {
-		normalizedSource := strings.TrimSpace(source)
-		normalizedTarget := strings.TrimSpace(target)
-		if normalizedSource == "" || normalizedTarget == "" {
-			continue
+	for source, entry := range parsed {
+		if entry.Target != "" {
+			normalized[source] = entry.Target
 		}
-		normalized[normalizedSource] = normalizedTarget
-	}
-	if len(normalized) == 0 {
-		return nil
 	}
 	return normalized
 }

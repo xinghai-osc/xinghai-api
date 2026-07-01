@@ -59,7 +59,14 @@ function isOptionalModelMapping(value: string | undefined): boolean {
     const parsed = parseOptionalJson(value)
     if (parsed === undefined) return true
     if (!isJsonObjectValue(parsed)) return false
-    return Object.values(parsed).every((item) => typeof item === 'string')
+    return Object.values(parsed).every((item) => {
+      if (typeof item === 'string') return true
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        const obj = item as Record<string, unknown>
+        return typeof obj.target === 'string'
+      }
+      return false
+    })
   } catch {
     return false
   }

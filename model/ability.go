@@ -47,6 +47,22 @@ func GetGroupEnabledModels(group string) []string {
 	return models
 }
 
+// GetGroupChannelModelMappings returns all non-empty model_mapping strings
+// for channels accessible by the given groups. Used to extract invisible model
+// mappings for /v1/models filtering.
+func GetGroupChannelModelMappings(groups []string) []string {
+	if len(groups) == 0 {
+		return nil
+	}
+	var mappings []string
+	DB.Table("abilities").
+		Select("DISTINCT channels.model_mapping").
+		Joins("JOIN channels ON abilities.channel_id = channels.id").
+		Where("abilities."+commonGroupCol+" IN ? AND abilities.enabled = ? AND channels.model_mapping IS NOT NULL AND channels.model_mapping != '' AND channels.model_mapping != '{}'", groups, true).
+		Pluck("channels.model_mapping", &mappings)
+	return mappings
+}
+
 func GetEnabledModels() []string {
 	var models []string
 	// Find distinct models

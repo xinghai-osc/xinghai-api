@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Code, Plus, Table, Trash2 } from 'lucide-react'
+import { Code, Eye, EyeOff, Plus, Table, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -39,6 +39,13 @@ type MappingRow = {
   id: string
   from: string
   to: string
+  visible: boolean
+}
+
+// ModelMappingValue 表示新格式的映射值
+type ModelMappingValue = {
+  target: string
+  visible: boolean
 }
 
 const DUPLICATE_MAPPING_SENTINEL = '{ "duplicate_source_models": '
@@ -88,20 +95,35 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
         setJsonError(t('Model mapping must be a valid JSON object'))
         return false
       }
-      const entries = Object.entries(parsed)
-      const invalidValue = entries.find(([, to]) => typeof to !== 'string')
+      const entries = Object.entries(parsed) as [string, unknown][]
+      // 检查值类型：支持 string (旧格式) 和 object (新格式)
+      const invalidValue = entries.find(([, value]) => {
+        if (typeof value === 'string') return false
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const obj = value as Record<string, unknown>
+          return typeof obj.target !== 'string'
+        }
+        return true
+      })
       if (invalidValue) {
-        setJsonError(t('Model mapping values must be strings'))
+        setJsonError(t('Model mapping values must be strings or {target, visible} objects'))
         return false
       }
       setRows((previousRows) => {
         const remainingRows = [...previousRows]
-        return entries.map(([from, to], index) => {
-          const toString = String(to)
+        return entries.map(([from, value], index) => {
+          const target =
+            typeof value === 'string'
+              ? value
+              : (value as ModelMappingValue).target
+          const visible =
+            typeof value === 'string'
+              ? true
+              : (value as ModelMappingValue).visible !== false
           const existingIndex = remainingRows.findIndex(
             (row) =>
               row.from === from ||
-              (row.from === from && row.to === toString) ||
+              (row.from === from && row.to === target) ||
               previousRows[index]?.id === row.id
           )
           if (existingIndex >= 0) {
@@ -109,13 +131,15 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
             return {
               id: existing.id,
               from,
-              to: toString,
+              to: target,
+              visible,
             }
           }
           return {
             id: createRowId(),
             from,
-            to: toString,
+            to: target,
+            visible,
           }
         })
       })
@@ -129,7 +153,6 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
 
   // Parse JSON to rows when value changes externally
   useEffect(() => {
-     
     setJsonValue(props.value)
     parseJsonToRows(props.value)
   }, [props.value, parseJsonToRows])
@@ -138,10 +161,13 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
     if (updatedRows.length === 0) {
       return ''
     }
-    const obj: Record<string, string> = {}
+    const obj: Record<string, ModelMappingValue> = {}
     updatedRows.forEach((row) => {
       if (row.from.trim()) {
-        obj[row.from.trim()] = row.to.trim()
+        obj[row.from.trim()] = {
+          target: row.to.trim(),
+          visible: row.visible,
+        }
       }
     })
     return JSON.stringify(obj, null, 2)
@@ -168,6 +194,7 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
       id: createRowId(),
       from: '',
       to: '',
+      visible: true,
     }
     syncRows([...rows, newRow])
   }
@@ -187,6 +214,13 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
     syncRows(updatedRows)
   }
 
+  const handleToggleVisible = (id: string) => {
+    const updatedRows = rows.map((row) =>
+      row.id === id ? { ...row, visible: !row.visible } : row
+    )
+    syncRows(updatedRows)
+  }
+
   const handleJsonChange = (newJson: string) => {
     setJsonValue(newJson)
     props.onChange(newJson)
@@ -195,7 +229,7 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
 
   const handleFillTemplate = () => {
     const template = JSON.stringify(
-      { 'gpt-3.5-turbo': 'gpt-3.5-turbo-0125' },
+      { 'gpt-3.5-turbo': { target: 'gpt-3.5-turbo-0125', visible: true } },
       null,
       2
     )
@@ -265,15 +299,16 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
         <TabsContent value='visual' className='space-y-2'>
           {rows.length > 0 ? (
             <div className='space-y-2'>
-              <div className='grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium'>
+              <div className='grid grid-cols-[1fr_1fr_auto_auto] gap-2 text-sm font-medium'>
                 <div>{t('Original Model')}</div>
                 <div>{t('Replacement Model')}</div>
+                <div className='w-10'></div>
                 <div className='w-10'></div>
               </div>
               {rows.map((row) => (
                 <div
                   key={row.id}
-                  className='grid grid-cols-[1fr_1fr_auto] gap-2'
+                  className='grid grid-cols-[1fr_1fr_auto_auto] gap-2'
                 >
                   <Input
                     value={row.from}
@@ -293,6 +328,30 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
                     disabled={props.disabled}
                     list={targetListId}
                   />
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => handleToggleVisible(row.id)}
+                    disabled={props.disabled}
+                    className='h-10 w-10'
+                    aria-label={
+                      row.visible
+                        ? t('Hide from users')
+                        : t('Show to users')
+                    }
+                    title={
+                      row.visible
+                        ? t('Visible to users - click to hide')
+                        : t('Hidden from users - click to show')
+                    }
+                  >
+                    {row.visible ? (
+                      <Eye className='h-4 w-4' aria-hidden='true' />
+                    ) : (
+                      <EyeOff className='h-4 w-4 text-muted-foreground' aria-hidden='true' />
+                    )}
+                  </Button>
                   <Button
                     type='button'
                     variant='ghost'
@@ -330,7 +389,9 @@ export function ModelMappingEditor(props: ModelMappingEditorProps) {
           <Textarea
             value={jsonValue}
             onChange={(e) => handleJsonChange(e.target.value)}
-            placeholder={t('{"original-model": "replacement-model"}')}
+            placeholder={t(
+              '{"original-model": {"target": "replacement-model", "visible": true}}'
+            )}
             disabled={props.disabled}
             rows={8}
             className={cn(

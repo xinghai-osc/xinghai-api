@@ -72,7 +72,21 @@ export function extractMappingSourceModels(modelMapping: string): string[] {
 }
 
 /**
+ * Extract the target model name from a model_mapping value.
+ * Supports both old format (string) and new format ({target, visible}).
+ */
+function extractTargetFromValue(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>
+    if (typeof obj.target === 'string') return obj.target.trim()
+  }
+  return undefined
+}
+
+/**
  * Extract redirect models from model_mapping JSON
+ * Supports both old and new formats.
  */
 export function extractRedirectModels(modelMapping: string): string[] {
   const mapping = modelMapping
@@ -87,7 +101,7 @@ export function extractRedirectModels(modelMapping: string): string[] {
     }
 
     const values = Object.values(parsed)
-      .map((value) => (typeof value === 'string' ? value.trim() : undefined))
+      .map(extractTargetFromValue)
       .filter((value): value is string => Boolean(value))
 
     return Array.from(new Set(values))
@@ -162,6 +176,7 @@ export function findMissingModelsInMapping(
 
 /**
  * Validate model mapping JSON format
+ * Supports both old format (string values) and new format ({target, visible} objects).
  */
 export function validateModelMappingJson(modelMapping: string): {
   valid: boolean
@@ -179,10 +194,18 @@ export function validateModelMappingJson(modelMapping: string): {
         error: 'Model mapping must be a valid JSON object',
       }
     }
-    if (Object.values(parsed).some((value) => typeof value !== 'string')) {
+    const hasInvalidValue = Object.values(parsed).some((value) => {
+      if (typeof value === 'string') return false
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        const obj = value as Record<string, unknown>
+        return typeof obj.target !== 'string'
+      }
+      return true
+    })
+    if (hasInvalidValue) {
       return {
         valid: false,
-        error: 'Model mapping values must be strings',
+        error: 'Model mapping values must be strings or {target, visible} objects',
       }
     }
     return { valid: true }
