@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Download,
   ImageIcon,
@@ -26,25 +26,25 @@ import {
   Mic2,
   Trash2,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getUserModels, getUserGroups, type UserGroupsResult } from './api'
-import { PlaygroundChat } from './components/playground-chat'
+import { PlaygroundChat } from './components/chat/playground-chat'
 import { PlaygroundImageGenerator } from './components/playground-image-generator'
-import { PlaygroundInput } from './components/playground-input'
+import { PlaygroundInput } from './components/input/playground-input'
 import { PlaygroundSpeechGenerator } from './components/playground-speech-generator'
-import { usePlaygroundState, useChatHandler } from './hooks'
 import {
-  createUserMessage,
-  createLoadingAssistantMessage,
+  useChatHandler,
+  usePlaygroundConversation,
+  usePlaygroundOptions,
+  usePlaygroundState,
+} from './hooks'
+import {
   decodeMessagesFromShare,
   encodeMessagesForShare,
   formatMessagesAsMarkdown,
-} from './lib'
-import type { Message as MessageType } from './types'
+} from './lib/message-utils'
 
 type PlaygroundProps = {
   initialTab?: string
@@ -59,13 +59,13 @@ export function Playground(props: PlaygroundProps = {}) {
     sessions,
     activeSessionId,
     messages,
+    isLoadingMessages,
     models,
     groups,
     updateMessages,
     setModels,
     setGroups,
     updateConfig,
-    updateParameterEnabled,
     clearMessages,
     createNewSession,
     switchSession,
@@ -78,74 +78,34 @@ export function Playground(props: PlaygroundProps = {}) {
     onMessageUpdate: updateMessages,
   })
 
-  // Edit dialog state
-  const [editingMessageKey, setEditingMessageKey] = useState<string | null>(
-    null
-  )
-
-  // Load models
-  const { data: modelsData, isLoading: isLoadingModels } = useQuery({
-    queryKey: ['playground-models', t],
-    queryFn: async () => {
-      try {
-        return await getUserModels()
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : t('Failed to load playground models')
-        )
-        return []
-      }
-    },
+  const {
+    editingMessageKey,
+    handleSendMessage,
+    handleRegenerateMessage,
+    handleEditMessage,
+    handleEditOpenChange,
+    applyEdit,
+    handleDeleteMessage,
+  } = usePlaygroundConversation({
+    messages,
+    updateMessages,
+    sendChat,
   })
 
-  // Load groups
-  const { data: groupsData } = useQuery({
-    queryKey: ['playground-groups', t],
-    queryFn: async () => {
-      try {
-        return await getUserGroups()
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : t('Failed to load playground groups')
-        )
-        return { groups: [], userGroup: '' } satisfies UserGroupsResult
-      }
-    },
+  const handleClearMessages = () => {
+    handleEditOpenChange(false)
+    clearMessages()
+  }
+
+  const { isLoadingModels } = usePlaygroundOptions({
+    currentGroup: config.group,
+    currentModel: config.model,
+    setGroups,
+    setModels,
+    updateConfig,
   })
 
-  // Update models when data changes
-  useEffect(() => {
-    if (!modelsData) return
-
-    setModels(modelsData)
-
-    // Set default model if current model is not available
-    const isCurrentModelValid = modelsData.some((m) => m.value === config.model)
-    if (modelsData.length > 0 && !isCurrentModelValid) {
-      updateConfig('model', modelsData[0].value)
-    }
-  }, [modelsData, config.model, setModels, updateConfig])
-
-  // Update groups when data changes
-  useEffect(() => {
-    if (!groupsData) return
-
-    const groupOptions = groupsData.groups
-    setGroups(groupOptions)
-
-    const hasCurrentGroup = groupOptions.some((g) => g.value === config.group)
-    if (!hasCurrentGroup && groupOptions.length > 0) {
-      const fallback =
-        groupOptions.find((g) => g.value === 'default')?.value ??
-        groupOptions[0].value
-      updateConfig('group', fallback)
-    }
-  }, [groupsData, setGroups, config.group, updateConfig])
-
+  // Share decoding
   useEffect(() => {
     const shared = new URLSearchParams(window.location.search).get('share')
     if (!shared) return
@@ -160,85 +120,6 @@ export function Playground(props: PlaygroundProps = {}) {
       toast.error(t('Failed to load shared conversation'))
     }
   }, [t, createNewSession])
-
-  const handleSendMessage = (text: string) => {
-    const userMessage = createUserMessage(text)
-    const assistantMessage = createLoadingAssistantMessage()
-
-    const newMessages = [...messages, userMessage, assistantMessage]
-    updateMessages(newMessages)
-
-    // Send chat request
-    sendChat(newMessages)
-  }
-
-  const handleCopyMessage = (message: MessageType) => {
-    // Copy is handled in MessageActions component
-    // eslint-disable-next-line no-console
-    console.log('Message copied:', message.key)
-  }
-
-  const handleRegenerateMessage = (message: MessageType) => {
-    // Find the message index and regenerate from there
-    const messageIndex = messages.findIndex((m) => m.key === message.key)
-    if (messageIndex === -1) return
-
-    // Remove messages after this one and regenerate
-    const messagesUpToHere = messages.slice(0, messageIndex)
-    const loadingMessage = createLoadingAssistantMessage()
-    const newMessages = [...messagesUpToHere, loadingMessage]
-
-    updateMessages(newMessages)
-    sendChat(newMessages)
-  }
-
-  const handleEditMessage = useCallback((message: MessageType) => {
-    setEditingMessageKey(message.key)
-  }, [])
-
-  const handleEditOpenChange = useCallback((open: boolean) => {
-    if (!open) setEditingMessageKey(null)
-  }, [])
-
-  // Apply edit and optionally re-submit from the edited user message
-  const applyEdit = useCallback(
-    (newContent: string, submit: boolean) => {
-      if (!editingMessageKey) return
-      const index = messages.findIndex((m) => m.key === editingMessageKey)
-      if (index === -1) return
-
-      const updated = messages.map((m) =>
-        m.key === editingMessageKey
-          ? { ...m, versions: [{ ...m.versions[0], content: newContent }] }
-          : m
-      )
-
-      setEditingMessageKey(null)
-
-      if (!submit || updated[index].from !== 'user') {
-        updateMessages(updated)
-        return
-      }
-
-      const toSubmit = [
-        ...updated.slice(0, index + 1),
-        createLoadingAssistantMessage(),
-      ]
-      updateMessages(toSubmit)
-      sendChat(toSubmit)
-    },
-    [editingMessageKey, messages, updateMessages, sendChat]
-  )
-
-  const handleDeleteMessage = (message: MessageType) => {
-    const newMessages = messages.filter((m) => m.key !== message.key)
-    updateMessages(newMessages)
-  }
-
-  const handleClearMessages = () => {
-    clearMessages()
-    toast.success(t('Conversation cleared'))
-  }
 
   const handleExportMarkdown = () => {
     const markdown = formatMessagesAsMarkdown(messages)
@@ -377,10 +258,11 @@ export function Playground(props: PlaygroundProps = {}) {
             <div className='flex flex-1 flex-col overflow-hidden'>
               <PlaygroundChat
                 messages={messages}
-                onCopyMessage={handleCopyMessage}
+                isLoadingMessages={isLoadingMessages}
                 onRegenerateMessage={handleRegenerateMessage}
                 onEditMessage={handleEditMessage}
                 onDeleteMessage={handleDeleteMessage}
+                onSelectPrompt={handleSendMessage}
                 isGenerating={isGenerating}
                 editingKey={editingMessageKey}
                 onCancelEdit={handleEditOpenChange}
@@ -398,12 +280,8 @@ export function Playground(props: PlaygroundProps = {}) {
                 isModelLoading={isLoadingModels}
                 modelValue={config.model}
                 models={models}
-                config={config}
-                parameterEnabled={parameterEnabled}
-                onConfigChange={updateConfig}
                 onGroupChange={(value) => updateConfig('group', value)}
                 onModelChange={(value) => updateConfig('model', value)}
-                onParameterEnabledChange={updateParameterEnabled}
                 onStop={stopGeneration}
                 onSubmit={handleSendMessage}
               />
@@ -421,6 +299,9 @@ export function Playground(props: PlaygroundProps = {}) {
           models={models}
           onGroupChange={(value) => updateConfig('group', value)}
           onModelChange={(value) => updateConfig('model', value)}
+          onStop={stopGeneration}
+          onSubmit={handleSendMessage}
+          hasMessages={messages.length > 0}
         />
       </TabsContent>
 

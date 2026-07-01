@@ -26,6 +26,7 @@ type MultiKeyTableRowActionsProps = {
   status: number
   testResult?: KeyTestResult
   isQueryingBalance?: boolean
+  canDelete: boolean
   onAction: (action: MultiKeyConfirmAction) => void
   onTest: (keyIndex: number) => void
   onQueryBalance?: (keyIndex: number) => void
@@ -36,6 +37,7 @@ export function MultiKeyTableRowActions({
   status,
   testResult,
   isQueryingBalance,
+  canDelete,
   onAction,
   onTest,
   onQueryBalance,
@@ -89,7 +91,16 @@ export function MultiKeyTableRowActions({
       <Button
         variant='destructive'
         size='sm'
-        onClick={() => onAction({ type: 'delete', keyIndex })}
+        onClick={() => {
+          if (!canDelete) return
+          onAction({ type: 'delete', keyIndex })
+        }}
+        disabled={!canDelete}
+        title={
+          canDelete
+            ? undefined
+            : t('No permission to perform this action')
+        }
       >
         {t('Delete')}
       </Button>

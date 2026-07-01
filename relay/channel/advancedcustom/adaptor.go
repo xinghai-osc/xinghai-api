@@ -110,7 +110,11 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 	case dto.AdvancedCustomConverterNone:
 		return a.convertOpenAICompatibleResponsesRequest(c, info, request)
 	case dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions:
-		return service.ResponsesRequestToChatCompletionsRequest(&request)
+		chatReq, err := service.ResponsesRequestToChatCompletionsRequest(&request)
+		if err != nil {
+			return nil, err
+		}
+		return a.convertOpenAICompatibleRequest(c, info, chatReq)
 	default:
 		return nil, fmt.Errorf("converter %q does not support OpenAI Responses requests", converter)
 	}
@@ -229,9 +233,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		return openai.OaiResponsesToChatHandler(c, info, resp)
 	case dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions:
 		if info.IsStream {
-			return a.chatCompletionsToResponsesStreamResponse(c, resp, info)
+			return openai.OaiChatToResponsesStreamHandler(c, info, resp)
 		}
-		return a.chatCompletionsToResponsesResponse(c, resp, info)
+		return openai.OaiChatToResponsesHandler(c, info, resp)
 	default:
 		return nil, types.NewOpenAIError(fmt.Errorf("unsupported advanced custom converter: %s", a.converter), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
