@@ -166,6 +166,12 @@ func SubscriptionEpayNotify(c *gin.Context) {
 		return
 	}
 
+	// 向易支付服务端查询订单，确认订单已支付
+	if queryStatus, queryOK := EpayQueryOrder(gatewayId, verifyInfo.ServiceTradeNo); !queryOK || queryStatus != epay.StatusTradeSuccess {
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
 	LockOrder(verifyInfo.ServiceTradeNo)
 	defer UnlockOrder(verifyInfo.ServiceTradeNo)
 
@@ -232,6 +238,11 @@ func SubscriptionEpayReturn(c *gin.Context) {
 		return
 	}
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
+		// 向易支付服务端查询订单，确认订单已支付
+		if queryStatus, queryOK := EpayQueryOrder(gatewayId, verifyInfo.ServiceTradeNo); !queryOK || queryStatus != epay.StatusTradeSuccess {
+			c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
+			return
+		}
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
 		if err := model.CompleteSubscriptionOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -153,6 +154,58 @@ func GetEpayClient(gatewayId string) *epay.Client {
 		return nil
 	}
 	return withUrl
+}
+
+// EpayQueryOrder 向易支付服务端查询订单状态，确认订单已支付。
+// 返回 trade_status 字符串（如 epay.StatusTradeSuccess）和是否查询成功。
+func EpayQueryOrder(gatewayId string, tradeNo string) (string, bool) {
+	gateway := operation_setting.GetEpayGatewayById(gatewayId)
+	if gateway == nil {
+		gateway = operation_setting.GetFirstEpayGateway()
+	}
+	if gateway == nil || gateway.PayAddress == "" || gateway.EpayId == "" || gateway.EpayKey == "" {
+		return "", false
+	}
+
+	queryURL, err := url.Parse(gateway.PayAddress)
+	if err != nil {
+		return "", false
+	}
+	queryURL.Path += "/api.php"
+	q := queryURL.Query()
+	q.Set("act", "order")
+	q.Set("pid", gateway.EpayId)
+	q.Set("key", gateway.EpayKey)
+	q.Set("out_trade_no", tradeNo)
+	queryURL.RawQuery = q.Encode()
+
+	httpClient := service.GetHttpClient()
+	resp, err := httpClient.Get(queryURL.String())
+	if err != nil {
+		return "", false
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", false
+	}
+
+	var result struct {
+		Code   int    `json:"code"`
+		Status int    `json:"status"`
+		Msg    string `json:"msg"`
+	}
+	if err := common.Unmarshal(body, &result); err != nil {
+		return "", false
+	}
+
+	// 易支付查询接口：code=1 表示查询成功，status=1 表示已支付
+	if result.Code == 1 && result.Status == 1 {
+		return epay.StatusTradeSuccess, true
+	}
+
+	return "", false
 }
 
 func getPayMoney(amount int64, group string) float64 {
@@ -391,6 +444,14 @@ func EpayNotify(c *gin.Context) {
 	}
 
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
+		// 向易支付服务端查询订单，确认订单已支付
+		queryStatus, queryOK := EpayQueryOrder(gatewayId, verifyInfo.ServiceTradeNo)
+		if !queryOK || queryStatus != epay.StatusTradeSuccess {
+			logger.LogWarn(c.Request.Context(), fmt.Sprintf("易支付 webhook 服务端查询订单未确认支付 trade_no=%s query_ok=%v query_status=%s client_ip=%s", verifyInfo.ServiceTradeNo, queryOK, queryStatus, c.ClientIP()))
+			return
+		}
+		logger.LogInfo(c.Request.Context(), fmt.Sprintf("易支付 webhook 服务端查询订单确认已支付 trade_no=%s client_ip=%s", verifyInfo.ServiceTradeNo, c.ClientIP()))
+
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
 		topUp := model.GetTopUpByTradeNo(verifyInfo.ServiceTradeNo)
