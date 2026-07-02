@@ -80,3 +80,36 @@ export async function fetchAdminTokenKeysBatch(ids: number[]): Promise<{
   const res = await api.post('/api/admin/token/batch/keys', { ids })
   return res.data
 }
+
+// Update a token (admin, cross-user)
+export async function updateAdminToken(
+  token: Partial<AdminApiKey> & { id: number }
+): Promise<ApiResponse<AdminApiKey>> {
+  const res = await api.put('/api/admin/token/', token)
+  return res.data
+}
+
+// Delete a single token (admin, cross-user)
+export async function deleteAdminToken(
+  id: number
+): Promise<ApiResponse> {
+  const res = await api.delete(`/api/admin/token/${id}`)
+  return res.data
+}
+
+// Batch delete tokens (admin, cross-user)
+export async function deleteAdminTokenBatch(
+  ids: number[]
+): Promise<ApiResponse<number>> {
+  const res = await api.post('/api/admin/token/batch/delete', { ids })
+  return res.data
+}
+
+// Batch update group for tokens (admin, cross-user)
+export async function updateAdminTokenGroupBatch(
+  ids: number[],
+  group: string
+): Promise<ApiResponse<number>> {
+  const res = await api.post('/api/admin/token/batch/group', { ids, group })
+  return res.data
+}

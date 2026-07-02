@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Loader2, DollarSign } from 'lucide-react'
+import { Loader2, DollarSign, Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,7 @@ type MultiKeyTableRowActionsProps = {
   onAction: (action: MultiKeyConfirmAction) => void
   onTest: (keyIndex: number) => void
   onQueryBalance?: (keyIndex: number) => void
+  onEditConfig?: () => void
 }
 
 export function MultiKeyTableRowActions({
@@ -42,6 +43,7 @@ export function MultiKeyTableRowActions({
   onAction,
   onTest,
   onQueryBalance,
+  onEditConfig,
 }: MultiKeyTableRowActionsProps) {
   const { t } = useTranslation()
   const isEnabled = status === 1
@@ -70,6 +72,12 @@ export function MultiKeyTableRowActions({
           )}
           {!isQueryingBalance && <DollarSign className='mr-2 h-4 w-4' />}
           {t('Balance')}
+        </Button>
+      )}
+      {onEditConfig && (
+        <Button variant='outline' size='sm' onClick={onEditConfig}>
+          <Settings className='mr-2 h-4 w-4' />
+          {t('Config')}
         </Button>
       )}
       {isEnabled ? (
