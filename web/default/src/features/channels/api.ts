@@ -155,6 +155,24 @@ export async function updateChannelStatus(
 }
 
 /**
+ * Enable or disable a single model on a channel.
+ * When disabled is true, the model will not be used for routing even though
+ * it remains in the channel's model list.
+ */
+export async function toggleChannelModel(
+  id: number,
+  model: string,
+  disabled: boolean
+): Promise<{ success: boolean; message?: string; data?: Channel }> {
+  const res = await api.post(
+    `/api/channel/${id}/model_status`,
+    { model, disabled },
+    channelActionConfig()
+  )
+  return res.data
+}
+
+/**
  * Batch update channel enabled/disabled status.
  */
 export async function batchUpdateChannelStatus(
@@ -432,6 +450,24 @@ export async function deleteMultiKey(
     channel_id: channelId,
     action: 'delete_key',
     key_index: keyIndex,
+  }) as Promise<{ success: boolean; message?: string }>
+}
+
+/**
+ * Set weight and priority for a specific key in multi-key channel
+ */
+export async function setMultiKeyConfig(
+  channelId: number,
+  keyIndex: number,
+  weight: number,
+  priority: number
+): Promise<{ success: boolean; message?: string }> {
+  return manageMultiKeys({
+    channel_id: channelId,
+    action: 'set_key_config',
+    key_index: keyIndex,
+    weight,
+    priority,
   }) as Promise<{ success: boolean; message?: string }>
 }
 

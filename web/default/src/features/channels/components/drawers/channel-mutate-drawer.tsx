@@ -128,6 +128,7 @@ import {
   getGroups,
   getPrefillGroups,
   refreshCodexCredential,
+  toggleChannelModel,
 } from '../../api'
 import {
   ADD_MODE_OPTIONS,
@@ -593,6 +594,11 @@ export function ChannelMutateDrawer({
     ADMIN_PERMISSION_RESOURCES.CHANNEL,
     ADMIN_PERMISSION_ACTIONS.SENSITIVE_WRITE
   )
+  const canOperateChannel = hasPermission(
+    currentUser,
+    ADMIN_PERMISSION_RESOURCES.CHANNEL,
+    ADMIN_PERMISSION_ACTIONS.OPERATE
+  )
   const canRevealChannelKey = currentUser?.role === ROLE.SUPER_ADMIN
   const [fetchModelsDialogOpen, setFetchModelsDialogOpen] = useState(false)
   const [channelKey, setChannelKey] = useState<string | null>(null)
@@ -701,6 +707,7 @@ export function ChannelMutateDrawer({
   const currentModels = form.watch('models')
   const currentName = form.watch('name')
   const currentModelMapping = form.watch('model_mapping')
+  const currentDisabledModels = form.watch('disabled_models')
   const awsKeyType = form.watch('aws_key_type')
   const vertexKeyType = form.watch('vertex_key_type')
   const upstreamModelUpdateCheckEnabled = form.watch(
@@ -826,6 +833,61 @@ export function ChannelMutateDrawer({
   const currentModelsArray = useMemo(
     () => parseModelsString(currentModels),
     [currentModels]
+  )
+
+  const disabledModelsSet = useMemo(() => {
+    const set = new Set<string>()
+    if (currentDisabledModels) {
+      for (const m of currentDisabledModels.split(',')) {
+        const trimmed = m.trim()
+        if (trimmed) set.add(trimmed)
+      }
+    }
+    return set
+  }, [currentDisabledModels])
+
+  const handleToggleModelDisabled = useCallback(
+    async (model: string, disabled: boolean) => {
+      if (!channelId) return
+      const newSet = new Set(disabledModelsSet)
+      if (disabled) {
+        newSet.add(model)
+      } else {
+        newSet.delete(model)
+      }
+      const newStr = [...newSet].join(',')
+      form.setValue('disabled_models', newStr)
+      try {
+        const res = await toggleChannelModel(channelId, model, disabled)
+        if (!res.success) {
+          toast.error(res.message || t('Failed to update model status'))
+          // revert on failure
+          form.setValue('disabled_models', currentDisabledModels || '')
+          return
+        }
+        // Update form with server-returned disabled_models if available
+        if (res.data?.disabled_models !== undefined) {
+          form.setValue('disabled_models', res.data.disabled_models || '')
+        }
+        queryClient.invalidateQueries({ queryKey: channelsQueryKeys.all })
+        toast.success(
+          disabled
+            ? t('Model disabled successfully')
+            : t('Model enabled successfully')
+        )
+      } catch {
+        toast.error(t('Failed to update model status'))
+        form.setValue('disabled_models', currentDisabledModels || '')
+      }
+    },
+    [
+      channelId,
+      disabledModelsSet,
+      form,
+      currentDisabledModels,
+      queryClient,
+      t,
+    ]
   )
 
   const currentTypeLabel = useMemo(
@@ -3281,6 +3343,73 @@ export function ChannelMutateDrawer({
                               )}
                             </div>
                           </div>
+
+                          {isEditing && currentModelsArray.length > 0 && (
+                            <div className='border-border/60 rounded-lg border p-4'>
+                              <div className='space-y-3'>
+                                <div className='flex items-center justify-between'>
+                                  <div className='space-y-1'>
+                                    <p className='text-sm font-medium'>
+                                      {t('Disabled Models')}
+                                    </p>
+                                    <p className='text-muted-foreground text-xs'>
+                                      {t(
+                                        'Disable individual models on this channel without removing them from the list.'
+                                      )}
+                                    </p>
+                                  </div>
+                                  {disabledModelsSet.size > 0 && (
+                                    <Badge variant='destructive'>
+                                      {t('{{count}} disabled', {
+                                        count: disabledModelsSet.size,
+                                      })}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className='flex flex-wrap gap-2'>
+                                  {currentModelsArray.map((model) => {
+                                    const isDisabled =
+                                      disabledModelsSet.has(model)
+                                    return (
+                                      <Button
+                                        key={model}
+                                        type='button'
+                                        variant={
+                                          isDisabled ? 'destructive' : 'outline'
+                                        }
+                                        size='sm'
+                                        className='text-xs'
+                                        disabled={!canOperateChannel}
+                                        onClick={() =>
+                                          handleToggleModelDisabled(
+                                            model,
+                                            !isDisabled
+                                          )
+                                        }
+                                      >
+                                        <span
+                                          className={cn(
+                                            'mr-1.5 inline-block h-2 w-2 rounded-full',
+                                            isDisabled
+                                              ? 'bg-destructive-foreground'
+                                              : 'bg-green-500'
+                                          )}
+                                        />
+                                        {model}
+                                      </Button>
+                                    )
+                                  })}
+                                </div>
+                                {!canOperateChannel && (
+                                  <p className='text-muted-foreground text-xs'>
+                                    {t(
+                                      'No permission to perform this action'
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                           <div className='border-border/60 rounded-lg border p-4'>
                             <FormField

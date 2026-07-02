@@ -53,10 +53,14 @@ func InitChannelCache() {
 		if channel.Status != common.ChannelStatusEnabled {
 			continue // skip disabled channels
 		}
+		disabledSet := channel.GetDisabledModelSet()
 		groups := strings.Split(channel.Group, ",")
 		for _, group := range groups {
 			models := strings.Split(channel.Models, ",")
 			for _, model := range models {
+				if disabledSet != nil && disabledSet[model] {
+					continue // skip per-channel disabled models
+				}
 				if _, ok := newGroup2model2channels[group][model]; !ok {
 					newGroup2model2channels[group][model] = make([]int, 0)
 				}
@@ -288,6 +292,80 @@ func CacheUpdateChannelStatus(id int, status int) {
 			}
 		}
 	}
+}
+
+// CacheUpdateChannelDisabledModels incrementally updates the in-memory cache
+// when a channel's DisabledModels list changes, without a full resync.
+// disabledSet is the new set of disabled model names for the channel.
+func CacheUpdateChannelDisabledModels(id int, disabledSet map[string]bool) {
+	if !common.MemoryCacheEnabled {
+		return
+	}
+	channelSyncLock.Lock()
+	defer channelSyncLock.Unlock()
+	channel, ok := channelsIDM[id]
+	if !ok {
+		return
+	}
+	// Update the cached channel's DisabledModels field so future lookups are consistent.
+	channel.DisabledModels = joinDisabledModels(disabledSet)
+
+	if channel.Status != common.ChannelStatusEnabled {
+		return // disabled channels are already absent from group2model2channels
+	}
+
+	// For each group this channel belongs to, remove the channel from newly-disabled
+	// models and add it back to newly-enabled models.
+	groups := strings.Split(channel.Group, ",")
+	models := strings.Split(channel.Models, ",")
+	for _, group := range groups {
+		model2channels := group2model2channels[group]
+		if model2channels == nil {
+			continue
+		}
+		for _, model := range models {
+			disabled := disabledSet != nil && disabledSet[model]
+			list := model2channels[model]
+			idx := -1
+			for i, cid := range list {
+				if cid == id {
+					idx = i
+					break
+				}
+			}
+			if disabled {
+				// remove channel from this model's list
+				if idx >= 0 {
+					model2channels[model] = append(list[:idx], list[idx+1:]...)
+				}
+			} else {
+				// add channel back to this model's list (and re-sort by priority)
+				if idx < 0 {
+					model2channels[model] = append(list, id)
+					sort.Slice(model2channels[model], func(i, j int) bool {
+						ci := channelsIDM[model2channels[model][i]]
+						cj := channelsIDM[model2channels[model][j]]
+						if ci == nil || cj == nil {
+							return false
+						}
+						return ci.GetPriority() > cj.GetPriority()
+					})
+				}
+			}
+		}
+	}
+}
+
+func joinDisabledModels(set map[string]bool) string {
+	if len(set) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return strings.Join(keys, ",")
 }
 
 func CacheUpdateChannel(channel *Channel) {

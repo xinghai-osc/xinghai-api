@@ -28,6 +28,8 @@ export const channelInfoSchema = z.object({
   multi_key_status_list: z.record(z.string(), z.number()).optional(),
   multi_key_disabled_reason: z.record(z.string(), z.string()).optional(),
   multi_key_disabled_time: z.record(z.string(), z.number()).optional(),
+  multi_key_weight_list: z.record(z.string(), z.number()).optional(),
+  multi_key_priority_list: z.record(z.string(), z.number()).optional(),
   multi_key_polling_index: z.number().default(0),
   multi_key_mode: z.enum(['random', 'polling']).default('random'),
 })
@@ -55,6 +57,7 @@ export const channelSchema = z.object({
   group: z.string().default('default'),
   used_quota: z.number().default(0),
   model_mapping: z.string().nullish(),
+  disabled_models: z.string().default(''),
   status_code_mapping: z.string().nullish(),
   priority: z.number().nullish(),
   auto_ban: z.number().nullish(),
@@ -228,6 +231,8 @@ export interface KeyStatus {
   reason?: string
   key_preview?: string
   balance?: number
+  weight: number
+  priority: number
 }
 
 export type MultiKeyConfirmAction = {
@@ -239,6 +244,12 @@ export type MultiKeyConfirmAction = {
     | 'disable-all'
     | 'delete-disabled'
   keyIndex?: number
+}
+
+export type MultiKeyConfigForm = {
+  keyIndex: number
+  weight: string
+  priority: string
 }
 
 export interface MultiKeyStatusResponse {
@@ -315,12 +326,15 @@ export interface MultiKeyManageParams {
     | 'disable_all_keys'
     | 'delete_key'
     | 'delete_disabled_keys'
+    | 'set_key_config'
     | 'check_key_balance'
     | 'check_all_keys_balance'
   key_index?: number
   page?: number
   page_size?: number
   status?: number // 1=enabled, 2=manual_disabled, 3=auto_disabled
+  weight?: number
+  priority?: number
 }
 
 export interface BatchDeleteParams {
@@ -355,6 +369,7 @@ export interface ChannelFormData {
   models: string
   group: string
   model_mapping?: string
+  disabled_models?: string
   priority?: number
   weight?: number
   test_model?: string

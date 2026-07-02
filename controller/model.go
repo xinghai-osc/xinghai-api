@@ -265,7 +265,6 @@ func ListModels(c *gin.Context, modelType int) {
 				}
 			}
 			userModelNames = append(userModelNames, modelName)
-			}
 		}
 	}
 

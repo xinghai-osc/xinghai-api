@@ -41,6 +41,7 @@ type Channel struct {
 	Group              string  `json:"group" gorm:"type:varchar(64);default:'default'"`
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:text"`
+	DisabledModels     string  `json:"disabled_models" gorm:"type:text"` // 逗号分隔的被禁用模型列表，用于单独禁用渠道中的某个模型
 	//MaxInputTokens     *int    `json:"max_input_tokens" gorm:"default:0"`
 	StatusCodeMapping *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
@@ -66,6 +67,8 @@ type ChannelInfo struct {
 	MultiKeyStatusList     map[int]int           `json:"multi_key_status_list"`               // key状态列表，key index -> status
 	MultiKeyDisabledReason map[int]string        `json:"multi_key_disabled_reason,omitempty"` // key禁用原因列表，key index -> reason
 	MultiKeyDisabledTime   map[int]int64         `json:"multi_key_disabled_time,omitempty"`   // key禁用时间列表，key index -> time
+	MultiKeyWeightList     map[int]uint          `json:"multi_key_weight_list,omitempty"`     // key权重列表，key index -> weight
+	MultiKeyPriorityList   map[int]int64         `json:"multi_key_priority_list,omitempty"`   // key优先级列表，key index -> priority
 	MultiKeyPollingIndex   int                   `json:"multi_key_polling_index"`             // 多Key模式下轮询的key索引
 	MultiKeyMode           constant.MultiKeyMode `json:"multi_key_mode"`
 }
@@ -256,11 +259,49 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
 		return "", 0, types.NewError(errors.New("no enabled keys"), types.ErrorCodeChannelNoAvailableKey)
 	}
 
+	getPriority := func(idx int) int64 {
+		if channel.ChannelInfo.MultiKeyPriorityList == nil {
+			return 0
+		}
+		return channel.ChannelInfo.MultiKeyPriorityList[idx]
+	}
+	highestPriority := getPriority(enabledIdx[0])
+	for _, idx := range enabledIdx[1:] {
+		if priority := getPriority(idx); priority > highestPriority {
+			highestPriority = priority
+		}
+	}
+	targetIdx := make([]int, 0, len(enabledIdx))
+	for _, idx := range enabledIdx {
+		if getPriority(idx) == highestPriority {
+			targetIdx = append(targetIdx, idx)
+		}
+	}
+	getWeight := func(idx int) uint {
+		if channel.ChannelInfo.MultiKeyWeightList == nil {
+			return 0
+		}
+		return channel.ChannelInfo.MultiKeyWeightList[idx]
+	}
+
 	switch channel.ChannelInfo.MultiKeyMode {
 	case constant.MultiKeyModeRandom:
-		// Randomly pick one enabled key
-		selectedIdx := enabledIdx[rand.Intn(len(enabledIdx))]
-		return keys[selectedIdx], selectedIdx, nil
+		weightSum := 0
+		for _, idx := range targetIdx {
+			weightSum += int(getWeight(idx))
+		}
+		if weightSum == 0 {
+			selectedIdx := targetIdx[rand.Intn(len(targetIdx))]
+			return keys[selectedIdx], selectedIdx, nil
+		}
+		randomWeight := rand.Intn(weightSum)
+		for _, idx := range targetIdx {
+			randomWeight -= int(getWeight(idx))
+			if randomWeight < 0 {
+				return keys[idx], idx, nil
+			}
+		}
+		return keys[targetIdx[0]], targetIdx[0], nil
 	case constant.MultiKeyModePolling:
 		// Use channel-specific lock to ensure thread-safe polling
 
@@ -285,17 +326,17 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
 		}
 		for i := 0; i < len(keys); i++ {
 			idx := (start + i) % len(keys)
-			if getStatus(idx) == common.ChannelStatusEnabled {
+			if getStatus(idx) == common.ChannelStatusEnabled && getPriority(idx) == highestPriority {
 				// update polling index for next call (point to the next position)
 				channel.ChannelInfo.MultiKeyPollingIndex = (idx + 1) % len(keys)
 				return keys[idx], idx, nil
 			}
 		}
-		// Fallback – should not happen, but return first enabled key
-		return keys[enabledIdx[0]], enabledIdx[0], nil
+		// Fallback – should not happen, but return first target key
+		return keys[targetIdx[0]], targetIdx[0], nil
 	default:
-		// Unknown mode, default to first enabled key (or original key string)
-		return keys[enabledIdx[0]], enabledIdx[0], nil
+		// Unknown mode, default to first target key
+		return keys[targetIdx[0]], targetIdx[0], nil
 	}
 }
 
@@ -308,6 +349,31 @@ func (channel *Channel) GetModels() []string {
 		return []string{}
 	}
 	return strings.Split(strings.Trim(channel.Models, ","), ",")
+}
+
+// GetDisabledModelSet returns a set of disabled model names for this channel.
+func (channel *Channel) GetDisabledModelSet() map[string]bool {
+	if channel.DisabledModels == "" {
+		return nil
+	}
+	parts := strings.Split(strings.Trim(channel.DisabledModels, ","), ",")
+	set := make(map[string]bool, len(parts))
+	for _, m := range parts {
+		m = strings.TrimSpace(m)
+		if m != "" {
+			set[m] = true
+		}
+	}
+	return set
+}
+
+// IsModelDisabled returns true if the given model is disabled on this channel.
+func (channel *Channel) IsModelDisabled(model string) bool {
+	if channel.DisabledModels == "" {
+		return false
+	}
+	disabledSet := channel.GetDisabledModelSet()
+	return disabledSet[model]
 }
 
 func (channel *Channel) GetGroups() []string {
@@ -612,6 +678,13 @@ func (channel *Channel) Update() error {
 	if err != nil {
 		return err
 	}
+	// Force-update DisabledModels so that clearing the list (empty string) is
+	// persisted; GORM Updates skips zero-value string fields.
+	if channel.DisabledModels == "" {
+		if e := DB.Model(channel).Update("disabled_models", "").Error; e != nil {
+			return e
+		}
+	}
 	DB.Model(channel).First(channel, "id = ?", channel.Id)
 	err = channel.UpdateAbilities(nil)
 	return err
@@ -750,6 +823,7 @@ func hasEnabledMultiKey(keys []string, statusList map[int]int) bool {
 
 func UpdateChannelStatus(channelId int, usingKey string, status int, reason string) bool {
 	var updatedChannel *Channel
+	var channel *Channel
 	if common.MemoryCacheEnabled {
 		channelStatusLock.Lock()
 		defer channelStatusLock.Unlock()
@@ -783,9 +857,18 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 	shouldUpdateAbilities := false
 	defer func() {
 		if shouldUpdateAbilities {
-			err := UpdateAbilityStatus(channelId, status == common.ChannelStatusEnabled)
-			if err != nil {
-				common.SysLog(fmt.Sprintf("failed to update ability status: channel_id=%d, error=%v", channelId, err))
+			// When enabling a channel, re-apply per-model disabled state so that
+			// individually disabled models stay disabled.
+			if status == common.ChannelStatusEnabled {
+				err := channel.UpdateAbilities(nil)
+				if err != nil {
+					common.SysLog(fmt.Sprintf("failed to update abilities: channel_id=%d, error=%v", channelId, err))
+				}
+			} else {
+				err := UpdateAbilityStatus(channelId, false)
+				if err != nil {
+					common.SysLog(fmt.Sprintf("failed to update ability status: channel_id=%d, error=%v", channelId, err))
+				}
 			}
 		}
 	}()
