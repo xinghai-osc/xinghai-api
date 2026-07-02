@@ -391,7 +391,8 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 					common.SysError(fmt.Sprintf("failed to resolve test user id for channel disable confirmation: %v", resolveErr))
 					return
 				}
-				confirmError, shouldDisable := confirmChannelDisableByTests(channel, testUserID, 10000000, channelError.MultiKeyIndex)
+				testModel := c.GetString("original_model")
+				confirmError, shouldDisable := confirmChannelDisableByTests(channel, testUserID, 10000000, channelError.MultiKeyIndex, testModel)
 				if !shouldDisable {
 					return
 				}
@@ -666,7 +667,7 @@ func RelayTask(c *gin.Context) {
 		if !taskErr.LocalError {
 			processChannelError(c,
 				*types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey,
-				common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan(), common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)),
+					common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan(), common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)),
 				types.NewOpenAIError(taskErr.Error, types.ErrorCodeBadResponseStatusCode, taskErr.StatusCode), true)
 		}
 
