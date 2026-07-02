@@ -22,11 +22,13 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { PasswordInput } from '@/components/password-input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
 import { ROLE } from '@/lib/roles'
 
 import { updateUserSettings } from '../../api'
@@ -337,14 +339,35 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
 
         <div className='space-y-1.5'>
           <Label htmlFor='avatarUrl'>{t('Avatar URL')}</Label>
-          <Input
-            id='avatarUrl'
-            type='url'
-            className='h-9'
-            value={settings.avatar_url}
-            onChange={(e) => updateField('avatar_url', e.target.value)}
-            placeholder='https://example.com/avatar.png'
-          />
+          <div className='flex items-center gap-3'>
+            <Avatar className='ring-background h-12 w-12 rounded-xl ring-2'>
+              {settings.avatar_url && (
+                <AvatarImage
+                  src={settings.avatar_url}
+                  alt={profile?.username || profile?.display_name || ''}
+                  className='rounded-xl object-cover'
+                />
+              )}
+              <AvatarFallback
+                className='rounded-xl font-semibold text-white'
+                style={getUserAvatarStyle(
+                  profile?.username || profile?.display_name || ''
+                )}
+              >
+                {getUserAvatarFallback(
+                  profile?.username || profile?.display_name || ''
+                )}
+              </AvatarFallback>
+            </Avatar>
+            <Input
+              id='avatarUrl'
+              type='url'
+              className='h-9 flex-1'
+              value={settings.avatar_url}
+              onChange={(e) => updateField('avatar_url', e.target.value)}
+              placeholder='https://example.com/avatar.png'
+            />
+          </div>
           <p className='text-muted-foreground text-xs'>
             {t('Enter an HTTP or HTTPS image URL for your avatar')}
           </p>
