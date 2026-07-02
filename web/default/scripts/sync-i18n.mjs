@@ -116,6 +116,7 @@ const NON_TRANSLATABLE_KEYS = new Set([
   'Well-Known URL',
   'Worker URL',
   'Xinference',
+  'Xinghai API',
   'Xunfei',
   'Zhipu V4',
 ])
