@@ -16,9 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Trophy, UserRound } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
 import { formatShare, formatTokens } from '../lib/format'
 import type { PersonalRanking } from '../types'
 
@@ -49,7 +50,7 @@ export function PersonalRankingsSection(props: PersonalRankingsSectionProps) {
         <div className='px-5 pt-1 pb-4'>
           <ul>
             {props.rows.map((row) => {
-              const displayName = row.display_name || row.username
+              const avatarKey = row.display_name || row.username
               return (
                 <li
                   key={row.user_id}
@@ -58,17 +59,24 @@ export function PersonalRankingsSection(props: PersonalRankingsSectionProps) {
                   <span className='text-muted-foreground/80 w-6 shrink-0 text-right font-mono text-xs tabular-nums'>
                     {row.rank}.
                   </span>
-                  <Avatar className='size-8 shrink-0'>
+                  <Avatar className='size-8 shrink-0 rounded-md'>
                     {row.avatar_url && (
-                      <AvatarImage src={row.avatar_url} alt={displayName} />
+                      <AvatarImage
+                        src={row.avatar_url}
+                        alt={avatarKey}
+                        className='rounded-md object-cover'
+                      />
                     )}
-                    <AvatarFallback className='bg-muted text-muted-foreground'>
-                      <UserRound className='size-4' />
+                    <AvatarFallback
+                      className='rounded-md font-semibold text-white'
+                      style={getUserAvatarStyle(avatarKey)}
+                    >
+                      {getUserAvatarFallback(avatarKey)}
                     </AvatarFallback>
                   </Avatar>
                   <div className='min-w-0 flex-1'>
                     <div className='text-foreground truncate text-sm font-medium'>
-                      {displayName}
+                      {avatarKey}
                     </div>
                     <p className='text-muted-foreground/80 truncate text-xs'>
                       {t('{{count}} requests', {
