@@ -41,6 +41,7 @@ export const userFormSchema = z.object({
   quota_dollars: z.number().min(0).optional(),
   group: z.array(z.string()).optional(),
   remark: z.string().optional(),
+  aff_code: z.string().optional(),
   admin_permissions: z
     .record(z.string(), z.record(z.string(), z.boolean()))
     .optional(),
@@ -98,7 +99,8 @@ export function transformFormDataToPayload(
   if (userId === undefined) {
     payload.role = role
   } else {
-    // For update: quota is adjusted atomically via /api/user/manage, not sent here
+    // For update: quota is adjusted atomically via /api/user/manage, not sent here;
+    // aff_code is updated via /api/user/aff_code, not sent here.
     payload.group = data.group?.join(',')
     payload.user_groups = data.group
     payload.remark = data.remark || undefined
@@ -128,6 +130,7 @@ export function transformUserToFormDefaults(user: User): UserFormValues {
     quota_dollars: quotaUnitsToDollars(user.quota),
     group: userGroups,
     remark: user.remark || '',
+    aff_code: user.aff_code || '',
     admin_permissions: user.admin_permissions ?? {},
   }
 }

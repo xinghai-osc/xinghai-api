@@ -99,6 +99,17 @@ export async function updateUser(
 }
 
 /**
+ * Admin update a user's invitation code (aff_code)
+ */
+export async function updateUserAffCode(
+  id: number,
+  aff_code: string
+): Promise<ApiResponse> {
+  const res = await api.put('/api/user/aff_code', { id, aff_code })
+  return res.data
+}
+
+/**
  * Delete a single user (hard delete)
  */
 export async function deleteUser(id: number): Promise<ApiResponse> {

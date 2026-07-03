@@ -127,6 +127,7 @@ export const ERROR_MESSAGES = {
   CREATE_FAILED: 'Failed to create user',
   UPDATE_FAILED: 'Failed to update user',
   DELETE_FAILED: 'Failed to delete user',
+  AFF_CODE_UPDATE_FAILED: 'Failed to update invitation code',
 } as const
 
 // ============================================================================
@@ -136,4 +137,5 @@ export const ERROR_MESSAGES = {
 export const SUCCESS_MESSAGES = {
   USER_CREATED: 'User created successfully',
   USER_UPDATED: 'User updated successfully',
+  AFF_CODE_UPDATED: 'Invitation code updated successfully',
 } as const

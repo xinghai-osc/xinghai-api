@@ -81,6 +81,7 @@ import {
   getUser,
   getGroups,
   getPermissionCatalog,
+  updateUserAffCode,
 } from '../api'
 import { BINDING_FIELDS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
 import {
@@ -210,6 +211,29 @@ export function UsersMutateDrawer({
       form.reset(transformUserToFormDefaults(result.data))
     }
     triggerRefresh()
+  }
+
+  const [isAffCodeSaving, setIsAffCodeSaving] = useState(false)
+  const affCodeValue = form.watch('aff_code') || ''
+  const isAffCodeDirty = isUpdate && affCodeValue !== (currentRow?.aff_code || '')
+  const onSaveAffCode = async () => {
+    if (!currentRow) return
+    setIsAffCodeSaving(true)
+    try {
+      const result = await updateUserAffCode(currentRow.id, affCodeValue)
+      if (result.success) {
+        toast.success(t(SUCCESS_MESSAGES.AFF_CODE_UPDATED))
+        await refreshUserData()
+      } else {
+        toast.error(
+          result.message || t(ERROR_MESSAGES.AFF_CODE_UPDATE_FAILED)
+        )
+      }
+    } catch (_error) {
+      toast.error(t(ERROR_MESSAGES.UNEXPECTED))
+    } finally {
+      setIsAffCodeSaving(false)
+    }
   }
 
   return (
@@ -430,6 +454,46 @@ export function UsersMutateDrawer({
                             rows={3}
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='aff_code'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Invitation Code')}</FormLabel>
+                        <div className='flex gap-2'>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ''}
+                              placeholder={t('Enter invitation code')}
+                              className='flex-1'
+                            />
+                          </FormControl>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            disabled={
+                              !isAffCodeDirty ||
+                              affCodeValue.trim() === '' ||
+                              isAffCodeSaving
+                            }
+                            onClick={onSaveAffCode}
+                          >
+                            {isAffCodeSaving
+                              ? t('Saving...')
+                              : t('Update Invitation Code')}
+                          </Button>
+                        </div>
+                        <FormDescription>
+                          {t(
+                            'Invitation code used by other users to register with this user as inviter.'
+                          )}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

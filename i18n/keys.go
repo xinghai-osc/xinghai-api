@@ -105,6 +105,8 @@ const (
 	MsgUserRegisterFailed            = "user.register_failed"
 	MsgUserDefaultTokenFailed        = "user.default_token_failed"
 	MsgUserAffCodeEmpty              = "user.aff_code_empty"
+	MsgUserAffCodeExists             = "user.aff_code_exists"
+	MsgUserAffCodeUpdated            = "user.aff_code_updated"
 	MsgUserEmailEmpty                = "user.email_empty"
 	MsgUserGitHubIdEmpty             = "user.github_id_empty"
 	MsgUserDiscordIdEmpty            = "user.discord_id_empty"

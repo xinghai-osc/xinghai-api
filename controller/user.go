@@ -708,6 +708,59 @@ func UpdateUser(c *gin.Context) {
 	return
 }
 
+type UpdateUserAffCodeRequest struct {
+	Id      int    `json:"id"`
+	AffCode string `json:"aff_code"`
+}
+
+// UpdateUserAffCode allows an admin to modify a user's invitation code (aff_code)
+func UpdateUserAffCode(c *gin.Context) {
+	var req UpdateUserAffCodeRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil || req.Id == 0 {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	affCode := strings.TrimSpace(req.AffCode)
+	if affCode == "" {
+		common.ApiErrorI18n(c, i18n.MsgUserAffCodeEmpty)
+		return
+	}
+	originUser, err := model.GetUserById(req.Id, false)
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgUserNotExists)
+		return
+	}
+	myRole := c.GetInt("role")
+	if !canManageTargetRole(myRole, originUser.Role) {
+		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+	// Check uniqueness: ensure no other user already uses this aff_code
+	var count int64
+	if err := model.DB.Model(&model.User{}).Where("aff_code = ? AND id <> ?", affCode, req.Id).Count(&count).Error; err != nil {
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	if count > 0 {
+		common.ApiErrorI18n(c, i18n.MsgUserAffCodeExists)
+		return
+	}
+	if err := model.DB.Model(&model.User{}).Where("id = ?", req.Id).Update("aff_code", affCode).Error; err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err := model.InvalidateUserCache(req.Id); err != nil {
+		common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %s", req.Id, err.Error()))
+	}
+	recordManageAuditFor(c, req.Id, "user.aff_code_update", map[string]interface{}{
+		"username": originUser.Username,
+		"id":       req.Id,
+		"old_code": originUser.AffCode,
+		"new_code": affCode,
+	})
+	common.ApiSuccessI18n(c, i18n.MsgUserAffCodeUpdated, nil)
+}
+
 func AdminClearUserBinding(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
