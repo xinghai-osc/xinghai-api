@@ -27,6 +27,16 @@ type RetryParam struct {
 	// crossFormatFallback 标记当前 RetryParam 已经进入"跨格式 fallback"分支，
 	// 防止 fallback 选出的渠道在后续请求中再次触发二次 fallback，造成无限放宽。
 	crossFormatFallback bool
+	// ExcludeChannelIds 记录本次请求已失败的 channel ID，重试时回避它们。
+	ExcludeChannelIds map[int]bool
+}
+
+// AddFailedChannel 将一个已失败的 channel ID 加入排除列表，重试时不再选中它。
+func (p *RetryParam) AddFailedChannel(channelId int) {
+	if p.ExcludeChannelIds == nil {
+		p.ExcludeChannelIds = make(map[int]bool)
+	}
+	p.ExcludeChannelIds[channelId] = true
 }
 
 func (p *RetryParam) GetRetry() int {
@@ -198,6 +208,10 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 func (p *RetryParam) channelSatisfied(channel *model.Channel) bool {
 	if p == nil || channel == nil {
 		return true
+	}
+	// 排除本次请求已失败的 channel
+	if p.ExcludeChannelIds != nil && p.ExcludeChannelIds[channel.Id] {
+		return false
 	}
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	if len(p.AllowedApiTypes) > 0 {

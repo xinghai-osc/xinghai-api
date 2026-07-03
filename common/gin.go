@@ -162,6 +162,10 @@ func GetContextKey(c *gin.Context, key constant.ContextKey) (any, bool) {
 	return c.Get(string(key))
 }
 
+func RemoveContextKey(c *gin.Context, key constant.ContextKey) {
+	c.Set(string(key), nil)
+}
+
 func GetContextKeyString(c *gin.Context, key constant.ContextKey) string {
 	return c.GetString(string(key))
 }

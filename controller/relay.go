@@ -245,6 +245,8 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
 			break
 		}
+		// 记录本次失败的 channel，下次重试时回避它
+		retryParam.AddFailedChannel(channel.Id)
 	}
 
 	useChannel := c.GetStringSlice("use_channel")
@@ -315,6 +317,9 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 			AutoBan: &autoBanInt,
 		}, nil
 	}
+	// 重试时清除上次的多 key index，让 SetupContextForSelectedChannel 重新选择 key，
+	// 避免重试到同一渠道时仍然使用上次失败的 key。
+	common.RemoveContextKey(c, constant.ContextKeyChannelMultiKeyIndex)
 	channel, selectGroup, err := service.CacheGetRandomSatisfiedChannel(retryParam)
 	if selectGroup != "" && selectGroup != info.UsingGroup {
 		info.UsingGroup = selectGroup
@@ -674,6 +679,8 @@ func RelayTask(c *gin.Context) {
 		if !shouldRetryTaskRelay(c, channel.Id, taskErr, common.RetryTimes-retryParam.GetRetry()) {
 			break
 		}
+		// 记录本次失败的 channel，下次重试时回避它
+		retryParam.AddFailedChannel(channel.Id)
 	}
 
 	useChannel := c.GetStringSlice("use_channel")
