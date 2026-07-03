@@ -338,11 +338,16 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             : `#${log.channel}`
           const channelIdDisplay = `#${log.channel}`
           const channelName = sensitiveVisible ? log.channel_name : '••••'
-          const multiKeyIndex = other?.admin_info?.multi_key_index
+          const rawMultiKeyIndex = other?.admin_info?.multi_key_index
+          const multiKeyIndex =
+            typeof rawMultiKeyIndex === 'number' &&
+            Number.isFinite(rawMultiKeyIndex)
+              ? rawMultiKeyIndex + 1
+              : rawMultiKeyIndex
           const showMultiKeyIndex =
             other?.admin_info?.is_multi_key === true &&
-            typeof multiKeyIndex === 'number' &&
-            Number.isFinite(multiKeyIndex)
+            typeof rawMultiKeyIndex === 'number' &&
+            Number.isFinite(rawMultiKeyIndex)
 
           return (
             <TooltipProvider>
@@ -363,7 +368,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     />
                     {showMultiKeyIndex && (
                       <StatusBadge
-                        label={String(multiKeyIndex)}
+                        label={`#${multiKeyIndex}`}
                         size='sm'
                         showDot={false}
                         copyable={false}
@@ -443,7 +448,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     )}
                     {showMultiKeyIndex && (
                       <p className='text-muted-foreground text-xs'>
-                        {t('Key')}: {multiKeyIndex}
+                        {t('Key')}: #{multiKeyIndex}
                       </p>
                     )}
                     {affinity && (

@@ -504,7 +504,7 @@ export const getLogsColumns = ({
           let adminInfo = other.admin_info;
           if (adminInfo?.is_multi_key) {
             isMultiKey = true;
-            multiKeyIndex = adminInfo.multi_key_index;
+            multiKeyIndex = adminInfo.multi_key_index + 1;
           }
           if (
             Array.isArray(adminInfo.use_channel) &&
@@ -576,7 +576,7 @@ export const getLogsColumns = ({
             </span>
             {isMultiKey && (
               <Tag color='white' shape='circle'>
-                {multiKeyIndex}
+                #{multiKeyIndex}
               </Tag>
             )}
           </Space>
