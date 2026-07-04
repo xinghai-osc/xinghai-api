@@ -388,6 +388,35 @@ func AdminDeleteUserRealName(c *gin.Context) {
 	common.ApiSuccess(c, gin.H{"user_id": userId})
 }
 
+// AdminListUserRealNames 管理员分页查询实名记录。
+func AdminListUserRealNames(c *gin.Context) {
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	var status *int
+	if statusStr := c.Query("status"); statusStr != "" {
+		if parsed, err := strconv.Atoi(statusStr); err == nil {
+			switch parsed {
+			case model.RealNameStatusPending, model.RealNameStatusPassed, model.RealNameStatusFailed:
+				status = &parsed
+			default:
+				common.ApiErrorMsg(c, "非法的实名状态值")
+				return
+			}
+		} else {
+			common.ApiErrorMsg(c, "非法的实名状态值")
+			return
+		}
+	}
+	pageInfo := common.GetPageQuery(c)
+	items, total, err := model.ListUserRealNames(keyword, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(items)
+	common.ApiSuccess(c, pageInfo)
+}
+
 func parseAdminUserRealNameParam(c *gin.Context) (int, bool) {
 	idStr := c.Param("id")
 	userId, err := strconv.Atoi(idStr)

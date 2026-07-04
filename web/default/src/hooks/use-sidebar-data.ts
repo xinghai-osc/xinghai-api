@@ -24,6 +24,7 @@ import {
   Crown,
   FileText,
   FlaskConical,
+  IdCard,
   ImageIcon,
   Key,
   KeyRound,
@@ -144,6 +145,11 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           title: t('API Key Management'),
           url: '/admin/tokens',
           icon: KeyRound,
+        },
+        {
+          title: t('Real-name Management'),
+          url: '/admin/real-name',
+          icon: IdCard,
         },
         {
           title: t('Redemption Codes'),

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
@@ -65,6 +66,69 @@ func UpsertUserRealName(record *UserRealName) error {
 	}
 	record.Id = existing.Id
 	return DB.Save(record).Error
+}
+
+// DeleteUserRealName 删除指定用户的实名认证记录。允许在用户尚未提交时调用（视为幂等）。
+func DeleteUserRealName(userId int) error {
+	if userId == 0 {
+		return errors.New("user_id 为空")
+	}
+	return DB.Where("user_id = ?", userId).Delete(&UserRealName{}).Error
+}
+
+// UserRealNameWithUser 在列表中返回实名记录时附加用户名/展示名等用户信息。
+type UserRealNameWithUser struct {
+	UserRealName
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+}
+
+// ListUserRealNames 分页查询实名记录，附带 username/display_name 便于管理员检索。
+// keyword 非空时按 username / display_name / user_id 模糊匹配；status 非 nil 时按状态过滤。
+func ListUserRealNames(keyword string, status *int, startIdx, num int) ([]*UserRealNameWithUser, int64, error) {
+	var items []*UserRealNameWithUser
+	var total int64
+
+	tx := DB.Begin()
+	if tx.Error != nil {
+		return nil, 0, tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query := tx.Table("user_real_names AS r").
+		Select(`r.*, u.username AS username, u.display_name AS display_name`).
+		Joins("LEFT JOIN users AS u ON u.id = r.user_id")
+
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		if userId, err := strconv.Atoi(keyword); err == nil {
+			query = query.Where("u.username LIKE ? OR u.display_name LIKE ? OR r.user_id = ?", like, like, userId)
+		} else {
+			query = query.Where("u.username LIKE ? OR u.display_name LIKE ?", like, like)
+		}
+	}
+	if status != nil {
+		query = query.Where("r.status = ?", *status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		tx.Rollback()
+		return nil, 0, err
+	}
+	if err := query.Order("r.updated_at DESC").
+		Limit(num).Offset(startIdx).
+		Scan(&items).Error; err != nil {
+		tx.Rollback()
+		return nil, 0, err
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
 }
 
 func BuildIdCardHash(idCard string) string {

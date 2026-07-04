@@ -160,6 +160,7 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.GET("/:id/real-name", controller.AdminGetUserRealName)
 				adminRoute.PUT("/:id/real-name", controller.AdminUpdateUserRealName)
 				adminRoute.DELETE("/:id/real-name", controller.AdminDeleteUserRealName)
+				adminRoute.GET("/real-name/list", controller.AdminListUserRealNames)
 			}
 		}
 
