@@ -75,6 +75,8 @@ const defaultAuthSettings: AuthSettings = {
   'real_name.secret_key': '',
   'real_name.endpoint': 'faceid.tencentcloudapi.com',
   'real_name.region': '',
+  'real_name.rule_id': '',
+  'real_name.redirect_url': '',
   'real_name.require_unique': true,
 }
 

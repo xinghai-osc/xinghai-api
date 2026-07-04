@@ -9,6 +9,8 @@ type RealNameSettings struct {
 	SecretKey     string `json:"secret_key"`
 	Endpoint      string `json:"endpoint"`
 	Region        string `json:"region"`
+	RuleId        string `json:"rule_id"`
+	RedirectUrl   string `json:"redirect_url"`
 	RequireUnique bool   `json:"require_unique"`
 }
 
@@ -19,6 +21,8 @@ var realNameSettings = RealNameSettings{
 	SecretKey:     "",
 	Endpoint:      "faceid.tencentcloudapi.com",
 	Region:        "",
+	RuleId:        "",
+	RedirectUrl:   "",
 	RequireUnique: true,
 }
 

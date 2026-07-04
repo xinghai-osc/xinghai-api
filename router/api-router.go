@@ -115,6 +115,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
 				selfRoute.GET("/real-name", controller.GetRealNameStatus)
 				selfRoute.POST("/real-name", middleware.CriticalRateLimit(), controller.VerifyRealName)
+				selfRoute.POST("/real-name/start", middleware.CriticalRateLimit(), controller.StartRealNameSession)
+				selfRoute.POST("/real-name/finish", middleware.CriticalRateLimit(), controller.FinishRealNameSession)
 
 				// 2FA routes
 				selfRoute.GET("/2fa/status", controller.Get2FAStatus)
@@ -153,6 +155,11 @@ func SetApiRouter(router *gin.Engine) {
 				// Admin 2FA routes
 				adminRoute.GET("/2fa/stats", controller.Admin2FAStats)
 				adminRoute.DELETE("/:id/2fa", controller.AdminDisable2FA)
+
+				// Admin real-name verification routes
+				adminRoute.GET("/:id/real-name", controller.AdminGetUserRealName)
+				adminRoute.PUT("/:id/real-name", controller.AdminUpdateUserRealName)
+				adminRoute.DELETE("/:id/real-name", controller.AdminDeleteUserRealName)
 			}
 		}
 

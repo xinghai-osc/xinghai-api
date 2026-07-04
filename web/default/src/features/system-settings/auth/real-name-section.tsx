@@ -42,6 +42,8 @@ const realNameSchema = z.object({
     secret_key: z.string(),
     endpoint: z.string(),
     region: z.string(),
+    rule_id: z.string(),
+    redirect_url: z.string(),
     require_unique: z.boolean(),
   }),
 })
@@ -55,6 +57,8 @@ type FlatRealNameDefaults = {
   'real_name.secret_key': string
   'real_name.endpoint': string
   'real_name.region': string
+  'real_name.rule_id': string
+  'real_name.redirect_url': string
   'real_name.require_unique': boolean
 }
 
@@ -70,6 +74,8 @@ const buildFormDefaults = (defaults: FlatRealNameDefaults): RealNameFormValues =
     secret_key: defaults['real_name.secret_key'] ?? '',
     endpoint: defaults['real_name.endpoint'] || 'faceid.tencentcloudapi.com',
     region: defaults['real_name.region'] ?? '',
+    rule_id: defaults['real_name.rule_id'] ?? '',
+    redirect_url: defaults['real_name.redirect_url'] ?? '',
     require_unique: defaults['real_name.require_unique'],
   },
 })
@@ -81,6 +87,8 @@ const normalizeFormValues = (values: RealNameFormValues): FlatRealNameDefaults =
   'real_name.secret_key': values.real_name.secret_key.trim(),
   'real_name.endpoint': values.real_name.endpoint.trim() || 'faceid.tencentcloudapi.com',
   'real_name.region': values.real_name.region.trim(),
+  'real_name.rule_id': values.real_name.rule_id.trim(),
+  'real_name.redirect_url': values.real_name.redirect_url.trim(),
   'real_name.require_unique': values.real_name.require_unique,
 })
 
@@ -195,6 +203,38 @@ export function RealNameSection({ defaultValues }: RealNameSectionProps) {
                     <Input {...field} placeholder='ap-guangzhou' />
                   </FormControl>
                   <FormDescription>{t('Optional for ID card two-factor verification')}</FormDescription>
+                </div>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='real_name.rule_id'
+              render={({ field }) => (
+                <div className='space-y-2'>
+                  <FormLabel>{t('Tencent Cloud FaceID RuleId')}</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder='1' />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'Required to open the H5 face-scan window. Create the rule in the Tencent Cloud FaceID console first.'
+                    )}
+                  </FormDescription>
+                </div>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='real_name.redirect_url'
+              render={({ field }) => (
+                <div className='space-y-2'>
+                  <FormLabel>{t('Redirect URL after verification')}</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder='https://example.com/real-name/callback' />
+                  </FormControl>
+                  <FormDescription>
+                    {t('Optional. The URL the H5 window redirects to after the user finishes face verification.')}
+                  </FormDescription>
                 </div>
               )}
             />

@@ -179,6 +179,8 @@ export type AuthSettings = {
   'real_name.secret_key': string
   'real_name.endpoint': string
   'real_name.region': string
+  'real_name.rule_id': string
+  'real_name.redirect_url': string
   'real_name.require_unique': boolean
 }
 

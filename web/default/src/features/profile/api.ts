@@ -102,6 +102,29 @@ export async function verifyRealName(
   return res.data
 }
 
+export interface RealNameStartSessionResponse {
+  biz_token: string
+  verification_url: string
+  request_id: string
+}
+
+// 启动腾讯云 FaceID H5 刷脸流程：返回 BizToken + VerificationURL，
+// 前端跳转到 VerificationURL 即可弹出 H5 刷脸窗口。
+export async function startRealNameSession(): Promise<
+  ApiResponse<RealNameStartSessionResponse>
+> {
+  const res = await api.post('/api/user/real-name/start')
+  return res.data
+}
+
+// 提交 H5 回跳的 BizToken，由后端调用 GetDetectInfoEnhanced 拉取核身结果。
+export async function finishRealNameSession(bizToken: string): Promise<
+  ApiResponse<RealNameStatusResponse['record']>
+> {
+  const res = await api.post('/api/user/real-name/finish', { biz_token: bizToken })
+  return res.data
+}
+
 // ============================================================================
 // Account Binding APIs
 // ============================================================================
