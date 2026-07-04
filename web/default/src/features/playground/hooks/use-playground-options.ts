@@ -111,8 +111,10 @@ export function usePlaygroundOptions({
   useEffect(() => {
     if (!groupsData) return
 
-    setGroups(groupsData)
-    const fallback = getGroupFallback(groupsData, currentGroup)
+    const groupOptions = groupsData.groups
+    setGroups(groupOptions)
+
+    const fallback = getGroupFallback(groupOptions, currentGroup)
 
     if (fallback) {
       updateConfig('group', fallback)
