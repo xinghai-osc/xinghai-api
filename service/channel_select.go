@@ -29,14 +29,32 @@ type RetryParam struct {
 	crossFormatFallback bool
 	// ExcludeChannelIds 记录本次请求已失败的 channel ID，重试时回避它们。
 	ExcludeChannelIds map[int]bool
+	// lastFailedChannelId 记录最近一次失败的 channel ID。当 ExcludeChannelIds
+	// 把所有可用渠道都排除后，getChannel 会使用该 ID 重新选择，使重试仍可
+	// 回到"原渠道"继续。
+	lastFailedChannelId int
 }
 
 // AddFailedChannel 将一个已失败的 channel ID 加入排除列表，重试时不再选中它。
+// 同时记录最近一次失败的 channel，以便在没有其他可用渠道时回退到"原渠道"。
 func (p *RetryParam) AddFailedChannel(channelId int) {
 	if p.ExcludeChannelIds == nil {
 		p.ExcludeChannelIds = make(map[int]bool)
 	}
 	p.ExcludeChannelIds[channelId] = true
+	p.lastFailedChannelId = channelId
+}
+
+// AllowLastFailedChannel 临时放行最近一次失败的 channel（仅限"无其他渠道可用"时使用）。
+// 返回该 channel 是否仍处于可被选中的状态。
+func (p *RetryParam) AllowLastFailedChannel() bool {
+	if p == nil || p.lastFailedChannelId == 0 {
+		return false
+	}
+	if p.ExcludeChannelIds != nil {
+		delete(p.ExcludeChannelIds, p.lastFailedChannelId)
+	}
+	return true
 }
 
 func (p *RetryParam) GetRetry() int {
