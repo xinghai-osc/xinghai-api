@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
-import { type Row } from '@tanstack/react-table'
+import type { Row } from '@tanstack/react-table'
 import { Database, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -43,8 +43,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { useTableUrlState, type NavigateFn } from '@/hooks/use-table-url-state'
 import { listAdminRealNameRecords } from '../api'
-import { ERROR_MESSAGES, REAL_NAME_STATUSES } from '../constants'
-import { type AdminRealNameRecord } from '../types'
+import {
+  ERROR_MESSAGES,
+  REAL_NAME_STATUSES,
+  REAL_NAME_STATUS_OPTIONS,
+} from '../constants'
+import type { AdminRealNameRecord } from '../types'
 import { useAdminRealName } from './admin-real-name-provider'
 import { useAdminRealNameColumns } from './admin-real-name-columns'
 
@@ -54,9 +58,9 @@ const ADMIN_REAL_NAME_COLUMN_VISIBILITY_STORAGE_KEY =
 function AdminRealNameMobileSkeleton() {
   return (
     <div className='divide-border overflow-hidden rounded-lg border'>
-      {Array.from({ length: 5 }).map((_, index) => (
+      {Array.from({ length: 5 }, (_, index) => `real-name-skeleton-${index}`).map((key) => (
         <div
-          key={index}
+          key={key}
           className='space-y-2 border-b px-3 py-2.5 last:border-b-0'
         >
           <div className='flex items-center justify-between'>
