@@ -66,6 +66,7 @@ import { Route as AuthenticatedSystemSettingsContentIndexRouteImport } from './r
 import { Route as AuthenticatedSystemSettingsBillingIndexRouteImport } from './routes/_authenticated/system-settings/billing/index'
 import { Route as AuthenticatedSystemSettingsAuthIndexRouteImport } from './routes/_authenticated/system-settings/auth/index'
 import { Route as AuthenticatedAdminTokensIndexRouteImport } from './routes/_authenticated/admin/tokens/index'
+import { Route as AuthenticatedAdminRealNameIndexRouteImport } from './routes/_authenticated/admin/real-name/index'
 import { Route as AuthenticatedSystemSettingsSiteSectionRouteImport } from './routes/_authenticated/system-settings/site/$section'
 import { Route as AuthenticatedSystemSettingsSecuritySectionRouteImport } from './routes/_authenticated/system-settings/security/$section'
 import { Route as AuthenticatedSystemSettingsOperationsSectionRouteImport } from './routes/_authenticated/system-settings/operations/$section'
@@ -384,6 +385,12 @@ const AuthenticatedAdminTokensIndexRoute =
     path: '/admin/tokens/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminRealNameIndexRoute =
+  AuthenticatedAdminRealNameIndexRouteImport.update({
+    id: '/admin/real-name/',
+    path: '/admin/real-name/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSystemSettingsSiteSectionRoute =
   AuthenticatedSystemSettingsSiteSectionRouteImport.update({
     id: '/site/$section',
@@ -482,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/admin/real-name/': typeof AuthenticatedAdminRealNameIndexRoute
   '/admin/tokens/': typeof AuthenticatedAdminTokensIndexRoute
   '/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/system-settings/billing/': typeof AuthenticatedSystemSettingsBillingIndexRoute
@@ -545,6 +553,7 @@ export interface FileRoutesByTo {
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/admin/real-name': typeof AuthenticatedAdminRealNameIndexRoute
   '/admin/tokens': typeof AuthenticatedAdminTokensIndexRoute
   '/system-settings/auth': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/system-settings/billing': typeof AuthenticatedSystemSettingsBillingIndexRoute
@@ -612,6 +621,7 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/_authenticated/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/_authenticated/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/_authenticated/admin/real-name/': typeof AuthenticatedAdminRealNameIndexRoute
   '/_authenticated/admin/tokens/': typeof AuthenticatedAdminTokensIndexRoute
   '/_authenticated/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/_authenticated/system-settings/billing/': typeof AuthenticatedSystemSettingsBillingIndexRoute
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/system-settings/operations/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
+    | '/admin/real-name/'
     | '/admin/tokens/'
     | '/system-settings/auth/'
     | '/system-settings/billing/'
@@ -741,6 +752,7 @@ export interface FileRouteTypes {
     | '/system-settings/operations/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
+    | '/admin/real-name'
     | '/admin/tokens'
     | '/system-settings/auth'
     | '/system-settings/billing'
@@ -807,6 +819,7 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/operations/$section'
     | '/_authenticated/system-settings/security/$section'
     | '/_authenticated/system-settings/site/$section'
+    | '/_authenticated/admin/real-name/'
     | '/_authenticated/admin/tokens/'
     | '/_authenticated/system-settings/auth/'
     | '/_authenticated/system-settings/billing/'
@@ -1239,6 +1252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTokensIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/real-name/': {
+      id: '/_authenticated/admin/real-name/'
+      path: '/admin/real-name'
+      fullPath: '/admin/real-name/'
+      preLoaderRoute: typeof AuthenticatedAdminRealNameIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/system-settings/site/$section': {
       id: '/_authenticated/system-settings/site/$section'
       path: '/site/$section'
@@ -1397,6 +1417,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUsageLogsIndexRoute: typeof AuthenticatedUsageLogsIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedWalletIndexRoute: typeof AuthenticatedWalletIndexRoute
+  AuthenticatedAdminRealNameIndexRoute: typeof AuthenticatedAdminRealNameIndexRoute
   AuthenticatedAdminTokensIndexRoute: typeof AuthenticatedAdminTokensIndexRoute
 }
 
@@ -1428,6 +1449,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsageLogsIndexRoute: AuthenticatedUsageLogsIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedWalletIndexRoute: AuthenticatedWalletIndexRoute,
+  AuthenticatedAdminRealNameIndexRoute: AuthenticatedAdminRealNameIndexRoute,
   AuthenticatedAdminTokensIndexRoute: AuthenticatedAdminTokensIndexRoute,
 }
 

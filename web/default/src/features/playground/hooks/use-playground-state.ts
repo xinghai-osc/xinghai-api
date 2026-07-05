@@ -26,7 +26,6 @@ import {
   applyMessageStateUpdate,
   getInitialParameterEnabled,
   getInitialPlaygroundConfig,
-  loadMessages,
   type MessageStateUpdater,
 } from '../lib'
 import {

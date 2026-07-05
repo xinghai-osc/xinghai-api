@@ -112,6 +112,8 @@ const AUTH_SECTIONS = [
           'real_name.secret_key': settings['real_name.secret_key'],
           'real_name.endpoint': settings['real_name.endpoint'],
           'real_name.region': settings['real_name.region'],
+          'real_name.rule_id': settings['real_name.rule_id'],
+          'real_name.redirect_url': settings['real_name.redirect_url'],
           'real_name.require_unique': settings['real_name.require_unique'],
         }}
       />

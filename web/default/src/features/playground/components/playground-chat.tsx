@@ -49,11 +49,11 @@ import {
   SourcesTrigger,
 } from '@/components/ai-elements/sources'
 import { MESSAGE_ROLES } from '../constants'
-import { getMessageContentStyles } from '../lib/message-styles'
+import { getMessageContentStyles } from '../lib/message/message-styles'
 import { parseThinkTags } from '../lib/message-utils'
 import type { Message as MessageType } from '../types'
-import { MessageActions } from './message-actions'
-import { MessageError } from './message-error'
+import { MessageActions } from './message/message-actions'
+import { MessageError } from './message/message-error'
 
 interface PlaygroundChatProps {
   messages: MessageType[]
@@ -112,11 +112,11 @@ export function PlaygroundChat({
             return (
               <Branch defaultBranch={0} key={message.key}>
                 <BranchMessages>
-                  {versions.map((version, versionIndex) => (
+                  {versions.map((version) => (
                     <Message
                       className='group flex-row-reverse'
                       from={message.from}
-                      key={`${message.key}-${version.id}-${versionIndex}`}
+                      key={`${message.key}-${version.id}`}
                     >
                       <div className='w-full min-w-0 flex-1 basis-full py-1'>
                         {isEditing(message.key) ? (
@@ -161,9 +161,11 @@ export function PlaygroundChat({
                             {(() => {
                               const isAssistant =
                                 message.from === MESSAGE_ROLES.ASSISTANT
-                              const hasSources = !!message.sources?.length
+                              const sources = message.sources ?? []
+                              const reasoningContent = message.reasoning?.content
+                              const hasSources = sources.length > 0
                               const showReasoning =
-                                isAssistant && !!message.reasoning?.content
+                                isAssistant && !!reasoningContent
                               const showLoader =
                                 isAssistant &&
                                 !message.isReasoningStreaming &&
@@ -198,19 +200,15 @@ export function PlaygroundChat({
                                   {/* Sources */}
                                   {hasSources && (
                                     <Sources>
-                                      <SourcesTrigger
-                                        count={message.sources!.length}
-                                      />
+                                      <SourcesTrigger count={sources.length} />
                                       <SourcesContent>
-                                        {message.sources!.map(
-                                          (source, sourceIndex) => (
-                                            <Source
-                                              href={source.href}
-                                              key={`${message.key}-source-${sourceIndex}`}
-                                              title={source.title}
-                                            />
-                                          )
-                                        )}
+                                        {sources.map((source) => (
+                                          <Source
+                                            href={source.href}
+                                            key={`${message.key}-source-${source.href}-${source.title}`}
+                                            title={source.title}
+                                          />
+                                        ))}
                                       </SourcesContent>
                                     </Sources>
                                   )}
@@ -218,12 +216,12 @@ export function PlaygroundChat({
                                   {/* Reasoning */}
                                   {showReasoning && (
                                     <Reasoning
-                                      defaultOpen={true}
+                                      defaultOpen
                                       isStreaming={message.isReasoningStreaming}
                                     >
                                       <ReasoningTrigger />
                                       <ReasoningContent>
-                                        {message.reasoning!.content}
+                                        {reasoningContent}
                                       </ReasoningContent>
                                     </Reasoning>
                                   )}
