@@ -130,6 +130,9 @@ function AdminTokensMobileList({
                   {apiKey.name}
                 </div>
                 <div className='text-muted-foreground text-[11px]'>
+                  {t('Username')}: {apiKey.username || '-'}
+                </div>
+                <div className='text-muted-foreground text-[11px]'>
                   {t('User ID')}: {apiKey.user_id}
                 </div>
               </div>

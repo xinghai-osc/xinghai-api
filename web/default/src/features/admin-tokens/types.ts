@@ -25,6 +25,7 @@ import { z } from 'zod'
 export const adminApiKeySchema = z.object({
   id: z.number(),
   user_id: z.number(),
+  username: z.string().optional(),
   name: z.string(),
   key: z.string(),
   status: z.number(), // 1: enabled, 2: disabled, 3: expired, 4: exhausted

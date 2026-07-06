@@ -79,15 +79,22 @@ export function useAdminTokensColumns(): ColumnDef<AdminApiKey>[] {
       meta: { mobileHidden: true },
     },
     {
-      accessorKey: 'user_id',
-      header: t('User ID'),
-      cell: ({ row }) => (
-        <TableId
-          value={row.getValue('user_id') as number}
-          className='w-[60px]'
-        />
-      ),
-      size: 90,
+      accessorKey: 'username',
+      header: t('Username'),
+      cell: ({ row }) => {
+        const apiKey = row.original
+        return (
+          <div className='min-w-0 space-y-0.5'>
+            <div className='truncate text-sm font-medium'>
+              {apiKey.username || '-'}
+            </div>
+            <div className='text-muted-foreground text-xs'>
+              {t('User ID')}: {apiKey.user_id}
+            </div>
+          </div>
+        )
+      },
+      size: 150,
       meta: { mobileHidden: true },
     },
     {

@@ -14,6 +14,7 @@ import (
 type Token struct {
 	Id                 int            `json:"id"`
 	UserId             int            `json:"user_id" gorm:"index"`
+	Username           string         `json:"username,omitempty" gorm:"-"`
 	Key                string         `json:"key" gorm:"type:varchar(128);uniqueIndex"`
 	Status             int            `json:"status" gorm:"default:1"`
 	Name               string         `json:"name" gorm:"index" `
@@ -557,12 +558,13 @@ func GetTokenKeysByIds(ids []int, userId int) ([]Token, error) {
 // GetAllTokensForAdmin returns all tokens (paginated), optionally filtered by userId.
 func GetAllTokensForAdmin(userId int, startIdx int, num int) ([]*Token, error) {
 	var tokens []*Token
-	var err error
-	query := DB.Model(&Token{})
+	query := DB.Model(&Token{}).
+		Select("tokens.*, users.username").
+		Joins("LEFT JOIN users ON users.id = tokens.user_id")
 	if userId > 0 {
-		query = query.Where("user_id = ?", userId)
+		query = query.Where("tokens.user_id = ?", userId)
 	}
-	err = query.Order("id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
+	err := query.Order("tokens.id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
 	return tokens, err
 }
 
@@ -590,9 +592,10 @@ func SearchTokensForAdmin(userId int, keyword string, token string, offset int, 
 		token = strings.TrimPrefix(token, "sk-")
 	}
 
-	baseQuery := DB.Model(&Token{})
+	baseQuery := DB.Model(&Token{}).
+		Joins("LEFT JOIN users ON users.id = tokens.user_id")
 	if userId > 0 {
-		baseQuery = baseQuery.Where("user_id = ?", userId)
+		baseQuery = baseQuery.Where("tokens.user_id = ?", userId)
 	}
 
 	if keyword != "" {
@@ -600,14 +603,14 @@ func SearchTokensForAdmin(userId int, keyword string, token string, offset int, 
 		if err != nil {
 			return nil, 0, err
 		}
-		baseQuery = baseQuery.Where("name LIKE ? ESCAPE '!'", keywordPattern)
+		baseQuery = baseQuery.Where("tokens.name LIKE ? ESCAPE '!'", keywordPattern)
 	}
 	if token != "" {
 		tokenPattern, err := sanitizeLikePattern(token)
 		if err != nil {
 			return nil, 0, err
 		}
-		baseQuery = baseQuery.Where(commonKeyCol+" LIKE ? ESCAPE '!'", tokenPattern)
+		baseQuery = baseQuery.Where("tokens.key LIKE ? ESCAPE '!'", tokenPattern)
 	}
 
 	err = baseQuery.Count(&total).Error
@@ -616,7 +619,7 @@ func SearchTokensForAdmin(userId int, keyword string, token string, offset int, 
 		return nil, 0, errors.New("搜索令牌失败")
 	}
 
-	err = baseQuery.Order("id desc").Offset(offset).Limit(limit).Find(&tokens).Error
+	err = baseQuery.Select("tokens.*, users.username").Order("tokens.id desc").Offset(offset).Limit(limit).Find(&tokens).Error
 	if err != nil {
 		common.SysError("failed to search tokens: " + err.Error())
 		return nil, 0, errors.New("搜索令牌失败")
