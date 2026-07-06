@@ -35,7 +35,7 @@ import {
   ZoomIn,
   type LucideIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { StatusBadge } from '@/components/status-badge'
@@ -85,7 +85,8 @@ export function useDrawingLogsColumns(
   isAdmin: boolean
 ): ColumnDef<MidjourneyLog>[] {
   const { t } = useTranslation()
-  const columns: ColumnDef<MidjourneyLog>[] = [
+  return useMemo<ColumnDef<MidjourneyLog>[]>(() => {
+    const columns: ColumnDef<MidjourneyLog>[] = [
     {
       accessorKey: 'submit_time',
       header: t('Submit Time'),
@@ -266,5 +267,6 @@ export function useDrawingLogsColumns(
     })
   )
 
-  return columns
+    return columns
+  }, [isAdmin, t])
 }

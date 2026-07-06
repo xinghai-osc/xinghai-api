@@ -17,7 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 
 import type { ChannelAffinityInfo } from '../types'
 
@@ -45,22 +51,30 @@ export function UsageLogsProvider({ children }: { children: ReactNode }) {
     useState<ChannelAffinityInfo | null>(null)
   const [affinityDialogOpen, setAffinityDialogOpen] = useState(false)
   const [sensitiveVisible, setSensitiveVisible] = useState(true)
+  const value = useMemo(
+    () => ({
+      selectedUserId,
+      setSelectedUserId,
+      userInfoDialogOpen,
+      setUserInfoDialogOpen,
+      affinityTarget,
+      setAffinityTarget,
+      affinityDialogOpen,
+      setAffinityDialogOpen,
+      sensitiveVisible,
+      setSensitiveVisible,
+    }),
+    [
+      selectedUserId,
+      userInfoDialogOpen,
+      affinityTarget,
+      affinityDialogOpen,
+      sensitiveVisible,
+    ]
+  )
 
   return (
-    <UsageLogsContext.Provider
-      value={{
-        selectedUserId,
-        setSelectedUserId,
-        userInfoDialogOpen,
-        setUserInfoDialogOpen,
-        affinityTarget,
-        setAffinityTarget,
-        affinityDialogOpen,
-        setAffinityDialogOpen,
-        sensitiveVisible,
-        setSensitiveVisible,
-      }}
-    >
+    <UsageLogsContext.Provider value={value}>
       {children}
     </UsageLogsContext.Provider>
   )

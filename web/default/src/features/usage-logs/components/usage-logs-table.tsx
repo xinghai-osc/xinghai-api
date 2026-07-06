@@ -18,7 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { type ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -59,7 +60,12 @@ function getColumnVisibilityStorageKey(
 }
 
 function deserializeLogTypeFilter(value: unknown): unknown[] {
-  const values = Array.isArray(value) ? value : value ? [value] : []
+  let values: unknown[] = []
+  if (Array.isArray(value)) {
+    values = value
+  } else if (value) {
+    values = [value]
+  }
   return values.filter((item) => String(item) !== LOG_TYPE_ALL_VALUE)
 }
 
@@ -72,19 +78,8 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const isAdmin = useIsAdmin()
   const isMobile = useMediaQuery('(max-width: 640px)')
   const searchParams = route.useSearch()
-
-  const {
-    columnFilters,
-    onColumnFiltersChange,
-    pagination,
-    onPaginationChange,
-    ensurePageInRange,
-  } = useTableUrlState({
-    search: route.useSearch(),
-    navigate: route.useNavigate(),
-    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 20 : 100 },
-    globalFilter: { enabled: false },
-    columnFilters: [
+  const columnFiltersConfig = useMemo(
+    () => [
       {
         columnId: 'created_at',
         searchKey: 'type',
@@ -109,6 +104,21 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
           ]
         : []),
     ],
+    [isAdmin]
+  )
+
+  const {
+    columnFilters,
+    onColumnFiltersChange,
+    pagination,
+    onPaginationChange,
+    ensurePageInRange,
+  } = useTableUrlState({
+    search: route.useSearch(),
+    navigate: route.useNavigate(),
+    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 20 : 100 },
+    globalFilter: { enabled: false },
+    columnFilters: columnFiltersConfig,
   })
 
   const { data, isLoading, isFetching } = useQuery({
@@ -147,13 +157,17 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     },
   })
 
-  const logs = data?.items || []
+  const logs = useMemo(() => data?.items || [], [data?.items])
   const columns = useColumnsByCategory(logCategory, isAdmin)
+  const tableColumns = useMemo(
+    () => columns as ColumnDef<Record<string, unknown>>[],
+    [columns]
+  )
   const isLoadingData = isLoading || (isFetching && !data)
 
   const { table } = useDataTable({
     data: logs as Record<string, unknown>[],
-    columns: columns as ColumnDef<Record<string, unknown>>[],
+    columns: tableColumns,
     columnFilters,
     columnVisibilityStorageKey: getColumnVisibilityStorageKey(
       logCategory,
@@ -174,7 +188,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   return (
     <DataTablePage
       table={table}
-      columns={columns as ColumnDef<Record<string, unknown>>[]}
+      columns={tableColumns}
       isLoading={isLoadingData}
       isFetching={isFetching}
       emptyTitle={t('No Logs Found')}

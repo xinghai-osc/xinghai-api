@@ -92,7 +92,8 @@ function AudioPreviewCell({ log }: { log: TaskLog }) {
 
 export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
   const { t } = useTranslation()
-  const columns: ColumnDef<TaskLog>[] = [
+  return useMemo<ColumnDef<TaskLog>[]>(() => {
+    const columns: ColumnDef<TaskLog>[] = [
     {
       accessorKey: 'submit_time',
       header: t('Submit Time'),
@@ -290,5 +291,6 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
     }
   )
 
-  return columns
+    return columns
+  }, [isAdmin, t])
 }

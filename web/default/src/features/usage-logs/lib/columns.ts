@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 /**
  * Column definitions factory
  */
+import { useMemo } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { useCommonLogsColumns } from '../components/columns/common-logs-columns'
@@ -39,14 +40,16 @@ export function useColumnsByCategory(
   const drawingColumns = useDrawingLogsColumns(isAdmin)
   const taskColumns = useTaskLogsColumns(isAdmin)
 
-  switch (logCategory) {
-    case 'common':
-      return commonColumns
-    case 'drawing':
-      return drawingColumns
-    case 'task':
-      return taskColumns
-    default:
-      return commonColumns
-  }
+  return useMemo(() => {
+    switch (logCategory) {
+      case 'common':
+        return commonColumns
+      case 'drawing':
+        return drawingColumns
+      case 'task':
+        return taskColumns
+      default:
+        return commonColumns
+    }
+  }, [commonColumns, drawingColumns, logCategory, taskColumns])
 }

@@ -16,9 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { CircleAlert, GitBranch, Sparkles, KeyRound } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
@@ -101,6 +101,41 @@ function splitQuotaDisplay(value: string): { prefix: string; amount: string } {
   const match = value.match(/^([^0-9+\-.,\s]+)(.+)$/)
   if (!match) return { prefix: '', amount: value }
   return { prefix: match[1], amount: match[2] }
+}
+
+function getDetailSegmentClassName(segment: DetailSegment): string {
+  if (segment.muted) return 'text-muted-foreground/60'
+  if (segment.danger) return 'text-red-600 dark:text-red-400'
+  return 'text-foreground'
+}
+
+function renderDetailPreview(log: UsageLog, segments: DetailSegment[]) {
+  const primary = segments[0]
+  if (primary) {
+    return (
+      <span
+        className={cn(
+          'truncate leading-snug group-hover:underline',
+          getDetailSegmentClassName(primary)
+        )}
+      >
+        {primary.text}
+        {segments.length > 1 && (
+          <span className='text-muted-foreground/40 ml-0.5'>
+            +{segments.length - 1}
+          </span>
+        )}
+      </span>
+    )
+  }
+  if (log.content) {
+    return (
+      <span className='text-muted-foreground truncate group-hover:underline'>
+        {log.content}
+      </span>
+    )
+  }
+  return <span className='text-muted-foreground/40'>—</span>
 }
 
 function buildDetailSegments(
@@ -207,9 +242,9 @@ function buildDetailSegments(
     }
   } else {
     const isPerCall = isPerCallBilling(other.model_price)
-    if (isPerCall) {
+    if (isPerCall && other.model_price != null) {
       segments.push({
-        text: `${t('Per-call')} · ${formatBillingCurrencyFromUSD(other.model_price!, priceOpts)}`,
+        text: `${t('Per-call')} · ${formatBillingCurrencyFromUSD(other.model_price, priceOpts)}`,
       })
     } else if (other.model_ratio != null) {
       const inputPriceUSD = other.model_ratio * 2.0
@@ -276,7 +311,8 @@ function buildDetailSegments(
 
 export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
   const { t } = useTranslation()
-  const columns: ColumnDef<UsageLog>[] = [
+  return useMemo<ColumnDef<UsageLog>[]>(() => {
+    const columns: ColumnDef<UsageLog>[] = [
     {
       accessorKey: 'created_at',
       header: t('Time'),
@@ -690,7 +726,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     <Tooltip>
                       <TooltipTrigger
                         render={<CircleAlert className='size-3 text-red-500' />}
-                      ></TooltipTrigger>
+                      />
                       <TooltipContent>
                         <div className='space-y-0.5 text-xs'>
                           <p>
@@ -823,8 +859,6 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const other = parseLogOther(log.other)
 
         const segments = buildDetailSegments(log, other, t)
-        const primary = segments[0]
-        const hasMore = segments.length > 1
 
         return (
           <>
@@ -834,31 +868,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               onClick={() => setDialogOpen(true)}
               title={t('Click to view full details')}
             >
-              {primary ? (
-                <span
-                  className={cn(
-                    'truncate leading-snug group-hover:underline',
-                    primary.muted
-                      ? 'text-muted-foreground/60'
-                      : primary.danger
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-foreground'
-                  )}
-                >
-                  {primary.text}
-                  {hasMore && (
-                    <span className='text-muted-foreground/40 ml-0.5'>
-                      +{segments.length - 1}
-                    </span>
-                  )}
-                </span>
-              ) : log.content ? (
-                <span className='text-muted-foreground truncate group-hover:underline'>
-                  {log.content}
-                </span>
-              ) : (
-                <span className='text-muted-foreground/40'>—</span>
-              )}
+              {renderDetailPreview(log, segments)}
             </button>
             <DetailsDialog
               log={log}
@@ -874,5 +884,6 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     }
   )
 
-  return columns
+    return columns
+  }, [isAdmin, t])
 }
