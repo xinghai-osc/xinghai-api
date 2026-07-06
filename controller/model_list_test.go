@@ -252,6 +252,59 @@ func TestListModelsIncludesTieredBillingModel(t *testing.T) {
 	require.Empty(t, missingExprPricing.BillingExpr)
 }
 
+func TestListModelsIncludesAdvancedCustomModelsForModelsPath(t *testing.T) {
+	withSelfUseModeDisabled(t)
+	withTieredBillingConfig(t, map[string]string{
+		"zz-advanced-custom-models-model": "tiered_expr",
+		"zz-advanced-custom-chat-model":   "tiered_expr",
+	}, map[string]string{
+		"zz-advanced-custom-models-model": `tier("base", p * 1 + c * 2)`,
+		"zz-advanced-custom-chat-model":   `tier("base", p * 1 + c * 2)`,
+	})
+
+	db := setupModelListControllerTestDB(t)
+	modelsChannel := model.Channel{
+		Id:       10001,
+		Type:     constant.ChannelTypeAdvancedCustom,
+		Key:      "test-key",
+		Status:   common.ChannelStatusEnabled,
+		Name:     "models-advanced-custom",
+		Models:   "zz-advanced-custom-models-model",
+		Group:    "default",
+		Priority: common.GetPointer[int64](0),
+	}
+	modelsChannel.SetOtherSettings(dto.ChannelOtherSettings{AdvancedCustom: &dto.AdvancedCustomConfig{Routes: []dto.AdvancedCustomRoute{
+		{IncomingPath: "/v1/models", UpstreamPath: "/v1/models"},
+	}}})
+	chatChannel := model.Channel{
+		Id:       10002,
+		Type:     constant.ChannelTypeAdvancedCustom,
+		Key:      "test-key",
+		Status:   common.ChannelStatusEnabled,
+		Name:     "chat-advanced-custom",
+		Models:   "zz-advanced-custom-chat-model",
+		Group:    "default",
+		Priority: common.GetPointer[int64](0),
+	}
+	chatChannel.SetOtherSettings(dto.ChannelOtherSettings{AdvancedCustom: &dto.AdvancedCustomConfig{Routes: []dto.AdvancedCustomRoute{
+		{IncomingPath: "/v1/chat/completions", UpstreamPath: "/v1/chat/completions"},
+	}}})
+	require.NoError(t, db.Create(&[]model.Channel{modelsChannel, chatChannel}).Error)
+	require.NoError(t, modelsChannel.AddAbilities(nil))
+	require.NoError(t, chatChannel.AddAbilities(nil))
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	common.SetContextKey(ctx, constant.ContextKeyUserGroup, "default")
+
+	ListModels(ctx, constant.ChannelTypeOpenAI)
+
+	ids := decodeListModelsResponse(t, recorder)
+	require.Contains(t, ids, "zz-advanced-custom-models-model")
+	require.NotContains(t, ids, "zz-advanced-custom-chat-model")
+}
+
 func TestListModelsTokenLimitIncludesTieredBillingModel(t *testing.T) {
 	withSelfUseModeDisabled(t)
 	withTieredBillingConfig(t, map[string]string{

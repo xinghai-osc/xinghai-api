@@ -248,7 +248,7 @@ func ListModels(c *gin.Context, modelType int) {
 		var models []string
 		if groups.tokenGroup == "auto" {
 			for _, autoGroup := range ownerGroups {
-				groupModels := model.GetGroupEnabledModels(autoGroup)
+				groupModels := model.GetGroupEnabledModelsForPath(autoGroup, c.Request.URL.Path)
 				for _, g := range groupModels {
 					if !common.StringsContains(models, g) {
 						models = append(models, g)
@@ -256,7 +256,7 @@ func ListModels(c *gin.Context, modelType int) {
 				}
 			}
 		} else {
-			models = model.GetGroupEnabledModels(ownerGroups[0])
+			models = model.GetGroupEnabledModelsForPath(ownerGroups[0], c.Request.URL.Path)
 		}
 		for _, modelName := range models {
 			if !acceptUnsetRatioModel {

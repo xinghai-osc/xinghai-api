@@ -41,9 +41,23 @@ func GetAllEnableAbilityWithChannels() ([]AbilityWithChannel, error) {
 }
 
 func GetGroupEnabledModels(group string) []string {
-	var models []string
-	// Find distinct models
-	DB.Table("abilities").Where(commonGroupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
+	return GetGroupEnabledModelsForPath(group, "")
+}
+
+func GetGroupEnabledModelsForPath(group string, requestPath string) []string {
+	var abilities []Ability
+	DB.Table("abilities").Where(commonGroupCol+" = ? and enabled = ?", group, true).Find(&abilities)
+	abilities = filterAbilitiesByRequestPath(abilities, requestPath)
+
+	models := make([]string, 0, len(abilities))
+	seen := make(map[string]struct{}, len(abilities))
+	for _, ability := range abilities {
+		if _, ok := seen[ability.Model]; ok {
+			continue
+		}
+		seen[ability.Model] = struct{}{}
+		models = append(models, ability.Model)
+	}
 	return models
 }
 
