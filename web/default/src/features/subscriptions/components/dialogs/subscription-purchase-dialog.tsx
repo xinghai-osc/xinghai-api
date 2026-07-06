@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useSystemConfig } from '@/hooks/use-system-config'
-import { formatBillingCurrencyFromUSD } from '@/lib/currency'
+import { formatLocalCurrencyAmount } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 import { DEFAULT_CURRENCY_CONFIG } from '@/stores/system-config-store'
 
@@ -99,7 +99,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     selectedEpayMethod ||
     t('Select payment method')
   const totalAmount = Number(plan.total_amount || 0)
-  const price = formatBillingCurrencyFromUSD(plan.price_amount)
+  const price = formatLocalCurrencyAmount(plan.price_amount)
   const quotaPerUnit =
     currency?.quotaPerUnit && currency.quotaPerUnit > 0
       ? currency.quotaPerUnit

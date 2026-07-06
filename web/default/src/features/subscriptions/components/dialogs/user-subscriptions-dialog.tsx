@@ -55,7 +55,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
-import { formatBillingCurrencyFromUSD } from '@/lib/currency'
+import { formatLocalCurrencyAmount } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 
 import {
@@ -299,7 +299,7 @@ export function UserSubscriptionsDialog(props: Props) {
                     label: (
                       <>
                         {p.plan.title}(
-                        {formatBillingCurrencyFromUSD(p.plan.price_amount)})
+                        {formatLocalCurrencyAmount(p.plan.price_amount)})
                       </>
                     ),
                   }))}
@@ -314,7 +314,7 @@ export function UserSubscriptionsDialog(props: Props) {
                       {plans.map((p) => (
                         <SelectItem key={p.plan.id} value={String(p.plan.id)}>
                           {p.plan.title} (
-                          {formatBillingCurrencyFromUSD(p.plan.price_amount)})
+                          {formatLocalCurrencyAmount(p.plan.price_amount)})
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -343,7 +343,7 @@ export function UserSubscriptionsDialog(props: Props) {
                       )}
                     </div>
                     <div className='text-primary shrink-0 font-semibold'>
-                      {formatBillingCurrencyFromUSD(selectedPlan.price_amount)}
+                      {formatLocalCurrencyAmount(selectedPlan.price_amount)}
                     </div>
                   </div>
 

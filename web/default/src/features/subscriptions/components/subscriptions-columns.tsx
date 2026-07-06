@@ -24,7 +24,7 @@ import { BadgeCell } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
-import { formatBillingCurrencyFromUSD } from '@/lib/currency'
+import { formatLocalCurrencyAmount } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 
 import { formatDuration, formatResetPeriod } from '../lib'
@@ -70,7 +70,7 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         header: t('Price'),
         cell: ({ row }) => (
           <span className='font-semibold text-emerald-600'>
-            {formatBillingCurrencyFromUSD(row.original.plan.price_amount)}
+            {formatLocalCurrencyAmount(row.original.plan.price_amount)}
           </span>
         ),
         size: 100,
