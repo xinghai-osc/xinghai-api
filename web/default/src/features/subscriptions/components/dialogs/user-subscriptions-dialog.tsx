@@ -55,6 +55,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import { formatBillingCurrencyFromUSD } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 
 import {
@@ -84,7 +85,7 @@ function SubscriptionStatusBadge(props: {
   const now = Date.now() / 1000
   const isExpired = (props.sub.end_time || 0) > 0 && props.sub.end_time < now
   const isActive = props.sub.status === 'active' && !isExpired
-  if (isActive)
+  if (isActive) {
     return (
       <StatusBadge
         label={props.t('Active')}
@@ -92,7 +93,8 @@ function SubscriptionStatusBadge(props: {
         copyable={false}
       />
     )
-  if (props.sub.status === 'cancelled')
+  }
+  if (props.sub.status === 'cancelled') {
     return (
       <StatusBadge
         label={props.t('Invalidated')}
@@ -100,6 +102,7 @@ function SubscriptionStatusBadge(props: {
         copyable={false}
       />
     )
+  }
   return (
     <StatusBadge
       label={props.t('Expired')}
@@ -291,17 +294,15 @@ export function UserSubscriptionsDialog(props: Props) {
             <div className='space-y-3 rounded-lg border p-3'>
               <div className='flex gap-2'>
                 <Select
-                  items={[
-                    ...plans.map((p) => ({
-                      value: String(p.plan.id),
-                      label: (
-                        <>
-                          {p.plan.title}($
-                          {Number(p.plan.price_amount || 0).toFixed(2)})
-                        </>
-                      ),
-                    })),
-                  ]}
+                  items={plans.map((p) => ({
+                    value: String(p.plan.id),
+                    label: (
+                      <>
+                        {p.plan.title}(
+                        {formatBillingCurrencyFromUSD(p.plan.price_amount)})
+                      </>
+                    ),
+                  }))}
                   value={selectedPlanId}
                   onValueChange={(v) => v !== null && setSelectedPlanId(v)}
                 >
@@ -312,8 +313,8 @@ export function UserSubscriptionsDialog(props: Props) {
                     <SelectGroup>
                       {plans.map((p) => (
                         <SelectItem key={p.plan.id} value={String(p.plan.id)}>
-                          {p.plan.title} ($
-                          {Number(p.plan.price_amount || 0).toFixed(2)})
+                          {p.plan.title} (
+                          {formatBillingCurrencyFromUSD(p.plan.price_amount)})
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -342,7 +343,7 @@ export function UserSubscriptionsDialog(props: Props) {
                       )}
                     </div>
                     <div className='text-primary shrink-0 font-semibold'>
-                      ${Number(selectedPlan.price_amount || 0).toFixed(2)}
+                      {formatBillingCurrencyFromUSD(selectedPlan.price_amount)}
                     </div>
                   </div>
 
