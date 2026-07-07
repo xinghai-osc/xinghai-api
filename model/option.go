@@ -386,9 +386,9 @@ func updateOptionMap(key string, value string) (err error) {
 	}
 	switch key {
 	case "EmailDomainWhitelist":
-		common.EmailDomainWhitelist = splitOptionList(value)
+		common.EmailDomainWhitelist = strings.Split(value, ",")
 	case "UsernameForbiddenWords":
-		common.UsernameForbiddenWords = splitOptionList(value)
+		common.UsernameForbiddenWords = strings.Split(value, ",")
 	case "SMTPServer":
 		common.SMTPServer = value
 	case "SMTPPort":
