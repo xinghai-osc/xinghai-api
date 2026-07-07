@@ -174,6 +174,31 @@ func Logout(c *gin.Context) {
 	})
 }
 
+func canRegisterFromIP(ip string) (bool, error) {
+	if common.MaxUsersPerIP <= 0 || ip == "" {
+		return true, nil
+	}
+	var count int64
+	if err := model.DB.Model(&model.User{}).Where("registration_ip = ?", ip).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count < int64(common.MaxUsersPerIP), nil
+}
+
+func checkIpRegistrationLimit(c *gin.Context) bool {
+	allowed, err := canRegisterFromIP(c.ClientIP())
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		common.SysLog(fmt.Sprintf("check registration ip limit error: %v", err))
+		return false
+	}
+	if !allowed {
+		common.ApiErrorI18n(c, i18n.MsgUserIpRegisterLimitExceeded)
+		return false
+	}
+	return true
+}
+
 func Register(c *gin.Context) {
 	if !common.RegisterEnabled {
 		common.ApiErrorI18n(c, i18n.MsgUserRegisterDisabled)
@@ -213,14 +238,18 @@ func Register(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserExists)
 		return
 	}
+	if !checkIpRegistrationLimit(c) {
+		return
+	}
 	affCode := user.AffCode // this code is the inviter's code, not the user's own code
 	inviterId, _ := model.GetUserIdByAffCode(affCode)
 	cleanUser := model.User{
-		Username:    user.Username,
-		Password:    user.Password,
-		DisplayName: user.Username,
-		InviterId:   inviterId,
-		Role:        common.RoleCommonUser, // 明确设置角色为普通用户
+		Username:       user.Username,
+		Password:       user.Password,
+		DisplayName:    user.Username,
+		InviterId:      inviterId,
+		Role:           common.RoleCommonUser, // 明确设置角色为普通用户
+		RegistrationIp: c.ClientIP(),
 	}
 	if common.EmailVerificationEnabled {
 		cleanUser.Email = user.Email

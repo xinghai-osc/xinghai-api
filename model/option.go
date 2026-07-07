@@ -50,6 +50,7 @@ func InitOptionMap() {
 	common.OptionMap["GeetestCaptchaID"] = ""
 	common.OptionMap["GeetestCaptchaKey"] = ""
 	common.OptionMap["RegisterEnabled"] = strconv.FormatBool(common.RegisterEnabled)
+	common.OptionMap["MaxUsersPerIP"] = strconv.Itoa(common.MaxUsersPerIP)
 	common.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(common.AutomaticDisableChannelEnabled)
 	common.OptionMap["AutomaticEnableChannelEnabled"] = strconv.FormatBool(common.AutomaticEnableChannelEnabled)
 	common.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(common.LogConsumeEnabled)
@@ -524,6 +525,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.GeetestCaptchaKey = value
 	case "QuotaForNewUser":
 		common.QuotaForNewUser, _ = strconv.Atoi(value)
+	case "MaxUsersPerIP":
+		common.MaxUsersPerIP, _ = strconv.Atoi(value)
 	case "QuotaForInviter":
 		common.QuotaForInviter, _ = strconv.Atoi(value)
 	case "QuotaForInvitee":

@@ -111,6 +111,8 @@ func HandleOAuth(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgOAuthUserDeleted)
 		case *OAuthRegistrationDisabledError:
 			common.ApiErrorI18n(c, i18n.MsgUserRegisterDisabled)
+		case *OAuthIpRegistrationLimitExceededError:
+			common.ApiErrorI18n(c, i18n.MsgUserIpRegisterLimitExceeded)
 		default:
 			common.ApiError(c, err)
 		}
@@ -236,6 +238,13 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	if !common.RegisterEnabled {
 		return nil, &OAuthRegistrationDisabledError{}
 	}
+	allowed, err := canRegisterFromIP(c.ClientIP())
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, &OAuthIpRegistrationLimitExceededError{}
+	}
 
 	// Set up new user
 	user.Username = provider.GetProviderPrefix() + strconv.Itoa(model.GetMaxUserId()+1)
@@ -261,6 +270,7 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	}
 	user.Role = common.RoleCommonUser
 	user.Status = common.UserStatusEnabled
+	user.RegistrationIp = c.ClientIP()
 
 	// Handle affiliate code
 	affCode := session.Get("aff")
@@ -341,6 +351,12 @@ type OAuthRegistrationDisabledError struct{}
 
 func (e *OAuthRegistrationDisabledError) Error() string {
 	return "registration is disabled"
+}
+
+type OAuthIpRegistrationLimitExceededError struct{}
+
+func (e *OAuthIpRegistrationLimitExceededError) Error() string {
+	return "ip registration limit exceeded"
 }
 
 // handleOAuthError handles OAuth errors and returns translated message

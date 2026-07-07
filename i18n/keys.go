@@ -103,6 +103,7 @@ const (
 	MsgUserTransferFailed            = "user.transfer_failed"
 	MsgUserTopUpProcessing           = "user.topup_processing"
 	MsgUserRegisterFailed            = "user.register_failed"
+	MsgUserIpRegisterLimitExceeded   = "user.ip_register_limit_exceeded"
 	MsgUserDefaultTokenFailed        = "user.default_token_failed"
 	MsgUserAffCodeEmpty              = "user.aff_code_empty"
 	MsgUserAffCodeExists             = "user.aff_code_exists"
