@@ -79,11 +79,14 @@ export function useUsersColumns(): ColumnDef<User>[] {
       header: t('ID'),
       cell: ({ row }) => {
         return (
-          <TableId value={row.getValue('id') as number} className='w-[60px]' />
+          <TableId
+            value={row.getValue('id') as number}
+            className='w-[60px] text-sm'
+          />
         )
       },
       size: 80,
-      meta: { mobileHidden: true },
+      meta: { mobileOrder: 10 },
     },
     {
       accessorKey: 'username',
@@ -223,6 +226,7 @@ export function useUsersColumns(): ColumnDef<User>[] {
         )
       },
       size: 170,
+      meta: { mobileOrder: 40 },
     },
     {
       accessorKey: 'group',
@@ -252,6 +256,7 @@ export function useUsersColumns(): ColumnDef<User>[] {
         return group.includes(searchValue)
       },
       size: 140,
+      meta: { mobileOrder: 30 },
     },
     {
       accessorKey: 'role',
@@ -278,6 +283,7 @@ export function useUsersColumns(): ColumnDef<User>[] {
       },
       enableSorting: false,
       size: 120,
+      meta: { mobileOrder: 20 },
     },
     {
       id: 'invite_info',

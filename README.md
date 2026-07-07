@@ -305,11 +305,12 @@ docker run --name new-api -d --restart always \
 
 ### 📋 Deployment Requirements
 
-| Component            | Requirement                                  |
-| -------------------- | -------------------------------------------- |
-| **Local database**   | SQLite (Docker must mount `/data` directory) |
-| **Remote database**  | MySQL ≥ 5.7.8 or PostgreSQL ≥ 9.6            |
-| **Container engine** | Docker / Docker Compose                      |
+| Component               | Requirement                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| **Local database**      | SQLite (Docker must mount `/data` directory)                       |
+| **Remote database**     | MySQL ≥ 5.7.8 or PostgreSQL ≥ 9.6                                  |
+| **Container engine**    | Docker / Docker Compose                                            |
+| **System architecture** | 64-bit only (amd64 / arm64); 32-bit systems are not supported      |
 
 ### ⚙️ Environment Variable Configuration
 
