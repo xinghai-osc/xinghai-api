@@ -1,12 +1,13 @@
 package middleware
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
-	"encoding/json"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -15,16 +16,13 @@ import (
 )
 
 type geetestValidateRequest struct {
-	CaptchaID    string `json:"captcha_id"`
-	CaptchaKey   string `json:"captcha_key"`
-	LotNumber    string `json:"lot_number"`
-	PassToken    string `json:"pass_token"`
-	GenTime      string `json:"gen_time"`
+	CaptchaID     string `json:"captcha_id"`
+	CaptchaKey    string `json:"captcha_key"`
+	LotNumber     string `json:"lot_number"`
+	PassToken     string `json:"pass_token"`
+	GenTime       string `json:"gen_time"`
+	CaptchaOutput string `json:"captcha_output"`
 	MarshalFormat string `json:"marshal_format"`
-}
-
-type geetestValidateResponse struct {
-	Success int `json:"success"`
 }
 
 func GeetestCheck() gin.HandlerFunc {
@@ -66,24 +64,8 @@ func GeetestCheck() gin.HandlerFunc {
 
 func parseGeetestResponse(response string) *geetestValidateRequest {
 	var req geetestValidateRequest
-	err := json.Unmarshal([]byte(response), &req)
-	if err != nil {
-		var simpleResp struct {
-			CaptchaID  string `json:"captcha_id"`
-			LotNumber  string `json:"lot_number"`
-			PassToken  string `json:"pass_token"`
-			GenTime    string `json:"gen_time"`
-		}
-		if json.Unmarshal([]byte(response), &simpleResp) == nil {
-			req.CaptchaID = simpleResp.CaptchaID
-			req.LotNumber = simpleResp.LotNumber
-			req.PassToken = simpleResp.PassToken
-			req.GenTime = simpleResp.GenTime
-			req.CaptchaKey = common.GeetestCaptchaKey
-			req.MarshalFormat = "json"
-		} else {
-			return nil
-		}
+	if err := common.UnmarshalJsonStr(response, &req); err != nil {
+		return nil
 	}
 	if req.CaptchaID == "" {
 		req.CaptchaID = common.GeetestCaptchaID
@@ -106,17 +88,17 @@ func validateGeetestV4(req *geetestValidateRequest) bool {
 	if captchaKey == "" {
 		captchaKey = common.GeetestCaptchaKey
 	}
-
-	signToken := md5Sum(captchaKey + "44b28f34e850a93f069e3d4c7f1eb08a" + req.LotNumber + req.GenTime)
+	if req.CaptchaID == "" || captchaKey == "" || req.LotNumber == "" || req.CaptchaOutput == "" || req.PassToken == "" || req.GenTime == "" {
+		return false
+	}
 
 	postData := url.Values{}
 	postData.Set("captcha_id", req.CaptchaID)
 	postData.Set("lot_number", req.LotNumber)
+	postData.Set("captcha_output", req.CaptchaOutput)
 	postData.Set("pass_token", req.PassToken)
 	postData.Set("gen_time", req.GenTime)
-	postData.Set("sign_token", signToken)
-	postData.Set("client_type", "web")
-	postData.Set("ip_address", "")
+	postData.Set("sign_token", hmacSha256Hex(captchaKey, req.LotNumber))
 
 	validateURL := common.GeetestValidateURL
 	if validateURL == "" {
@@ -132,14 +114,22 @@ func validateGeetestV4(req *geetestValidateRequest) bool {
 	defer resp.Body.Close()
 
 	var result struct {
-		Success int `json:"success"`
+		Status string `json:"status"`
+		Result string `json:"result"`
+		Reason string `json:"reason"`
+		Code   string `json:"code"`
+		Msg    string `json:"msg"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := common.DecodeJson(resp.Body, &result); err != nil {
 		common.SysLog("Geetest v4 response decode error: " + err.Error())
 		return false
 	}
+	if result.Result != "success" {
+		common.SysLog(fmt.Sprintf("Geetest v4 validate failed: status=%s result=%s code=%s reason=%s msg=%s", result.Status, result.Result, result.Code, result.Reason, result.Msg))
+		return false
+	}
 
-	return result.Success == 1
+	return true
 }
 
 func validateGeetestV3(req *geetestValidateRequest) bool {
@@ -184,7 +174,7 @@ func validateGeetestV3(req *geetestValidateRequest) bool {
 	var result struct {
 		Success int `json:"success"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := common.DecodeJson(resp.Body, &result); err != nil {
 		common.SysLog("Geetest v3 secverify response decode error: " + err.Error())
 		return false
 	}
@@ -198,16 +188,8 @@ func md5Sum(input string) string {
 	return fmt.Sprintf("%x", sum)
 }
 
-func sortParams(params map[string]string) string {
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	result := make([]string, 0, len(params))
-	for _, k := range keys {
-		result = append(result, k+"="+params[k])
-	}
-	return strings.Join(result, "&")
+func hmacSha256Hex(key string, message string) string {
+	mac := hmac.New(sha256.New, []byte(key))
+	mac.Write([]byte(message))
+	return hex.EncodeToString(mac.Sum(nil))
 }

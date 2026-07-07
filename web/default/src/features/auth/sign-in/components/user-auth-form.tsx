@@ -27,6 +27,7 @@ import type { z } from 'zod'
 
 import { Dialog } from '@/components/dialog'
 import { PasswordInput } from '@/components/password-input'
+import { Geetest } from '@/components/geetest'
 import { Turnstile } from '@/components/turnstile'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,7 +45,7 @@ import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
-import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
+import { useCaptcha } from '@/features/auth/hooks/use-captcha'
 import { beginPasskeyLogin, finishPasskeyLogin } from '@/features/auth/passkey'
 import type { AuthFormProps } from '@/features/auth/types'
 import { useStatus } from '@/hooks/use-status'
@@ -80,12 +81,15 @@ export function UserAuthForm({
       status?.data?.password_login_enabled ??
       true) !== false
   const {
-    isTurnstileEnabled,
+    captchaType,
+    isCaptchaEnabled,
+    captchaToken,
+    setCaptchaToken,
+    validateCaptcha,
+    onVerifyGeetest,
     turnstileSiteKey,
-    turnstileToken,
-    setTurnstileToken,
-    validateTurnstile,
-  } = useTurnstile()
+    geetestCaptchaId,
+  } = useCaptcha()
   const { handleLoginSuccess, redirectTo2FA } = useAuthRedirect()
 
   const hasUserAgreement = Boolean(status?.user_agreement_enabled)
@@ -149,14 +153,15 @@ export function UserAuthForm({
       return
     }
 
-    if (!validateTurnstile()) return
+    if (!validateCaptcha()) return
 
     setIsLoading(true)
     try {
       const res = await login({
         username: data.username,
         password: data.password,
-        turnstile: turnstileToken,
+        turnstile: captchaType === 'turnstile' ? captchaToken : undefined,
+        geetest: captchaType === 'geetest' ? captchaToken : undefined,
       })
 
       if (res.success) {
@@ -382,13 +387,20 @@ export function UserAuthForm({
               {t('Sign in')}
             </Button>
 
-            {/* Turnstile */}
-            {isTurnstileEnabled && (
+            {isCaptchaEnabled && (
               <div className='mt-2'>
-                <Turnstile
-                  siteKey={turnstileSiteKey}
-                  onVerify={setTurnstileToken}
-                />
+                {captchaType === 'geetest' && (
+                  <Geetest
+                    captchaId={geetestCaptchaId}
+                    onVerify={onVerifyGeetest}
+                  />
+                )}
+                {captchaType === 'turnstile' && (
+                  <Turnstile
+                    siteKey={turnstileSiteKey}
+                    onVerify={setCaptchaToken}
+                  />
+                )}
               </div>
             )}
           </>
