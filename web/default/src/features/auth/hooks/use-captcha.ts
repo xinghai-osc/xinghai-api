@@ -34,11 +34,12 @@ export function useCaptcha(): UseCaptchaResult {
     turnstileSiteKey
   )
 
-  const captchaType: CaptchaType = isGeetestEnabled
-    ? 'geetest'
-    : isTurnstileEnabled
-      ? 'turnstile'
-      : null
+  let captchaType: CaptchaType = null
+  if (isGeetestEnabled) {
+    captchaType = 'geetest'
+  } else if (isTurnstileEnabled) {
+    captchaType = 'turnstile'
+  }
 
   const isCaptchaEnabled = isGeetestEnabled || isTurnstileEnabled
 

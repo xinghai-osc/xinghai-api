@@ -40,7 +40,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { type SidebarData, type NavItem, type NavGroup } from '@/components/layout/types'
+import type { SidebarData, NavItem, NavGroup } from '@/components/layout/types'
 import { ROLE } from '@/lib/roles'
 import { useStatus } from '@/hooks/use-status'
 import { parseCustomSidebarItems, resolveIcon } from '@/features/system-settings/maintenance/custom-sidebar-config'
@@ -207,7 +207,7 @@ function mergeCustomItems(
   }
 
   const order = ['chat', 'general', 'personal', 'admin']
-  const groups = Array.from(groupMap.values())
+  const groups = [...groupMap.values()]
   groups.sort((a, b) => {
     const aIdx = order.indexOf(a.id ?? '')
     const bIdx = order.indexOf(b.id ?? '')

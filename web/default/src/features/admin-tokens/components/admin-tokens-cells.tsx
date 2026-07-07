@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/tooltip'
 import { BadgeCell } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
-import { type AdminApiKey } from '../types'
+import type { AdminApiKey } from '../types'
 import { useAdminTokens } from './admin-tokens-provider'
 
 export function AdminApiKeyCell({ apiKey }: { apiKey: AdminApiKey }) {

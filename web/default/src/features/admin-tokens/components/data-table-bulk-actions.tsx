@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type Table } from '@tanstack/react-table'
+import type { Table } from '@tanstack/react-table'
 import { Trash2, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -30,7 +30,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-import { type AdminApiKey } from '../types'
+import type { AdminApiKey } from '../types'
 import { deleteAdminTokenBatch } from '../api'
 import { useAdminTokens } from './admin-tokens-provider'
 import { AdminTokensMultiDeleteDialog } from './admin-tokens-multi-delete-dialog'

@@ -17,16 +17,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 export function normalizeDeploymentStatus(status: unknown) {
-  return typeof status === 'string' ? status.trim().toLowerCase() : ''
+  if (typeof status !== 'string') return ''
+  return status.trim().toLowerCase()
 }
 
 export function formatRemainingMinutes(mins: unknown) {
-  const n =
-    typeof mins === 'string'
-      ? Number(mins)
-      : typeof mins === 'number'
-        ? mins
-        : NaN
+  let n = Number.NaN
+  if (typeof mins === 'string') {
+    n = Number(mins)
+  } else if (typeof mins === 'number') {
+    n = mins
+  }
   if (!Number.isFinite(n)) return null
 
   const total = Math.max(0, Math.round(n))

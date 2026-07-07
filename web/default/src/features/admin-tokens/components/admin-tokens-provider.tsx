@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { fetchAdminTokenKey, fetchAdminTokenKeysBatch } from '../api'
 import { ERROR_MESSAGES } from '../constants'
-import { type AdminApiKey } from '../types'
+import type { AdminApiKey } from '../types'
 
 type AdminTokensContextType = {
   refreshTrigger: number

@@ -117,7 +117,7 @@ export function Geetest({
       return
     }
 
-    if (document.getElementById(scriptId)) {
+    if (document.querySelector(`#${scriptId}`)) {
       return
     }
 

@@ -92,7 +92,7 @@ export function ImageGeneration() {
     if (modelsData.length > 0 && !isCurrentModelValid) {
       state.updateConfig('model', modelsData[0].value)
     }
-  }, [modelsData])
+  }, [modelsData, state.config.model, state.setModels, state.updateConfig])
 
   // Update groups when data changes
   useEffect(() => {
@@ -110,12 +110,13 @@ export function ImageGeneration() {
         groupOptions[0].value
       state.updateConfig('group', fallback)
     }
-  }, [groupsData])
+  }, [groupsData, state.config.group, state.setGroups, state.updateConfig])
 
   // Model options with fallback
   const modelOptions = useMemo(() => {
-    if (state.models.some((model) => model.value === FALLBACK_MODEL))
+    if (state.models.some((model) => model.value === FALLBACK_MODEL)) {
       return state.models
+    }
     return [{ label: FALLBACK_MODEL, value: FALLBACK_MODEL }, ...state.models]
   }, [state.models])
 

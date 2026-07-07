@@ -119,7 +119,7 @@ function formatCherryStudioConnection(
     (typeof window !== 'undefined' ? window.location.origin : '')
   const payload = {
     id: 'new-api',
-    baseUrl: baseUrl,
+    baseUrl,
     apiKey: key,
   }
 

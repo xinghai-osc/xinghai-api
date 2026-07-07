@@ -88,6 +88,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           selectedGroupRatio ?? getDynamicDisplayGroupRatio(props.model),
       })
     : null
+  let pricingSummary: React.ReactNode = null
 
   const primaryGroup = selectedGroup ?? groups[0]
   const isSubscriptionResistantGroup =
@@ -100,6 +101,69 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     Math.max(groups.length - 1, 0) +
     Math.max(endpoints.length - 2, 0) +
     Math.max(tags.filter((tag) => tag !== primaryGroup).length - 2, 0)
+
+  if (dynamicSummary) {
+    if (dynamicSummary.isSpecialExpression) {
+      pricingSummary = (
+        <span className='min-w-0'>
+          <span className='text-amber-700 dark:text-amber-300'>
+            {t('Special billing expression')}
+          </span>
+          <code className='text-muted-foreground/70 mt-0.5 line-clamp-1 block font-mono text-[11px] break-all'>
+            {dynamicSummary.rawExpression}
+          </code>
+        </span>
+      )
+    } else if (dynamicSummary.primaryEntries.length > 0) {
+      pricingSummary = (
+        <>
+          {dynamicSummary.primaryEntries.map((entry) => (
+            <span
+              key={entry.key}
+              className='text-muted-foreground whitespace-nowrap'
+            >
+              {t(entry.shortLabel)}{' '}
+              <span className='text-foreground font-mono font-semibold'>
+                {entry.formatted}
+              </span>
+              /{tokenUnitLabel}
+            </span>
+          ))}
+        </>
+      )
+    } else {
+      pricingSummary = (
+        <span className='text-muted-foreground text-xs'>
+          {t('Dynamic Pricing')}
+        </span>
+      )
+    }
+  }
+
+  if (!pricingSummary && !isTokenBased) {
+    pricingSummary = (
+      <span className='text-muted-foreground whitespace-nowrap'>
+        <span className='text-foreground font-mono font-semibold'>
+          {selectedGroup
+            ? formatFixedPrice(
+                props.model,
+                selectedGroup,
+                showRechargePrice,
+                priceRate,
+                usdExchangeRate,
+                groupRatio
+              )
+            : formatRequestPrice(
+                props.model,
+                showRechargePrice,
+                priceRate,
+                usdExchangeRate
+              )}
+        </span>{' '}
+        / {t('request')}
+      </span>
+    )
+  }
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -128,37 +192,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               {props.model.model_name}
             </h3>
             <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs sm:mt-1 sm:gap-x-3'>
-              {dynamicSummary ? (
-                dynamicSummary.isSpecialExpression ? (
-                  <span className='min-w-0'>
-                    <span className='text-amber-700 dark:text-amber-300'>
-                      {t('Special billing expression')}
-                    </span>
-                    <code className='text-muted-foreground/70 mt-0.5 line-clamp-1 block font-mono text-[11px] break-all'>
-                      {dynamicSummary.rawExpression}
-                    </code>
-                  </span>
-                ) : dynamicSummary.primaryEntries.length > 0 ? (
-                  <>
-                    {dynamicSummary.primaryEntries.map((entry) => (
-                      <span
-                        key={entry.key}
-                        className='text-muted-foreground whitespace-nowrap'
-                      >
-                        {t(entry.shortLabel)}{' '}
-                        <span className='text-foreground font-mono font-semibold'>
-                          {entry.formatted}
-                        </span>
-                        /{tokenUnitLabel}
-                      </span>
-                    ))}
-                  </>
-                ) : (
-                  <span className='text-muted-foreground text-xs'>
-                    {t('Dynamic Pricing')}
-                  </span>
-                )
-              ) : isTokenBased ? (
+              {pricingSummary || (isTokenBased ? (
                 <>
                   <span className='text-muted-foreground whitespace-nowrap'>
                     {t('Input')}{' '}
@@ -258,7 +292,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   </span>{' '}
                   / {t('request')}
                 </span>
-              )}
+              ))}
             </div>
           </div>
         </div>

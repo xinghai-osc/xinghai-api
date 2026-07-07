@@ -55,8 +55,8 @@ export function ProfileSecurityCard({
           <Skeleton className='mt-2 h-4 w-48' />
         </CardHeader>
         <CardContent className='space-y-3 p-3 sm:p-5'>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className='h-16 w-full' />
+          {['security-skeleton-1', 'security-skeleton-2', 'security-skeleton-3'].map((key) => (
+            <Skeleton key={key} className='h-16 w-full' />
           ))}
         </CardContent>
       </Card>

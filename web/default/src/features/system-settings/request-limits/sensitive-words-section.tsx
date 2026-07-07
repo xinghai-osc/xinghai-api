@@ -409,7 +409,7 @@ export function SensitiveWordsSection({
                   {/* Existing mappings */}
                   {wordResponsesMap.size > 0 && (
                     <div className='space-y-1.5'>
-                      {Array.from(wordResponsesMap.entries()).map(
+                      {[...wordResponsesMap.entries()].map(
                         ([word, response]) => (
                           <div
                             key={word}

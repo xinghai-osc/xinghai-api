@@ -61,7 +61,7 @@ const DEFAULT_RETRY_ERROR_CODES = [
 
 const fallbackSettings = {
   AutomaticRetryStatusCodes: DEFAULT_RETRY_STATUS_CODES,
-  AutomaticRetryErrorCodes: DEFAULT_RETRY_ERROR_CODES.replace(/\n/g, ','),
+  AutomaticRetryErrorCodes: DEFAULT_RETRY_ERROR_CODES.replaceAll('\n', ','),
 }
 
 const retryChannelSchema = z
@@ -94,7 +94,7 @@ type NormalizedRetryChannelValues = {
 function normalizeErrorCodes(value: string) {
   const seen = new Set<string>()
   return value
-    .replace(/，/g, ',')
+    .replaceAll('，', ',')
     .split(/[\n,]+/)
     .map((item) => item.trim())
     .filter((item) => {
@@ -106,7 +106,7 @@ function normalizeErrorCodes(value: string) {
 }
 
 function formatErrorCodes(value: string) {
-  return normalizeErrorCodes(value).replace(/,/g, '\n')
+  return normalizeErrorCodes(value).replaceAll(',', '\n')
 }
 
 function normalizeFormValues(

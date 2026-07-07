@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/tooltip'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
 
-import { type ApiKey } from '../types'
+import type { ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
 export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
@@ -135,20 +135,16 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
             />
           }
         >
-          {isLoading ? (
-            <Loader2 className='size-3.5 animate-spin' />
-          ) : isCopied ? (
+          {isLoading && <Loader2 className='size-3.5 animate-spin' />}
+          {!isLoading && isCopied && (
             <Check className='size-3.5 text-green-600' />
-          ) : (
-            <Copy className='size-3.5' />
           )}
+          {!isLoading && !isCopied && <Copy className='size-3.5' />}
         </TooltipTrigger>
         <TooltipContent>
-          {isLoading
-            ? t('Loading...')
-            : isCopied
-              ? t('Copied!')
-              : t('Copy API key')}
+          {isLoading && t('Loading...')}
+          {!isLoading && isCopied && t('Copied!')}
+          {!isLoading && !isCopied && t('Copy API key')}
         </TooltipContent>
       </Tooltip>
     </div>

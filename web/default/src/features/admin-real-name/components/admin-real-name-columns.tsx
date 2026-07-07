@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { IdCard } from 'lucide-react'
 import { formatTimestampToDate } from '@/lib/format'
@@ -24,7 +24,7 @@ import { BadgeCell } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import { REAL_NAME_STATUSES } from '../constants'
-import { type AdminRealNameRecord } from '../types'
+import type { AdminRealNameRecord } from '../types'
 
 export function useAdminRealNameColumns(): ColumnDef<AdminRealNameRecord>[] {
   const { t } = useTranslation()

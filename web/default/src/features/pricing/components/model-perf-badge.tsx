@@ -22,6 +22,12 @@ import { useTranslation } from 'react-i18next'
 import { getSuccessRateDotClass } from '@/features/performance-metrics/lib/format'
 import { cn } from '@/lib/utils'
 
+const STATUS_BAR_CONFIG = [
+  { key: 'status-bar-low', heightClass: 'h-2' },
+  { key: 'status-bar-mid', heightClass: 'h-2.5' },
+  { key: 'status-bar-high', heightClass: 'h-3' },
+]
+
 export type ModelPerfBadgeData = {
   avg_latency_ms: number
   success_rate: number
@@ -71,6 +77,19 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
     ...statusRates,
   ].slice(-3)
 
+  const statusBarItems = statusBars.map((rate, index) => {
+    const config = STATUS_BAR_CONFIG[index]
+    let emptyClass = 'bg-muted-foreground/15'
+    if (config.key === 'status-bar-low') {
+      emptyClass = 'bg-muted-foreground/10'
+    }
+    return {
+      ...config,
+      rate,
+      statusClass: rate == null ? emptyClass : getSuccessRateDotClass(rate),
+    }
+  })
+
   return (
     <div
       className={cn(
@@ -102,20 +121,10 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
           {t('Status short')}
         </div>
         <div className='flex h-4 items-center justify-end gap-0.5'>
-          {statusBars.map((rate, index) => (
+          {statusBarItems.map((item) => (
             <span
-              key={`${index}-${rate ?? 'empty'}`}
-              className={cn(
-                'w-1 rounded-full',
-                index === 0 && 'h-2',
-                index === 1 && 'h-2.5',
-                index === 2 && 'h-3',
-                rate == null
-                  ? index === 0
-                    ? 'bg-muted-foreground/10'
-                    : 'bg-muted-foreground/15'
-                  : getSuccessRateDotClass(rate)
-              )}
+              key={item.key}
+              className={cn('w-1 rounded-full', item.heightClass, item.statusClass)}
             />
           ))}
         </div>

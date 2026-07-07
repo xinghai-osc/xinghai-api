@@ -27,7 +27,7 @@ import { quotaUnitsToDollars } from '@/lib/format'
 import { ROLE } from '@/lib/roles'
 
 import { DEFAULT_GROUP } from '../constants'
-import { type UserFormData, type User } from '../types'
+import type { UserFormData, User } from '../types'
 
 // ============================================================================
 // Form Schema
@@ -116,11 +116,12 @@ export function transformFormDataToPayload(
  * the catalog at render time in UsersMutateDrawer.
  */
 export function transformUserToFormDefaults(user: User): UserFormValues {
-  const userGroups = user.user_groups?.length
-    ? user.user_groups
-    : user.group
-      ? user.group.split(/[，,;；\s]+/).filter(Boolean)
-      : [DEFAULT_GROUP]
+  let userGroups: string[] = [DEFAULT_GROUP]
+  if (user.user_groups?.length) {
+    userGroups = user.user_groups
+  } else if (user.group) {
+    userGroups = user.group.split(/[，,;；\s]+/).filter(Boolean)
+  }
 
   return {
     username: user.username,

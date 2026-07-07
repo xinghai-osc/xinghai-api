@@ -47,7 +47,7 @@ import {
   API_KEY_STATUSES,
   ERROR_MESSAGES,
 } from '../constants'
-import { type AdminApiKey } from '../types'
+import type { AdminApiKey } from '../types'
 import { AdminApiKeyCell } from './admin-tokens-cells'
 import { useAdminTokensColumns } from './admin-tokens-columns'
 import { useAdminTokens } from './admin-tokens-provider'

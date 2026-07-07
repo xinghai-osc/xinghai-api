@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 
 import { BadgeCell, BadgeListCell } from '@/components/data-table'
@@ -293,8 +293,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
         const tagArray = parseModelTags(tags)
         return (
           <BadgeListCell
-            items={tagArray.map((tag, idx) => (
-              <StatusBadge key={idx} label={tag} autoColor={tag} size='sm' />
+            items={tagArray.map((tag) => (
+              <StatusBadge key={tag} label={tag} autoColor={tag} size='sm' />
             ))}
           />
         )
@@ -313,8 +313,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
         const endpointArray = formatEndpointsDisplay(endpoints)
         return (
           <BadgeListCell
-            items={endpointArray.map((ep, idx) => (
-              <StatusBadge key={idx} label={ep} autoColor={ep} size='sm' />
+            items={endpointArray.map((ep) => (
+              <StatusBadge key={ep} label={ep} autoColor={ep} size='sm' />
             ))}
           />
         )
@@ -380,11 +380,11 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
         const quotaTypes = row.getValue('quota_types') as number[]
         return (
           <BadgeListCell
-            items={(quotaTypes ?? []).map((qt, idx) => {
+            items={(quotaTypes ?? []).map((qt) => {
               const config = QUOTA_TYPE_CONFIG[qt]
               return (
                 <StatusBadge
-                  key={idx}
+                  key={qt}
                   label={config?.label || String(qt)}
                   variant={
                     (config?.color === 'error' ? 'danger' : config?.color) as

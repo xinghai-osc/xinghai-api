@@ -91,6 +91,19 @@ function SectionTitle(props: { children: React.ReactNode }) {
   )
 }
 
+const HEADER_SKELETON_KEYS = [
+  'detail-header-skeleton-1',
+  'detail-header-skeleton-2',
+  'detail-header-skeleton-3',
+  'detail-header-skeleton-4',
+]
+const SECTION_SKELETON_KEYS = [
+  'detail-section-skeleton-1',
+  'detail-section-skeleton-2',
+  'detail-section-skeleton-3',
+  'detail-section-skeleton-4',
+]
+
 const CAPABILITY_LABEL_KEYS: Record<ModelCapability, string> = {
   function_calling: 'Function calling',
   streaming: 'Streaming',
@@ -839,13 +852,7 @@ function getDynamicPriceFields(
   tiers: DynamicPricingTier[],
   options: DynamicPriceOptions
 ) {
-  return Array.from(
-    new Map(
-      tiers
-        .flatMap((tier) => getDynamicPriceEntries(tier, options))
-        .map((entry) => [entry.field, entry])
-    ).values()
-  )
+  return [...new Map(tiers.flatMap((tier) => getDynamicPriceEntries(tier, options)).map((entry) => [entry.field, entry])).values()]
 }
 
 function getDynamicFormattedPricesByTier(
@@ -894,18 +901,18 @@ function GroupPricingSection(props: {
   const extraPriceTypes = useMemo(() => {
     const types: { label: string; type: PriceType }[] = []
     if (props.model.cache_ratio != null)
-      types.push({ label: t('Cache'), type: 'cache' })
+      {types.push({ label: t('Cache'), type: 'cache' })}
     if (props.model.create_cache_ratio != null)
-      types.push({ label: t('Cache Write'), type: 'create_cache' })
+      {types.push({ label: t('Cache Write'), type: 'create_cache' })}
     if (props.model.image_ratio != null)
-      types.push({ label: t('Image'), type: 'image' })
+      {types.push({ label: t('Image'), type: 'image' })}
     if (props.model.audio_ratio != null)
-      types.push({ label: t('Audio In'), type: 'audio_input' })
+      {types.push({ label: t('Audio In'), type: 'audio_input' })}
     if (
       props.model.audio_ratio != null &&
       props.model.audio_completion_ratio != null
     )
-      types.push({ label: t('Audio Out'), type: 'audio_output' })
+      {types.push({ label: t('Audio Out'), type: 'audio_output' })}
     return types
   }, [props.model, t])
 
@@ -1319,13 +1326,13 @@ export function ModelDetails() {
             <Skeleton className='h-4 w-full max-w-md' />
           </div>
           <div className='mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4'>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className='h-16 w-full' />
+            {HEADER_SKELETON_KEYS.map((key) => (
+              <Skeleton key={key} className='h-16 w-full' />
             ))}
           </div>
           <div className='mt-6 space-y-3'>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className='h-24 w-full' />
+            {SECTION_SKELETON_KEYS.map((key) => (
+              <Skeleton key={key} className='h-24 w-full' />
             ))}
           </div>
         </div>

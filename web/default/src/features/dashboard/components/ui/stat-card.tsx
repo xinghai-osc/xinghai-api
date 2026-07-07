@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type LucideIcon } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
 
 import { Skeleton } from '@/components/ui/skeleton'
@@ -108,6 +108,9 @@ function buildLineSparkline(values?: number[]) {
     .join(' ')
   const firstPoint = points[0]
   const lastPoint = points[points.length - 1]
+  if (!firstPoint || !lastPoint) {
+    return { areaPath: '', linePath: '' }
+  }
   const areaPath = `${linePath} L ${lastPoint.x} ${height} L ${firstPoint.x} ${height} Z`
 
   return {
@@ -118,7 +121,7 @@ function buildLineSparkline(values?: number[]) {
 
 function LineSparkline(props: { values?: number[]; tone: StatCardTone }) {
   const rawGradientId = useId()
-  const gradientId = `stat-card-line-${rawGradientId.replace(/:/g, '')}`
+  const gradientId = `stat-card-line-${rawGradientId.replaceAll(':', '')}`
   const paths = buildLineSparkline(props.values)
 
   if (!paths) return <div className='h-8' aria-hidden='true' />

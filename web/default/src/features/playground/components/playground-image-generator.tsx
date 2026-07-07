@@ -209,7 +209,7 @@ export function PlaygroundImageGenerator({
   const handleContextUpload = async (files: FileList | null) => {
     if (!files?.length) return
 
-    const imageFiles = Array.from(files).filter((file) =>
+    const imageFiles = [...files].filter((file) =>
       file.type.startsWith('image/')
     )
     if (imageFiles.length === 0) {

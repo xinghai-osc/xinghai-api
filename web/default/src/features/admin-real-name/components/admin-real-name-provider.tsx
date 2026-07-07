@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import React, { useCallback, useState } from 'react'
-import { type AdminRealNameRecord } from '../types'
+import type { AdminRealNameRecord } from '../types'
 
 type AdminRealNameContextType = {
   refreshTrigger: number
