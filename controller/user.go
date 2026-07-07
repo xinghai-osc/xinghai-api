@@ -185,6 +185,28 @@ func canRegisterFromIP(ip string) (bool, error) {
 	return count < int64(common.MaxUsersPerIP), nil
 }
 
+func usernameContainsForbiddenWord(username string) bool {
+	username = strings.ToLower(strings.TrimSpace(username))
+	if username == "" {
+		return false
+	}
+	for _, word := range common.UsernameForbiddenWords {
+		word = strings.ToLower(strings.TrimSpace(word))
+		if word != "" && strings.Contains(username, word) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkUsernameForbidden(c *gin.Context, username string) bool {
+	if usernameContainsForbiddenWord(username) {
+		common.ApiErrorI18n(c, i18n.MsgUserUsernameForbidden)
+		return false
+	}
+	return true
+}
+
 func checkIpRegistrationLimit(c *gin.Context) bool {
 	allowed, err := canRegisterFromIP(c.ClientIP())
 	if err != nil {
@@ -690,6 +712,9 @@ func UpdateUser(c *gin.Context) {
 	}
 	if usernameCount > 0 {
 		common.ApiErrorI18n(c, i18n.MsgUserExists)
+		return
+	}
+	if !checkUsernameForbidden(c, updatedUser.Username) {
 		return
 	}
 	if !canManageTargetRole(myRole, updatedUser.Role) {

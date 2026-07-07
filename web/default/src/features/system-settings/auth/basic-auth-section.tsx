@@ -51,6 +51,7 @@ const basicAuthSchema = z.object({
   EmailVerificationEnabled: z.boolean(),
   RegisterEnabled: z.boolean(),
   MaxUsersPerIP: z.number().min(0),
+  UsernameForbiddenWords: z.string(),
   EmailDomainRestrictionEnabled: z.boolean(),
   EmailAliasRestrictionEnabled: z.boolean(),
   EmailDomainWhitelist: z.string(),
@@ -71,6 +72,10 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
       ...defaultValues,
       EmailDomainWhitelist: defaultValues.EmailDomainWhitelist.split(',')
         .map((domain) => domain.trim())
+        .filter(Boolean)
+        .join('\n'),
+      UsernameForbiddenWords: defaultValues.UsernameForbiddenWords.split(',')
+        .map((word) => word.trim())
         .filter(Boolean)
         .join('\n'),
     }),
@@ -97,6 +102,16 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
           .join(',')
         if (domains !== defaultValues.EmailDomainWhitelist) {
           updates.push({ key, value: domains })
+        }
+      } else if (key === 'UsernameForbiddenWords') {
+        if (typeof value !== 'string') return
+        const words = value
+          .split('\n')
+          .map((word) => word.trim())
+          .filter(Boolean)
+          .join(',')
+        if (words !== defaultValues.UsernameForbiddenWords) {
+          updates.push({ key, value: words })
         }
       } else if (value !== defaultValues[key as keyof typeof defaultValues]) {
         updates.push({ key, value })
@@ -197,6 +212,27 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
                 </FormControl>
                 <FormDescription>
                   {t('Set to 0 to disable per-IP registration limit')}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='UsernameForbiddenWords'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Username Forbidden Words')}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder={t('admin&#10;test')}
+                    rows={4}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t('One forbidden word per line; matching is case-insensitive')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

@@ -37,6 +37,7 @@ const AUTH_SECTIONS = [
           EmailVerificationEnabled: settings.EmailVerificationEnabled,
           RegisterEnabled: settings.RegisterEnabled,
           MaxUsersPerIP: settings.MaxUsersPerIP,
+          UsernameForbiddenWords: settings.UsernameForbiddenWords,
           EmailDomainRestrictionEnabled: settings.EmailDomainRestrictionEnabled,
           EmailAliasRestrictionEnabled: settings.EmailAliasRestrictionEnabled,
           EmailDomainWhitelist: settings.EmailDomainWhitelist,

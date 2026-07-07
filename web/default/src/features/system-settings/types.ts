@@ -134,6 +134,7 @@ export type AuthSettings = {
   EmailVerificationEnabled: boolean
   RegisterEnabled: boolean
   MaxUsersPerIP: number
+  UsernameForbiddenWords: string
   EmailDomainRestrictionEnabled: boolean
   EmailAliasRestrictionEnabled: boolean
   EmailDomainWhitelist: string

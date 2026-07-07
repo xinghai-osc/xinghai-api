@@ -51,6 +51,7 @@ func InitOptionMap() {
 	common.OptionMap["GeetestCaptchaKey"] = ""
 	common.OptionMap["RegisterEnabled"] = strconv.FormatBool(common.RegisterEnabled)
 	common.OptionMap["MaxUsersPerIP"] = strconv.Itoa(common.MaxUsersPerIP)
+	common.OptionMap["UsernameForbiddenWords"] = strings.Join(common.UsernameForbiddenWords, ",")
 	common.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(common.AutomaticDisableChannelEnabled)
 	common.OptionMap["AutomaticEnableChannelEnabled"] = strconv.FormatBool(common.AutomaticEnableChannelEnabled)
 	common.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(common.LogConsumeEnabled)
@@ -385,7 +386,9 @@ func updateOptionMap(key string, value string) (err error) {
 	}
 	switch key {
 	case "EmailDomainWhitelist":
-		common.EmailDomainWhitelist = strings.Split(value, ",")
+		common.EmailDomainWhitelist = splitOptionList(value)
+	case "UsernameForbiddenWords":
+		common.UsernameForbiddenWords = splitOptionList(value)
 	case "SMTPServer":
 		common.SMTPServer = value
 	case "SMTPPort":
