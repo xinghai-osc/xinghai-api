@@ -131,12 +131,28 @@ export interface ResetPlanSubscriptionsRequest {
   advance_reset_time: boolean
 }
 
+export interface ExtendPlanSubscriptionsRequest {
+  duration_unit: 'year' | 'month' | 'day' | 'hour' | 'custom'
+  duration_value: number
+  custom_seconds: number
+}
+
 export interface SubscriptionResetResult {
   plan_id: number
   matched_count: number
   reset_count: number
   user_count: number
   advance_reset_time: boolean
+}
+
+export interface SubscriptionExtendResult {
+  plan_id: number
+  matched_count: number
+  updated_count: number
+  user_count: number
+  duration_unit: string
+  duration_value: number
+  custom_seconds: number
 }
 
 // ============================================================================
@@ -158,3 +174,4 @@ export type SubscriptionsDialogType =
   | 'update'
   | 'toggle-status'
   | 'reset-subscriptions'
+  | 'extend-subscriptions'

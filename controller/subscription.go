@@ -418,6 +418,12 @@ type AdminResetSubscriptionRequest struct {
 	AdvanceResetTime *bool `json:"advance_reset_time"`
 }
 
+type AdminExtendSubscriptionRequest struct {
+	DurationUnit  string `json:"duration_unit"`
+	DurationValue int    `json:"duration_value"`
+	CustomSeconds int64  `json:"custom_seconds"`
+}
+
 func resolveAdvanceResetTime(value *bool) bool {
 	if value == nil {
 		return true
@@ -430,6 +436,16 @@ func recordSubscriptionResetUserLogs(result *model.SubscriptionResetResult, admi
 		return
 	}
 	content := fmt.Sprintf("管理员重置订阅套餐 %s（ID: %d）额度", result.PlanTitle, result.PlanId)
+	for _, userId := range result.AffectedUserIds {
+		model.RecordLogWithAdminInfo(userId, model.LogTypeManage, content, adminInfo)
+	}
+}
+
+func recordSubscriptionExtendUserLogs(result *model.SubscriptionExtendResult, adminInfo map[string]interface{}) {
+	if result == nil || result.UpdatedCount == 0 {
+		return
+	}
+	content := fmt.Sprintf("管理员为订阅套餐 %s（ID: %d）延长有效期", result.PlanTitle, result.PlanId)
 	for _, userId := range result.AffectedUserIds {
 		model.RecordLogWithAdminInfo(userId, model.LogTypeManage, content, adminInfo)
 	}
@@ -544,6 +560,41 @@ func AdminResetPlanSubscriptions(c *gin.Context) {
 		"reset_count":        result.ResetCount,
 		"user_count":         result.UserCount,
 		"advance_reset_time": result.AdvanceResetTime,
+	})
+	common.ApiSuccess(c, result)
+}
+
+func AdminExtendPlanSubscriptions(c *gin.Context) {
+	planId, _ := strconv.Atoi(c.Param("id"))
+	if planId <= 0 {
+		common.ApiErrorMsg(c, "无效的ID")
+		return
+	}
+	var req AdminExtendSubscriptionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiErrorMsg(c, "参数错误")
+		return
+	}
+	if strings.TrimSpace(req.DurationUnit) == "" {
+		req.DurationUnit = model.SubscriptionDurationDay
+	}
+	result, err := model.AdminExtendPlanSubscriptions(planId, req.DurationUnit, req.DurationValue, req.CustomSeconds)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	recordSubscriptionExtendUserLogs(result, auditOperatorInfo(c))
+	common.SysLog(fmt.Sprintf("admin extend subscription plan %d period: updated_count=%d user_count=%d duration_unit=%s duration_value=%d custom_seconds=%d",
+		result.PlanId, result.UpdatedCount, result.UserCount, result.DurationUnit, result.DurationValue, result.CustomSeconds))
+	recordManageAudit(c, "subscription.plan_extend", map[string]interface{}{
+		"plan_id":        result.PlanId,
+		"plan_title":     result.PlanTitle,
+		"matched_count":  result.MatchedCount,
+		"updated_count":  result.UpdatedCount,
+		"user_count":     result.UserCount,
+		"duration_unit":  result.DurationUnit,
+		"duration_value": result.DurationValue,
+		"custom_seconds": result.CustomSeconds,
 	})
 	common.ApiSuccess(c, result)
 }

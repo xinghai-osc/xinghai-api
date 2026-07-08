@@ -307,30 +307,46 @@ type SubscriptionResetResult struct {
 	AffectedUserIds  []int  `json:"-"`
 }
 
+type SubscriptionExtendResult struct {
+	PlanId          int    `json:"plan_id"`
+	MatchedCount    int    `json:"matched_count"`
+	UpdatedCount    int    `json:"updated_count"`
+	UserCount       int    `json:"user_count"`
+	DurationUnit    string `json:"duration_unit"`
+	DurationValue   int    `json:"duration_value"`
+	CustomSeconds   int64  `json:"custom_seconds"`
+	PlanTitle       string `json:"-"`
+	AffectedUserIds []int  `json:"-"`
+}
+
+func calcSubscriptionEndTime(start time.Time, durationUnit string, durationValue int, customSeconds int64) (int64, error) {
+	if durationValue <= 0 && durationUnit != SubscriptionDurationCustom {
+		return 0, errors.New("duration_value must be > 0")
+	}
+	switch durationUnit {
+	case SubscriptionDurationYear:
+		return start.AddDate(durationValue, 0, 0).Unix(), nil
+	case SubscriptionDurationMonth:
+		return start.AddDate(0, durationValue, 0).Unix(), nil
+	case SubscriptionDurationDay:
+		return start.Add(time.Duration(durationValue) * 24 * time.Hour).Unix(), nil
+	case SubscriptionDurationHour:
+		return start.Add(time.Duration(durationValue) * time.Hour).Unix(), nil
+	case SubscriptionDurationCustom:
+		if customSeconds <= 0 {
+			return 0, errors.New("custom_seconds must be > 0")
+		}
+		return start.Add(time.Duration(customSeconds) * time.Second).Unix(), nil
+	default:
+		return 0, fmt.Errorf("invalid duration_unit: %s", durationUnit)
+	}
+}
+
 func calcPlanEndTime(start time.Time, plan *SubscriptionPlan) (int64, error) {
 	if plan == nil {
 		return 0, errors.New("plan is nil")
 	}
-	if plan.DurationValue <= 0 && plan.DurationUnit != SubscriptionDurationCustom {
-		return 0, errors.New("duration_value must be > 0")
-	}
-	switch plan.DurationUnit {
-	case SubscriptionDurationYear:
-		return start.AddDate(plan.DurationValue, 0, 0).Unix(), nil
-	case SubscriptionDurationMonth:
-		return start.AddDate(0, plan.DurationValue, 0).Unix(), nil
-	case SubscriptionDurationDay:
-		return start.Add(time.Duration(plan.DurationValue) * 24 * time.Hour).Unix(), nil
-	case SubscriptionDurationHour:
-		return start.Add(time.Duration(plan.DurationValue) * time.Hour).Unix(), nil
-	case SubscriptionDurationCustom:
-		if plan.CustomSeconds <= 0 {
-			return 0, errors.New("custom_seconds must be > 0")
-		}
-		return start.Add(time.Duration(plan.CustomSeconds) * time.Second).Unix(), nil
-	default:
-		return 0, fmt.Errorf("invalid duration_unit: %s", plan.DurationUnit)
-	}
+	return calcSubscriptionEndTime(start, plan.DurationUnit, plan.DurationValue, plan.CustomSeconds)
 }
 
 func NormalizeResetPeriod(period string) string {
@@ -1181,6 +1197,67 @@ func AdminResetPlanSubscriptions(planId int, advanceResetTime bool) (*Subscripti
 		}
 		result, err = adminResetPlanSubscriptionsTx(tx, plan, now, advanceResetTime)
 		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func AdminExtendPlanSubscriptions(planId int, durationUnit string, durationValue int, customSeconds int64) (*SubscriptionExtendResult, error) {
+	if planId <= 0 {
+		return nil, errors.New("invalid planId")
+	}
+	durationUnit = strings.TrimSpace(durationUnit)
+	_, err := calcSubscriptionEndTime(time.Unix(GetDBTimestamp(), 0), durationUnit, durationValue, customSeconds)
+	if err != nil {
+		return nil, err
+	}
+	var result *SubscriptionExtendResult
+	now := GetDBTimestamp()
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		plan, err := getSubscriptionPlanByIdTx(tx, planId)
+		if err != nil {
+			return err
+		}
+		var subs []UserSubscription
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("plan_id = ? AND status = ? AND end_time > ?", plan.Id, "active", now).
+			Order("user_id asc, end_time asc, id asc").
+			Find(&subs).Error; err != nil {
+			return err
+		}
+		userIds := make([]int, 0, len(subs))
+		seenUsers := make(map[int]struct{}, len(subs))
+		for i := range subs {
+			newEndTime, err := calcSubscriptionEndTime(time.Unix(subs[i].EndTime, 0), durationUnit, durationValue, customSeconds)
+			if err != nil {
+				return err
+			}
+			if err := tx.Model(&subs[i]).Updates(map[string]interface{}{
+				"end_time":   newEndTime,
+				"updated_at": now,
+			}).Error; err != nil {
+				return err
+			}
+			if _, ok := seenUsers[subs[i].UserId]; ok {
+				continue
+			}
+			seenUsers[subs[i].UserId] = struct{}{}
+			userIds = append(userIds, subs[i].UserId)
+		}
+		result = &SubscriptionExtendResult{
+			PlanId:          plan.Id,
+			MatchedCount:    len(subs),
+			UpdatedCount:    len(subs),
+			UserCount:       len(userIds),
+			DurationUnit:    durationUnit,
+			DurationValue:   durationValue,
+			CustomSeconds:   customSeconds,
+			PlanTitle:       plan.Title,
+			AffectedUserIds: userIds,
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
