@@ -11,6 +11,7 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/openai"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
+	"github.com/QuantumNous/new-api/service/relayconvert"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -83,7 +84,11 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
-	return nil, errors.New("not implemented")
+	chatRequest, err := relayconvert.ResponsesRequestToChatCompletionsRequest(&request)
+	if err != nil {
+		return nil, err
+	}
+	return openAIChatToOllamaChat(c, chatRequest)
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
@@ -94,6 +99,17 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 	switch info.RelayMode {
 	case relayconstant.RelayModeEmbeddings:
 		return ollamaEmbeddingHandler(c, info, resp)
+	case relayconstant.RelayModeResponses:
+		if info.RelayFormat != types.RelayFormatOpenAIResponses {
+			if info.IsStream {
+				return ollamaStreamHandler(c, info, resp)
+			}
+			return ollamaChatHandler(c, info, resp)
+		}
+		if info.IsStream {
+			return ollamaResponsesStreamHandler(c, info, resp)
+		}
+		return ollamaResponsesHandler(c, info, resp)
 	default:
 		if info.IsStream {
 			return ollamaStreamHandler(c, info, resp)

@@ -15,6 +15,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/service/relayconvert"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -92,12 +93,18 @@ func toUnix(ts string) int64 {
 }
 
 func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+	return ollamaStreamHandlerWithChunk(c, info, resp, nil)
+}
+
+func ollamaStreamHandlerWithChunk(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response, onChunk func(dto.ChatCompletionsStreamResponse) *types.NewAPIError) (*dto.Usage, *types.NewAPIError) {
 	if resp == nil || resp.Body == nil {
 		return nil, types.NewOpenAIError(fmt.Errorf("empty response"), types.ErrorCodeBadResponse, http.StatusBadRequest)
 	}
 	defer service.CloseResponseBodyGracefully(resp)
 
-	helper.SetEventStreamHeaders(c)
+	if onChunk == nil {
+		helper.SetEventStreamHeaders(c)
+	}
 	scanner := helper.NewStreamScanner(resp.Body)
 	usage := &dto.Usage{}
 	var model = info.UpstreamModelName
@@ -105,7 +112,11 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	var created = time.Now().Unix()
 	var toolCallIndex int
 	start := helper.GenerateStartEmptyResponse(responseId, created, model, nil)
-	if data, err := common.Marshal(start); err == nil {
+	if onChunk != nil {
+		if err := onChunk(*start); err != nil {
+			return usage, err
+		}
+	} else if data, err := common.Marshal(start); err == nil {
 		_ = helper.StringData(c, string(data))
 	}
 
@@ -163,7 +174,11 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			if chunk.Message != nil && len(chunk.Message.ToolCalls) > 0 {
 				delta.Choices[0].Delta.ToolCalls, toolCallIndex = ollamaToolCallsToOpenAI(chunk.Message.ToolCalls, toolCallIndex, true)
 			}
-			if data, err := common.Marshal(delta); err == nil {
+			if onChunk != nil {
+				if err := onChunk(delta); err != nil {
+					return usage, err
+				}
+			} else if data, err := common.Marshal(delta); err == nil {
 				_ = helper.StringData(c, string(data))
 			}
 			continue
@@ -182,18 +197,28 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		}
 		// emit stop delta
 		if stop := helper.GenerateStopResponse(responseId, created, model, finishReason); stop != nil {
-			if data, err := common.Marshal(stop); err == nil {
+			if onChunk != nil {
+				if err := onChunk(*stop); err != nil {
+					return usage, err
+				}
+			} else if data, err := common.Marshal(stop); err == nil {
 				_ = helper.StringData(c, string(data))
 			}
 		}
 		// emit usage frame
 		if final := helper.GenerateFinalUsageResponse(responseId, created, model, *usage); final != nil {
-			if data, err := common.Marshal(final); err == nil {
+			if onChunk != nil {
+				if err := onChunk(*final); err != nil {
+					return usage, err
+				}
+			} else if data, err := common.Marshal(final); err == nil {
 				_ = helper.StringData(c, string(data))
 			}
 		}
 		// send [DONE]
-		helper.Done(c)
+		if onChunk == nil {
+			helper.Done(c)
+		}
 		break
 	}
 	if err := scanner.Err(); err != nil && err != io.EOF {
@@ -202,11 +227,87 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	return usage, nil
 }
 
+func ollamaResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+	responseID := helper.GetResponseID(c)
+	state := relayconvert.NewChatToResponsesStreamState(responseID, info.UpstreamModelName)
+	var streamErr *types.NewAPIError
+
+	sendEvent := func(event relayconvert.ChatToResponsesStreamEvent) bool {
+		data, err := common.Marshal(event.Payload)
+		if err != nil {
+			streamErr = types.NewOpenAIError(err, types.ErrorCodeJsonMarshalFailed, http.StatusInternalServerError)
+			return false
+		}
+		_ = helper.ResponseChunkData(c, dto.ResponsesStreamResponse{Type: event.Type}, string(data))
+		return true
+	}
+
+	helper.SetEventStreamHeaders(c)
+	usage, apiErr := ollamaStreamHandlerWithChunk(c, info, resp, func(chunk dto.ChatCompletionsStreamResponse) *types.NewAPIError {
+		events, err := relayconvert.ChatCompletionsStreamChunkToResponsesEvents(&chunk, state)
+		if err != nil {
+			return types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		}
+		for _, event := range events {
+			if !sendEvent(event) {
+				return streamErr
+			}
+		}
+		return nil
+	})
+	if apiErr != nil {
+		return usage, apiErr
+	}
+	if streamErr != nil {
+		return nil, streamErr
+	}
+	if state.Usage == nil || state.Usage.TotalTokens == 0 {
+		state.Usage = relayconvert.UsageFromChatUsage(usage)
+	}
+	for _, event := range relayconvert.FinalizeChatCompletionsStreamToResponses(state) {
+		if !sendEvent(event) {
+			return nil, streamErr
+		}
+	}
+	return usage, nil
+}
+
+func ollamaResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+	chatResp, usage, apiErr := ollamaChatResponse(c, info, resp)
+	if apiErr != nil {
+		return nil, apiErr
+	}
+	responsesResp, responsesUsage, err := relayconvert.ChatCompletionsResponseToResponsesResponse(chatResp, helper.GetResponseID(c))
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+	}
+	if responsesUsage == nil || responsesUsage.TotalTokens == 0 {
+		responsesUsage = relayconvert.UsageFromChatUsage(usage)
+		responsesResp.Usage = responsesUsage
+	}
+	out, err := common.Marshal(responsesResp)
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeJsonMarshalFailed, http.StatusInternalServerError)
+	}
+	service.IOCopyBytesGracefully(c, resp, out)
+	return usage, nil
+}
+
 // non-stream handler for chat/generate
 func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+	full, usage, apiErr := ollamaChatResponse(c, info, resp)
+	if apiErr != nil {
+		return nil, apiErr
+	}
+	out, _ := common.Marshal(full)
+	service.IOCopyBytesGracefully(c, resp, out)
+	return usage, nil
+}
+
+func ollamaChatResponse(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.OpenAITextResponse, *dto.Usage, *types.NewAPIError) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+		return nil, nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
 	service.CloseResponseBodyGracefully(resp)
 	raw := string(body)
@@ -231,7 +332,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		var ck ollamaChatStreamChunk
 		if err := common.Unmarshal([]byte(ln), &ck); err != nil {
 			if len(lines) == 1 {
-				return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+				return nil, nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 			}
 			continue
 		}
@@ -265,7 +366,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	if !parsedAny {
 		var single ollamaChatStreamChunk
 		if err := common.Unmarshal(body, &single); err != nil {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			return nil, nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
 		lastChunk = single
 		if single.Message != nil {
@@ -329,9 +430,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		}},
 		Usage: *usage,
 	}
-	out, _ := common.Marshal(full)
-	service.IOCopyBytesGracefully(c, resp, out)
-	return usage, nil
+	return &full, usage, nil
 }
 
 func contentPtr(s string) *string {
