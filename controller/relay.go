@@ -241,7 +241,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		relayInfo.LastError = newAPIError
 
 		willRetry := shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry())
-		c.Set(constant.ContextKeyIsRetryIntermediate, willRetry)
+		c.Set(string(constant.ContextKeyIsRetryIntermediate), willRetry)
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan(), common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)), newAPIError, true)
 
 		if !willRetry {
@@ -689,7 +689,7 @@ func RelayTask(c *gin.Context) {
 		}
 
 		willRetryTask := shouldRetryTaskRelay(c, channel.Id, taskErr, common.RetryTimes-retryParam.GetRetry())
-		c.Set(constant.ContextKeyIsRetryIntermediate, willRetryTask)
+		c.Set(string(constant.ContextKeyIsRetryIntermediate), willRetryTask)
 		if !taskErr.LocalError {
 			processChannelError(c,
 				*types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey,
