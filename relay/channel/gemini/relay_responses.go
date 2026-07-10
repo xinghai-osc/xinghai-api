@@ -50,7 +50,7 @@ func GeminiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	}
 
 	chatResp := responseGeminiChat2OpenAI(c, &geminiResponse)
-	chatResp.Model = info.UpstreamModelName
+	chatResp.Model = helper.ResponseModelName(info)
 	usage := buildUsageFromGeminiMetadata(geminiResponse.UsageMetadata, info.GetEstimatePromptTokens())
 	chatResp.Usage = usage
 
@@ -73,7 +73,7 @@ func GeminiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 func GeminiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	responseID := helper.GetResponseID(c)
 	created := common.GetTimestamp()
-	state := relayconvert.NewChatToResponsesStreamState(responseID, info.UpstreamModelName)
+	state := relayconvert.NewChatToResponsesStreamState(responseID, helper.ResponseModelName(info))
 	state.Created = created
 	finishReason := constant.FinishReasonStop
 	toolCallIndexByChoice := make(map[int]map[string]int)
@@ -107,7 +107,7 @@ func GeminiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, r
 		response, isStop := streamResponseGeminiChat2OpenAI(geminiResponse)
 		response.Id = responseID
 		response.Created = created
-		response.Model = info.UpstreamModelName
+		response.Model = helper.ResponseModelName(info)
 
 		if response.IsToolCall() {
 			finishReason = constant.FinishReasonToolCalls

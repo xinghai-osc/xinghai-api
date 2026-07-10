@@ -48,6 +48,9 @@ func OaiResponsesToChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
+	// Rewrite model name to the user-facing name when model mapping is active
+	chatResp.Model = helper.ResponseModelName(info)
+
 	if usage == nil || usage.TotalTokens == 0 {
 		text := service.ExtractOutputTextFromResponses(&responsesResp)
 		usage = service.ResponseText2Usage(c, text, info.UpstreamModelName, info.GetEstimatePromptTokens())
@@ -152,7 +155,7 @@ func OaiResponsesToChatBufferedStreamHandler(c *gin.Context, info *relaycommon.R
 		finalResponse = &dto.OpenAIResponsesResponse{
 			ID:        helper.GetResponseID(c),
 			CreatedAt: int(time.Now().Unix()),
-			Model:     info.UpstreamModelName,
+			Model:     helper.ResponseModelName(info),
 			Status:    []byte(`"completed"`),
 		}
 	}
@@ -197,16 +200,16 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 
 	responseId := helper.GetResponseID(c)
 	createAt := time.Now().Unix()
-	model := info.UpstreamModelName
+	model := helper.ResponseModelName(info)
 
-	state := relayconvert.NewResponsesToChatStreamState(info.UpstreamModelName, false)
+	state := relayconvert.NewResponsesToChatStreamState(helper.ResponseModelName(info), false)
 	state.ID = responseId
 	state.Created = createAt
 
 	var (
-		usage                     = &dto.Usage{}
-		completionSensitiveText   strings.Builder
-		streamErr                 *types.NewAPIError
+		usage                      = &dto.Usage{}
+		completionSensitiveText    strings.Builder
+		streamErr                  *types.NewAPIError
 		completionSensitiveBlocked bool
 	)
 

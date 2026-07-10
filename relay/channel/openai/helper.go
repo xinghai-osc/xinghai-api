@@ -38,6 +38,9 @@ func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 		return err
 	}
 
+	// Rewrite model name to the user-facing name when model mapping is active
+	streamResponse.Model = helper.ResponseModelName(info)
+
 	if streamResponse.Usage != nil {
 		info.ClaudeConvertInfo.Usage = streamResponse.Usage
 	}
@@ -163,6 +166,9 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 			return
 		}
 
+		// Rewrite model name to the user-facing name when model mapping is active
+		streamResponse.Model = helper.ResponseModelName(info)
+
 		info.ClaudeConvertInfo.Usage = usage
 
 		claudeResponses := service.StreamResponseOpenAI2Claude(&streamResponse, info)
@@ -202,9 +208,11 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 	}
 }
 
-func sendResponsesStreamData(c *gin.Context, streamResponse dto.ResponsesStreamResponse, data string) {
+func sendResponsesStreamData(c *gin.Context, info *relaycommon.RelayInfo, streamResponse dto.ResponsesStreamResponse, data string) {
 	if data == "" {
 		return
 	}
+	// Rewrite model name to the user-facing name when model mapping is active
+	data = helper.RewriteResponseModelStr(info, data)
 	_ = helper.ResponseChunkData(c, streamResponse, data)
 }

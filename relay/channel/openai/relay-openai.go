@@ -25,6 +25,9 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 		return nil
 	}
 
+	// Rewrite model name to the user-facing name when model mapping is active
+	data = helper.RewriteResponseModelStr(info, data)
+
 	if !forceFormat && !thinkToContent {
 		return helper.StringData(c, data)
 	}
@@ -33,6 +36,8 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
+	// Ensure the struct also carries the user-facing model name
+	lastStreamResponse.Model = helper.ResponseModelName(info)
 
 	if !thinkToContent {
 		return helper.ObjectData(c, lastStreamResponse)
@@ -150,7 +155,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 				if contains, words := service.CheckSensitiveText(responseTextBuilder.String()); contains {
 					logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
 					completionSensitiveBlocked = true
-					blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), model, nil, words...)
+					blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), helper.ResponseModelName(info), nil, words...)
 					if err := helper.ObjectData(c, blockedResponse); err != nil {
 						sr.Error(err)
 						return
@@ -190,6 +195,9 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		&containStreamUsage, info, &shouldSendLastResp); err != nil {
 		logger.LogError(c, fmt.Sprintf("error handling last response: %s, lastStreamData: [%s]", err.Error(), lastStreamData))
 	}
+
+	// Rewrite the model name to the user-facing name for the final usage response
+	model = helper.ResponseModelName(info)
 
 	if info.RelayFormat == types.RelayFormatOpenAI {
 		if shouldSendLastResp {
@@ -243,6 +251,9 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
 	}
 
+	// Rewrite model name to the user-facing name when model mapping is active
+	simpleResponse.Model = helper.ResponseModelName(info)
+
 	for _, choice := range simpleResponse.Choices {
 		if choice.FinishReason == constant.FinishReasonContentFilter {
 			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "openai_finish_reason=content_filter")
@@ -290,6 +301,9 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			}
 		}
 	}
+
+	// Rewrite the model field in the raw response body for passthrough paths
+	responseBody = helper.RewriteResponseModel(info, responseBody)
 
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:

@@ -12,7 +12,49 @@ import (
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/sjson"
 )
+
+// ResponseModelName returns the model name that should appear in the response
+// sent to the client. When model mapping is active (info.IsModelMapped), the
+// user-facing OriginModelName is returned; otherwise the upstream model name is
+// returned unchanged.
+func ResponseModelName(info *common.RelayInfo) string {
+	if info == nil {
+		return ""
+	}
+	if info.IsModelMapped && info.OriginModelName != "" {
+		return info.OriginModelName
+	}
+	return info.UpstreamModelName
+}
+
+// RewriteResponseModel rewrites the "model" field in a raw JSON response body
+// to the user-facing model name when model mapping is active. It returns the
+// (possibly modified) bytes. If the rewrite fails or mapping is inactive, the
+// original data is returned unchanged.
+func RewriteResponseModel(info *common.RelayInfo, data []byte) []byte {
+	if info == nil || !info.IsModelMapped || info.OriginModelName == "" {
+		return data
+	}
+	result, err := sjson.SetBytes(data, "model", info.OriginModelName)
+	if err != nil {
+		return data
+	}
+	return result
+}
+
+// RewriteResponseModelStr is the string variant of RewriteResponseModel.
+func RewriteResponseModelStr(info *common.RelayInfo, data string) string {
+	if info == nil || !info.IsModelMapped || info.OriginModelName == "" {
+		return data
+	}
+	result, err := sjson.Set(data, "model", info.OriginModelName)
+	if err != nil {
+		return data
+	}
+	return result
+}
 
 // ModelMappingEntry 表示模型映射中单个条目的目标模型和可见性
 // 支持两种格式：

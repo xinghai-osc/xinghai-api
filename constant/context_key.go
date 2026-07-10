@@ -72,4 +72,10 @@ const (
 	// fallback in authHelper (finishAdminAudit) skips its record to avoid
 	// duplicate entries.
 	ContextKeyAuditLogged ContextKey = "audit_logged"
+
+	// ContextKeyIsRetryIntermediate marks that the current failed attempt is an
+	// intermediate retry (i.e. more retries will follow). Failed-request logs
+	// recorded under this flag are hidden from non-admin users so that they only
+	// see the final outcome, while admins can still inspect every attempt.
+	ContextKeyIsRetryIntermediate ContextKey = "is_retry_intermediate"
 )

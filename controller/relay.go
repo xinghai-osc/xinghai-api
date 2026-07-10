@@ -240,9 +240,11 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		newAPIError = service.NormalizeViolationFeeError(newAPIError)
 		relayInfo.LastError = newAPIError
 
+		willRetry := shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry())
+		c.Set(constant.ContextKeyIsRetryIntermediate, willRetry)
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan(), common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)), newAPIError, true)
 
-		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+		if !willRetry {
 			break
 		}
 		// 记录本次失败的 channel，下次重试时回避它
@@ -438,6 +440,9 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		other["channel_id"] = channelId
 		other["channel_name"] = c.GetString("channel_name")
 		other["channel_type"] = c.GetInt("channel_type")
+		if common.GetContextKeyBool(c, constant.ContextKeyIsRetryIntermediate) {
+			other["is_retry_intermediate"] = true
+		}
 		adminInfo := make(map[string]interface{})
 		adminInfo["use_channel"] = c.GetStringSlice("use_channel")
 		isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)
@@ -498,6 +503,9 @@ func recordFailedRequestToConsumeLog(c *gin.Context, channelError types.ChannelE
 	other["error_code"] = err.GetErrorCode()
 	other["status_code"] = err.StatusCode
 	other["is_failed_request"] = true
+	if common.GetContextKeyBool(c, constant.ContextKeyIsRetryIntermediate) {
+		other["is_retry_intermediate"] = true
+	}
 	other["channel_name"] = c.GetString("channel_name")
 	other["channel_type"] = c.GetInt("channel_type")
 
@@ -680,6 +688,8 @@ func RelayTask(c *gin.Context) {
 			break
 		}
 
+		willRetryTask := shouldRetryTaskRelay(c, channel.Id, taskErr, common.RetryTimes-retryParam.GetRetry())
+		c.Set(constant.ContextKeyIsRetryIntermediate, willRetryTask)
 		if !taskErr.LocalError {
 			processChannelError(c,
 				*types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey,
@@ -687,7 +697,7 @@ func RelayTask(c *gin.Context) {
 				types.NewOpenAIError(taskErr.Error, types.ErrorCodeBadResponseStatusCode, taskErr.StatusCode), true)
 		}
 
-		if !shouldRetryTaskRelay(c, channel.Id, taskErr, common.RetryTimes-retryParam.GetRetry()) {
+		if !willRetryTask {
 			break
 		}
 		// 记录本次失败的 channel，下次重试时回避它
