@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useIsAdmin } from '@/hooks/use-admin'
 
-import { LOG_TYPE_ALL_VALUE, LOG_TYPE_FILTERS } from '../constants'
+import { LOG_STATUS_FILTERS, LOG_TYPE_ALL_VALUE, LOG_TYPE_FILTERS } from '../constants'
 import { buildSearchParams } from '../lib/filter'
 import { getDefaultTimeRange } from '../lib/utils'
 import type { CommonLogFilters } from '../types'
@@ -89,6 +89,7 @@ function buildSearchSourceKey(values: {
   requestId?: unknown
   upstreamRequestId?: unknown
   type?: unknown
+  status?: unknown
 }) {
   return [
     values.startTime,
@@ -101,6 +102,7 @@ function buildSearchSourceKey(values: {
     values.requestId,
     values.upstreamRequestId,
     Array.isArray(values.type) ? values.type.join(',') : values.type,
+    values.status,
   ]
     .map((value) => String(value ?? ''))
     .join('\u001f')
@@ -134,6 +136,7 @@ export function CommonLogsFilterBar<TData>(
       requestId: searchParams.requestId,
       upstreamRequestId: searchParams.upstreamRequestId,
       type: searchParams.type,
+      status: searchParams.status,
     }
     const filters: CommonLogFilters = {
       startTime: searchParams.startTime
@@ -147,6 +150,7 @@ export function CommonLogsFilterBar<TData>(
       username: searchParams.username || undefined,
       requestId: searchParams.requestId || undefined,
       upstreamRequestId: searchParams.upstreamRequestId || undefined,
+      status: (searchParams.status as string) || undefined,
     }
     return {
       sourceKey: buildSearchSourceKey(sourceValues),
@@ -194,6 +198,7 @@ export function CommonLogsFilterBar<TData>(
       search: {
         ...filterParams,
         type: [logType],
+        status: filters.status || undefined,
         page: 1,
       },
     })
@@ -241,9 +246,18 @@ export function CommonLogsFilterBar<TData>(
     !!filters.requestId ||
     !!filters.upstreamRequestId
 
+  const statusItems = useMemo(
+    () =>
+      LOG_STATUS_FILTERS.map((s) => ({
+        value: s.value,
+        label: t(s.label),
+      })),
+    [t]
+  )
+  const hasStatusFilter = !!filters.status
   const hasTypeFilter = logType !== LOG_TYPE_ALL_VALUE
   const hasAdditionalFilters =
-    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters
+    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters || hasStatusFilter
 
   const expandedFilterCount = [
     filters.token,
@@ -359,6 +373,34 @@ export function CommonLogsFilterBar<TData>(
       </Select>
     </LogsFilterField>
   )
+  const statusFilter = (
+    <LogsFilterField>
+      <Select
+        items={statusItems}
+        value={filters.status || ''}
+        onValueChange={(value) => {
+          handleChange('status', value ? String(value) : undefined)
+        }}
+      >
+        <SelectTrigger>
+          <SelectValue>
+            {statusItems.find((s) => s.value === (filters.status || ''))?.label ??
+              t('All Status')}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          <SelectGroup>
+            {LOG_STATUS_FILTERS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {t(s.label)}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </LogsFilterField>
+  )
+
   const advancedFilters = (
     <>
       <LogsFilterField>
@@ -421,6 +463,7 @@ export function CommonLogsFilterBar<TData>(
           {modelFilter}
           {groupFilter}
           {typeFilter}
+          {statusFilter}
         </>
       }
       advancedFilters={advancedFilters}
@@ -430,11 +473,12 @@ export function CommonLogsFilterBar<TData>(
           {modelFilter}
           {groupFilter}
           {typeFilter}
+          {statusFilter}
           {advancedFilters}
         </>
       }
       mobileFilterCount={
-        [filters.model, filters.group, hasTypeFilter].filter(Boolean).length +
+        [filters.model, filters.group, hasTypeFilter, hasStatusFilter].filter(Boolean).length +
         expandedFilterCount
       }
       hasAdvancedActiveFilters={hasExpandedFilters}

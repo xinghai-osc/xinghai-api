@@ -16,10 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -42,6 +42,7 @@ import { useColumnsByCategory } from '../lib/columns'
 import { parseLogOther } from '../lib/format'
 import { fetchLogsByCategory } from '../lib/utils'
 import type { LogCategory } from '../types'
+import { CommonLogsBulkActions } from './common-logs-bulk-actions'
 import { CommonLogsFilterBar } from './common-logs-filter-bar'
 import { TaskLogsFilterBar } from './task-logs-filter-bar'
 import { UsageLogsMobileList } from './usage-logs-mobile-card'
@@ -82,6 +83,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const { t } = useTranslation()
   const isAdmin = useIsAdmin()
   const isMobile = useMediaQuery('(max-width: 640px)')
+  const queryClient = useQueryClient()
   const searchParams = route.useSearch()
   const columnFiltersConfig = useMemo(
     () => [
@@ -162,6 +164,13 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     },
   })
 
+  const isCommon = logCategory === 'common'
+
+  const triggerRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['logs'] })
+    queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
+  }, [queryClient])
+
   const logs = useMemo(() => data?.items || [], [data?.items])
   const columns = useColumnsByCategory(logCategory, isAdmin)
   const tableColumns = useMemo(
@@ -179,7 +188,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       isAdmin
     ),
     pagination,
-    enableRowSelection: false,
+    enableRowSelection: isAdmin && isCommon,
     onPaginationChange,
     onColumnFiltersChange,
     manualPagination: true,
@@ -187,8 +196,6 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     totalCount: data?.total || 0,
     ensurePageInRange,
   })
-
-  const isCommon = logCategory === 'common'
 
   return (
     <DataTablePage
@@ -211,6 +218,14 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
           isLoading={isLoadingData}
           logCategory={logCategory}
         />
+      }
+      bulkActions={
+        isCommon && isAdmin ? (
+          <CommonLogsBulkActions
+            table={table}
+            triggerRefresh={triggerRefresh}
+          />
+        ) : undefined
       }
       toolbar={
         isCommon ? (

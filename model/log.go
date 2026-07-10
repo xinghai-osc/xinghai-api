@@ -704,6 +704,20 @@ func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	return token
 }
 
+func DeleteLogsByIds(ctx context.Context, ids []int) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	if common.UsingLogDatabase(common.DatabaseTypeClickHouse) {
+		return 0, errors.New("ClickHouse does not support deleting logs by ID")
+	}
+	result := LOG_DB.WithContext(ctx).Where("id IN ?", ids).Delete(&Log{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
+}
+
 func CountOldLog(ctx context.Context, targetTimestamp int64) (int64, error) {
 	var total int64
 	if err := LOG_DB.WithContext(ctx).Model(&Log{}).Where("created_at < ?", targetTimestamp).Count(&total).Error; err != nil {

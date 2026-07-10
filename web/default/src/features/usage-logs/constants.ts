@@ -100,6 +100,19 @@ export const LOG_TYPES = [
   { value: 7, label: 'Login', color: 'teal' },
 ] as const
 
+// ============================================================================
+// Log Status Constants
+// ============================================================================
+
+/**
+ * Log status filter options
+ */
+export const LOG_STATUS_FILTERS = [
+  { label: 'All Status', value: '' },
+  { label: 'Success', value: 'success' },
+  { label: 'Failed', value: 'failed' },
+] as const
+
 /**
  * Log types for DataTableToolbar filters (single select mode)
  * Backend treats type=0 as "all logs" in list/stat endpoints, so the filter

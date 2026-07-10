@@ -84,6 +84,13 @@ export const getUserLogStats = (
   params: Omit<GetLogStatsParams, 'username' | 'channel'> = {}
 ) => fetchLogStats('/api/log', params, false)
 
+export async function batchDeleteLogs(
+  ids: number[]
+): Promise<{ success: boolean; message?: string; data?: number }> {
+  const res = await api.post('/api/log/batch/delete', { ids })
+  return res.data
+}
+
 export async function getUserInfo(
   userId: number
 ): Promise<{ success: boolean; message?: string; data?: UserInfo }> {

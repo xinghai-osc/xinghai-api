@@ -13,6 +13,15 @@ import (
 func GetAllLogs(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	logType, _ := strconv.Atoi(c.Query("type"))
+	status := c.Query("status")
+	if status != "" {
+		switch status {
+		case "success":
+			logType = model.LogTypeConsume
+		case "failed":
+			logType = model.LogTypeError
+		}
+	}
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	username := c.Query("username")
@@ -37,6 +46,15 @@ func GetUserLogs(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	userId := c.GetInt("id")
 	logType, _ := strconv.Atoi(c.Query("type"))
+	status := c.Query("status")
+	if status != "" {
+		switch status {
+		case "success":
+			logType = model.LogTypeConsume
+		case "failed":
+			logType = model.LogTypeError
+		}
+	}
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	tokenName := c.Query("token_name")
@@ -148,6 +166,38 @@ func GetLogsSelfStat(c *gin.Context) {
 		},
 	})
 	return
+}
+
+func DeleteLogs(c *gin.Context) {
+	var req struct {
+		Ids []int `json:"ids"`
+	}
+	rawData, err := c.GetRawData()
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err := common.UnmarshalJsonStr(string(rawData), &req); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if len(req.Ids) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "ids is required",
+		})
+		return
+	}
+	count, err := model.DeleteLogsByIds(c.Request.Context(), req.Ids)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    count,
+	})
 }
 
 // DeleteHistoryLogs is the legacy synchronous log cleanup endpoint (DELETE /api/log/).
