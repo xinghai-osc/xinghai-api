@@ -248,7 +248,7 @@ func ListModels(c *gin.Context, modelType int) {
 		var models []string
 		if groups.tokenGroup == "auto" {
 			for _, autoGroup := range ownerGroups {
-				groupModels := model.GetGroupEnabledModelsForPath(autoGroup, c.Request.URL.Path)
+				groupModels := model.GetGroupEnabledModels(autoGroup)
 				for _, g := range groupModels {
 					if !common.StringsContains(models, g) {
 						models = append(models, g)
@@ -256,7 +256,7 @@ func ListModels(c *gin.Context, modelType int) {
 				}
 			}
 		} else {
-			models = model.GetGroupEnabledModelsForPath(ownerGroups[0], c.Request.URL.Path)
+			models = model.GetGroupEnabledModels(ownerGroups[0])
 		}
 		for _, modelName := range models {
 			if !acceptUnsetRatioModel {
@@ -265,28 +265,6 @@ func ListModels(c *gin.Context, modelType int) {
 				}
 			}
 			userModelNames = append(userModelNames, modelName)
-		}
-	}
-
-	// 过滤模型映射中设为不可见的模型
-	if len(userModelNames) > 0 && len(ownerGroups) > 0 {
-		mappings := model.GetGroupChannelModelMappings(ownerGroups)
-		if len(mappings) > 0 {
-			invisibleSet := make(map[string]bool)
-			for _, m := range mappings {
-				for _, name := range helper.GetInvisibleModelsFromMapping(m) {
-					invisibleSet[name] = true
-				}
-			}
-			if len(invisibleSet) > 0 {
-				filtered := make([]string, 0, len(userModelNames))
-				for _, name := range userModelNames {
-					if !invisibleSet[name] {
-						filtered = append(filtered, name)
-					}
-				}
-				userModelNames = filtered
-			}
 		}
 	}
 
