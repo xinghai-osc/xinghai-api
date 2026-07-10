@@ -838,13 +838,7 @@ export function ChannelMutateDrawer({
   const isChannelDetailLoading = isEditing && isChannelLoading
   const supportsMultiKeyAddMode =
     currentType !== 57 && !(currentType === 41 && vertexKeyType === 'api_key')
-  const addModeOptions = useMemo(
-    () =>
-      supportsMultiKeyAddMode
-        ? ADD_MODE_OPTIONS
-        : ADD_MODE_OPTIONS.filter((option) => option.value === 'single'),
-    [supportsMultiKeyAddMode]
-  )
+  const addModeOptions = useMemo(() => ADD_MODE_OPTIONS, [])
 
   const advancedCustomStats = useMemo(
     () => getAdvancedCustomStats(currentAdvancedCustom),
