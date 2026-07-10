@@ -355,6 +355,19 @@ function BalanceCell({ channel }: { channel: Channel }) {
   const maskedUsedLabel = `${t('Used:')} ${SENSITIVE_MASK}`
   const maskedRemainingLabel = `${t('Remaining:')} ${SENSITIVE_MASK}`
 
+  const quotaLimit = channel.quota_limit || 0
+  const quotaLimitLabel =
+    quotaLimit > 0
+      ? `${t('Quota Limit:')} ${withSuffix(
+          formatQuotaWithCurrency(quotaLimit, {
+            digitsLarge: 2,
+            digitsSmall: 4,
+            abbreviate: true,
+            showSymbol: layout !== 'card',
+          })
+        )}`
+      : null
+
   // Tag row: only show cumulative used quota
   if (isTagRow) {
     return (
@@ -451,6 +464,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>{sensitiveVisible ? usedLabel : maskedUsedLabel}</p>
+            {quotaLimitLabel && <p>{quotaLimitLabel}</p>}
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -469,6 +483,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>{remainingTooltipLabel}</p>
+            {quotaLimitLabel && <p>{quotaLimitLabel}</p>}
             {channel.type !== 57 && <p>{t('Click to update balance')}</p>}
           </TooltipContent>
         </Tooltip>

@@ -3659,6 +3659,32 @@ export function ChannelMutateDrawer({
                                   </FormItem>
                                 )}
                               />
+
+                              <FormField
+                                control={form.control}
+                                name='quota_limit'
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>{t('Quota Limit')}</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        placeholder='0'
+                                        {...field}
+                                        onChange={(e) =>
+                                          field.onChange(Number(e.target.value))
+                                        }
+                                      />
+                                    </FormControl>
+                                    <FormDescription>
+                                      {t(
+                                        'Per-channel quota cap. When used quota reaches this limit, the channel is automatically disabled. 0 means no limit.'
+                                      )}
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                             </div>
 
                             <FormField

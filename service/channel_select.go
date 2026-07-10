@@ -231,6 +231,10 @@ func (p *RetryParam) channelSatisfied(channel *model.Channel) bool {
 	if p.ExcludeChannelIds != nil && p.ExcludeChannelIds[channel.Id] {
 		return false
 	}
+	// 排除额度已达上限的渠道
+	if model.ChannelQuotaExceeded(channel.Id) {
+		return false
+	}
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	if len(p.AllowedApiTypes) > 0 {
 		return p.AllowedApiTypes[apiType]

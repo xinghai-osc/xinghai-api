@@ -63,7 +63,8 @@ func LogTaskConsumption(c *gin.Context, info *relaycommon.RelayInfo) {
 		Other:     other,
 	})
 	model.UpdateUserUsedQuotaAndRequestCount(info.UserId, info.PriceData.Quota)
-	model.UpdateChannelUsedQuota(info.ChannelId, info.PriceData.Quota)
+	model.IncreaseChannelUsedQuota(info.ChannelId, info.PriceData.Quota)
+	CheckAndDisableChannelOnQuotaExceeded(info.ChannelId)
 }
 
 // ---------------------------------------------------------------------------
@@ -239,11 +240,13 @@ func RecalculateTaskQuota(ctx context.Context, task *model.Task, actualQuota int
 		logType = model.LogTypeConsume
 		logQuota = quotaDelta
 		model.UpdateUserUsedQuotaAndRequestCount(task.UserId, quotaDelta)
-		model.UpdateChannelUsedQuota(task.ChannelId, quotaDelta)
+		model.IncreaseChannelUsedQuota(task.ChannelId, quotaDelta)
 	} else {
 		logType = model.LogTypeRefund
 		logQuota = -quotaDelta
+		model.DecreaseChannelUsedQuota(task.ChannelId, -quotaDelta)
 	}
+	CheckAndDisableChannelOnQuotaExceeded(task.ChannelId)
 	other := taskBillingOther(task)
 	other["task_id"] = task.TaskID
 	other["pre_consumed_quota"] = preConsumedQuota

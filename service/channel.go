@@ -6,6 +6,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/types"
@@ -13,6 +14,38 @@ import (
 
 func formatNotifyType(channelId int, status int) string {
 	return fmt.Sprintf("%s_%d_%d", dto.NotifyTypeChannelUpdate, channelId, status)
+}
+
+// CheckAndDisableChannelOnQuotaExceeded checks if a channel's used_quota has
+// reached its quota_limit. If so, it disables the channel and sends a notification.
+// This is called after each billing settlement to provide real-time enforcement.
+func CheckAndDisableChannelOnQuotaExceeded(channelId int) {
+	quotaLimit, usedQuota, err := model.GetChannelQuotaLimit(channelId, false)
+	if err != nil || quotaLimit <= 0 {
+		return
+	}
+	if usedQuota < quotaLimit {
+		return
+	}
+
+	channel, err := model.GetChannelById(channelId, false)
+	if err != nil {
+		common.SysError(fmt.Sprintf("failed to get channel for quota-exceeded check: channel_id=%d, error=%v", channelId, err))
+		return
+	}
+	if channel.Status != common.ChannelStatusEnabled {
+		return
+	}
+
+	reason := fmt.Sprintf("渠道额度已达上限（限额 %s，已用 %s）", logger.FormatQuota(int(quotaLimit)), logger.FormatQuota(int(usedQuota)))
+	common.SysLog(fmt.Sprintf("通道「%s」（#%d）额度已达上限，自动禁用", channel.Name, channelId))
+
+	success := model.UpdateChannelStatus(channelId, "", common.ChannelStatusAutoDisabled, reason)
+	if success {
+		subject := fmt.Sprintf("通道「%s」（#%d）已被禁用", channel.Name, channelId)
+		content := fmt.Sprintf("通道「%s」（#%d）已被禁用，原因：%s", channel.Name, channelId, reason)
+		NotifyRootUser(formatNotifyType(channelId, common.ChannelStatusAutoDisabled), subject, content)
+	}
 }
 
 // disable & notify

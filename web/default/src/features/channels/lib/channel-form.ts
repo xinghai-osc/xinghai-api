@@ -193,6 +193,7 @@ export const channelFormSchema = z
     batch_add_set_key_prefix_2_name: z.boolean().optional(),
     key_mode: z.enum(['append', 'replace']).optional(), // For editing multi-key channels
     // Channel extra settings (stored in setting JSON, not sent directly)
+    quota_limit: z.number().optional(),
     force_format: z.boolean().optional(),
     thinking_to_content: z.boolean().optional(),
     proxy: z.string().optional(),
@@ -334,6 +335,7 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   batch_add_set_key_prefix_2_name: false,
   key_mode: 'append',
   // Channel extra settings
+  quota_limit: 0,
   force_format: false,
   thinking_to_content: false,
   proxy: '',
@@ -476,6 +478,7 @@ export function transformChannelToFormDefaults(
     batch_add_set_key_prefix_2_name: false,
     key_mode: 'append', // Default to append mode for editing multi-key channels
     // Channel extra settings
+    quota_limit: channel.quota_limit || 0,
     ...extraSettings,
     // Type-specific settings
     is_enterprise_account: isEnterpriseAccount,
@@ -680,6 +683,7 @@ export function transformFormDataToCreatePayload(formData: ChannelFormValues): {
     header_override: formData.header_override || null,
     settings: buildSettingsJSON(formData),
     other: formData.other || '',
+    quota_limit: formData.quota_limit || 0,
   }
 
   // Clean up empty strings to null for optional fields
@@ -728,6 +732,7 @@ export function transformFormDataToUpdatePayload(
     header_override: formData.header_override || null,
     settings: buildSettingsJSON(formData),
     other: formData.other || '',
+    quota_limit: formData.quota_limit || 0,
   }
 
   // Only include key if it was changed (not empty)

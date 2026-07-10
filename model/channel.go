@@ -40,8 +40,11 @@ type Channel struct {
 	Models             string  `json:"models"`
 	Group              string  `json:"group" gorm:"type:text"`
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
-	ModelMapping       *string `json:"model_mapping" gorm:"type:text"`
-	DisabledModels     string  `json:"disabled_models" gorm:"type:text"` // 逗号分隔的被禁用模型列表，用于单独禁用渠道中的某个模型
+	// QuotaLimit is the per-channel quota cap. When UsedQuota reaches QuotaLimit,
+	// the channel is automatically disabled. 0 means no limit.
+	QuotaLimit     int64   `json:"quota_limit" gorm:"bigint;default:0"`
+	ModelMapping   *string `json:"model_mapping" gorm:"type:text"`
+	DisabledModels string  `json:"disabled_models" gorm:"type:text"` // 逗号分隔的被禁用模型列表，用于单独禁用渠道中的某个模型
 	//MaxInputTokens     *int    `json:"max_input_tokens" gorm:"default:0"`
 	StatusCodeMapping *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
@@ -631,6 +634,9 @@ func (channel *Channel) Insert() error {
 		return err
 	}
 	err = channel.AddAbilities(nil)
+	if err == nil {
+		_ = populateChannelQuotaCache(channel.Id, channel.QuotaLimit, channel.UsedQuota)
+	}
 	return err
 }
 
@@ -685,6 +691,15 @@ func (channel *Channel) Update() error {
 			return e
 		}
 	}
+	// Force-update QuotaLimit so that setting it to 0 (no limit) is persisted;
+	// GORM Updates skips zero-value scalar fields.
+	if channel.QuotaLimit == 0 {
+		if e := DB.Model(channel).Update("quota_limit", 0).Error; e != nil {
+			return e
+		}
+	}
+	// Sync channel quota_limit to Redis cache
+	_ = updateChannelQuotaLimitCache(channel.Id, channel.QuotaLimit)
 	DB.Model(channel).First(channel, "id = ?", channel.Id)
 	err = channel.UpdateAbilities(nil)
 	return err
@@ -717,6 +732,7 @@ func (channel *Channel) Delete() error {
 		return err
 	}
 	err = channel.DeleteAbilities()
+	_ = invalidateChannelQuotaCache(channel.Id)
 	return err
 }
 
