@@ -65,14 +65,10 @@ export function usePricingColumns(
     priceRate = 1,
     usdExchangeRate = 1,
     showRechargePrice = false,
-    selectedGroup: selectedGroupOption,
+    selectedGroup,
   } = options
 
   const tokenUnitLabel = tokenUnit === 'K' ? '1K' : '1M'
-  const selectedGroup =
-    selectedGroupOption && selectedGroupOption !== FILTER_ALL
-      ? selectedGroupOption
-      : null
 
   return [
     // Model column
@@ -136,8 +132,10 @@ export function usePricingColumns(
           showRechargePrice,
           priceRate,
           usdExchangeRate,
-          groupRatioMultiplier:
-            selectedGroupRatio ?? getDynamicDisplayGroupRatio(model),
+          groupRatioMultiplier: getDynamicDisplayGroupRatio(
+            model,
+            selectedGroup
+          ),
         })
 
         if (dynamicSummary) {
@@ -193,46 +191,26 @@ export function usePricingColumns(
 
         if (isTokenBased) {
           const inputPrice = stripTrailingZeros(
-            selectedGroup
-              ? formatGroupPrice(
-                  model,
-                  selectedGroup,
-                  'input',
-                  tokenUnit,
-                  showRechargePrice,
-                  priceRate,
-                  usdExchangeRate,
-                  groupRatio
-                )
-              : formatPrice(
-                  model,
-                  'input',
-                  tokenUnit,
-                  showRechargePrice,
-                  priceRate,
-                  usdExchangeRate
-                )
+            formatPrice(
+              model,
+              'input',
+              tokenUnit,
+              showRechargePrice,
+              priceRate,
+              usdExchangeRate,
+              selectedGroup
+            )
           )
           const outputPrice = stripTrailingZeros(
-            selectedGroup
-              ? formatGroupPrice(
-                  model,
-                  selectedGroup,
-                  'output',
-                  tokenUnit,
-                  showRechargePrice,
-                  priceRate,
-                  usdExchangeRate,
-                  groupRatio
-                )
-              : formatPrice(
-                  model,
-                  'output',
-                  tokenUnit,
-                  showRechargePrice,
-                  priceRate,
-                  usdExchangeRate
-                )
+            formatPrice(
+              model,
+              'output',
+              tokenUnit,
+              showRechargePrice,
+              priceRate,
+              usdExchangeRate,
+              selectedGroup
+            )
           )
 
           return (
@@ -250,21 +228,13 @@ export function usePricingColumns(
         }
 
         const price = stripTrailingZeros(
-          selectedGroup
-            ? formatFixedPrice(
-                model,
-                selectedGroup,
-                showRechargePrice,
-                priceRate,
-                usdExchangeRate,
-                groupRatio
-              )
-            : formatRequestPrice(
-                model,
-                showRechargePrice,
-                priceRate,
-                usdExchangeRate
-              )
+          formatRequestPrice(
+            model,
+            showRechargePrice,
+            priceRate,
+            usdExchangeRate,
+            selectedGroup
+          )
         )
 
         return (
@@ -295,8 +265,10 @@ export function usePricingColumns(
           showRechargePrice,
           priceRate,
           usdExchangeRate,
-          groupRatioMultiplier:
-            selectedGroupRatio ?? getDynamicDisplayGroupRatio(model),
+          groupRatioMultiplier: getDynamicDisplayGroupRatio(
+            model,
+            selectedGroup
+          ),
         })
 
         if (dynamicSummary) {
@@ -334,25 +306,15 @@ export function usePricingColumns(
         }
 
         const cachedPrice = stripTrailingZeros(
-          selectedGroup
-            ? formatGroupPrice(
-                model,
-                selectedGroup,
-                'cache',
-                tokenUnit,
-                showRechargePrice,
-                priceRate,
-                usdExchangeRate,
-                groupRatio
-              )
-            : formatPrice(
-                model,
-                'cache',
-                tokenUnit,
-                showRechargePrice,
-                priceRate,
-                usdExchangeRate
-              )
+          formatPrice(
+            model,
+            'cache',
+            tokenUnit,
+            showRechargePrice,
+            priceRate,
+            usdExchangeRate,
+            selectedGroup
+          )
         )
 
         return (

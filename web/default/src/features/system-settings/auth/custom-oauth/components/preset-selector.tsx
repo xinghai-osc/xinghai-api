@@ -50,9 +50,13 @@ export function PresetSelector(props: PresetSelectorProps) {
 
     // Auto-fill name, slug, icon, and field mappings immediately
     props.form.setValue('name', preset.name, { shouldDirty: true })
-    props.form.setValue('slug', presetKey.toLowerCase().replaceAll(/\s+/g, '-'), {
-      shouldDirty: true,
-    })
+    props.form.setValue(
+      'slug',
+      presetKey.toLowerCase().replaceAll(/\s+/g, '-'),
+      {
+        shouldDirty: true,
+      }
+    )
     props.form.setValue('icon', preset.icon, { shouldDirty: true })
     props.form.setValue('scopes', preset.scopes, { shouldDirty: true })
     props.form.setValue('user_id_field', preset.user_id_field, {
@@ -112,9 +116,9 @@ export function PresetSelector(props: PresetSelectorProps) {
           <Label>{t('Preset Template')}</Label>
           <Select
             items={OAUTH_PRESETS.map((preset) => ({
-                value: preset.key,
-                label: preset.name,
-              }))}
+              value: preset.key,
+              label: preset.name,
+            }))}
             value={selectedPreset}
             onValueChange={(v) => v !== null && handlePresetChange(v)}
           >
