@@ -520,6 +520,17 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 	return info
 }
 
+// NormalizePlaygroundPath converts a /pg/ request path to its /v1/ equivalent
+// so that downstream path-based routing (channel selection, Advanced Custom
+// route matching) works identically for playground and regular API calls.
+// Non-playground paths are returned unchanged.
+func NormalizePlaygroundPath(path string) string {
+	if strings.HasPrefix(path, "/pg") {
+		return "/v1" + strings.TrimPrefix(path, "/pg")
+	}
+	return path
+}
+
 func cloneRequestHeaders(c *gin.Context) map[string]string {
 	if c == nil || c.Request == nil {
 		return nil

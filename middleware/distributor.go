@@ -15,6 +15,7 @@ import (
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/model"
+	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
@@ -121,7 +122,7 @@ func Distribute() func(c *gin.Context) {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled &&
 						service.IsChannelMatchedForApiTypes(preferred, allowedApiTypes, deniedApiTypes) &&
-						channelSupportsRequestPath(preferred, c.Request.URL.Path) {
+						channelSupportsRequestPath(preferred, relaycommon.NormalizePlaygroundPath(c.Request.URL.Path)) {
 						if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
 							autoGroups := service.GetUserAutoGroup(userGroup)
@@ -152,7 +153,7 @@ func Distribute() func(c *gin.Context) {
 						Ctx:             c,
 						ModelName:       modelRequest.Model,
 						TokenGroup:      usingGroup,
-						RequestPath:     c.Request.URL.Path,
+						RequestPath:     relaycommon.NormalizePlaygroundPath(c.Request.URL.Path),
 						Retry:           common.GetPointer(0),
 						AllowedApiTypes: allowedApiTypes,
 						DeniedApiTypes:  deniedApiTypes,
