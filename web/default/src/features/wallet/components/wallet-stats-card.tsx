@@ -63,15 +63,28 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   ]
 
   return (
-    <Card data-card-hover='false' className='gap-0 py-0'>
-      <div className='divide-border/60 grid grid-cols-3 divide-x'>
-        {stats.map((item) => (
+    <Card data-card-hover='false' className='relative overflow-hidden py-0'>
+      <div className='absolute inset-0 bg-gradient-to-r from-warning/5 via-transparent to-success/5' aria-hidden='true' />
+      <div className='relative divide-border/60 grid grid-cols-3 divide-x'>
+        {stats.map((item, index) => (
           <div key={item.label} className='min-w-0 px-4 py-3 sm:px-5 sm:py-4'>
             <div className='text-muted-foreground truncate text-sm'>
               {item.label}
             </div>
-            <div className='text-foreground mt-1 truncate text-lg font-semibold tracking-tight tabular-nums sm:text-2xl'>
-              {item.value}
+            <div
+              className={
+                index === 0
+                  ? 'text-foreground mt-1 truncate text-lg font-semibold tracking-tight tabular-nums sm:text-2xl'
+                  : 'text-foreground mt-1 truncate text-lg font-semibold tracking-tight tabular-nums sm:text-2xl'
+              }
+            >
+              {index === 0 ? (
+                <span className='bg-gradient-to-r from-warning/80 via-foreground to-foreground bg-clip-text text-transparent'>
+                  {item.value}
+                </span>
+              ) : (
+                item.value
+              )}
             </div>
           </div>
         ))}

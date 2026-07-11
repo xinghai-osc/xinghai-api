@@ -111,6 +111,8 @@ export function PerformanceHealthPanel() {
             value={formatUptimePct(summary.successRate)}
             loading={loading}
             valueClassName={getSuccessRateTextClass(summary.successRate)}
+            progress={Number.isFinite(summary.successRate) ? summary.successRate : 0}
+            progressClassName='bg-success/60'
           />
           <MetricCell
             icon={Timer}
@@ -181,6 +183,8 @@ function MetricCell(props: {
   value: string
   loading: boolean
   valueClassName?: string
+  progress?: number
+  progressClassName?: string
 }) {
   const Icon = props.icon
   return (
@@ -192,14 +196,27 @@ function MetricCell(props: {
       {props.loading ? (
         <Skeleton className='mt-1.5 h-5 w-16' />
       ) : (
-        <div
-          className={cn(
-            'mt-1.5 text-sm font-semibold tabular-nums',
-            props.valueClassName
+        <>
+          <div
+            className={cn(
+              'mt-1.5 text-sm font-semibold tabular-nums',
+              props.valueClassName
+            )}
+          >
+            {props.value}
+          </div>
+          {props.progress !== undefined && (
+            <div className='bg-muted-foreground/10 mt-2 h-1 overflow-hidden rounded-full'>
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all duration-500',
+                  props.progressClassName ?? 'bg-primary/60'
+                )}
+                style={{ width: `${Math.min(100, Math.max(0, props.progress))}%` }}
+              />
+            </div>
           )}
-        >
-          {props.value}
-        </div>
+        </>
       )}
     </div>
   )

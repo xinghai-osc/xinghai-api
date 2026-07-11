@@ -481,17 +481,65 @@ For commercial licensing, please contact support@quantumnous.com
 }
 
 /* Micro-interactions — admin surfaces stay calm: color transitions only.
- * No entrance animations, no hover lift/shadow, no press scaling. High-
+ * No entrance animations, no hover lift/shrink, no press scaling. High-
  * frequency workflows (scanning tables, toggling filters) read as instant;
  * decorative motion belongs to the landing page (landing-* utilities). */
 [data-slot='table'] tr {
   transition: background-color 120ms ease;
 }
 
+/* Table row hover effect */
+[data-slot='table'] tbody tr:not([data-disabled]) {
+  transition: background-color 150ms ease;
+}
+[data-slot='table'] tbody tr:not([data-disabled]):hover {
+  background-color: color-mix(in oklch, var(--foreground) 3%, var(--card));
+}
+
 /* Tabular numbers for data-heavy contexts */
 [data-slot='table'] td,
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Soft gradient card backgrounds for dashboard stats */
+.stat-card-gradient-rose {
+  background: linear-gradient(135deg, color-mix(in oklch, var(--chart-5) 5%, var(--card)), var(--card));
+}
+.stat-card-gradient-teal {
+  background: linear-gradient(135deg, color-mix(in oklch, var(--chart-2) 5%, var(--card)), var(--card));
+}
+.stat-card-gradient-default {
+  background: linear-gradient(135deg, color-mix(in oklch, var(--muted-foreground) 3%, var(--card)), var(--card));
+}
+
+/* Soft glow effect for interactive elements */
+.glow-primary {
+  box-shadow: 0 0 20px color-mix(in oklch, var(--primary) 8%, transparent);
+}
+.glow-primary:hover {
+  box-shadow: 0 0 30px color-mix(in oklch, var(--primary) 12%, transparent);
+}
+
+/* Gradient border effect for cards */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--primary), var(--chart-2), var(--chart-5));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.gradient-border:hover::before {
+  opacity: 1;
 }
 
 /* Long list rendering optimization */

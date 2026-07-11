@@ -270,9 +270,10 @@ export function RechargeFormCard({
                         key={preset.value}
                         variant='outline'
                         className={cn(
-                          'h-auto sm:h-auto min-h-16 flex-col items-start justify-center gap-1 rounded-lg px-3 py-2.5 text-left whitespace-normal',
-                          selectedPreset === preset.value &&
-                            'border-foreground bg-foreground/5 dark:bg-foreground/10'
+                          'h-auto sm:h-auto min-h-16 flex-col items-start justify-center gap-1 rounded-lg px-3 py-2.5 text-left whitespace-normal transition-all duration-200',
+                          selectedPreset === preset.value
+                            ? 'border-primary/40 bg-primary/5 shadow-xs shadow-primary/5'
+                            : 'hover:border-primary/20 hover:bg-muted/30'
                         )}
                         onClick={() => onSelectPreset(preset)}
                       >

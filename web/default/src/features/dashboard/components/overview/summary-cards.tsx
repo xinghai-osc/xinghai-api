@@ -136,6 +136,18 @@ const HEALTH_CONFIG: Record<
   },
 }
 
+const STAT_TONE_GRADIENTS: Record<string, string> = {
+  rose: 'stat-card-gradient-rose',
+  teal: 'stat-card-gradient-teal',
+  gray: 'stat-card-gradient-default',
+}
+
+const STAT_TONE_ACCENT: Record<string, string> = {
+  rose: 'from-chart-5/40 to-chart-5/0',
+  teal: 'from-chart-2/40 to-chart-2/0',
+  gray: 'from-muted-foreground/20 to-muted-foreground/0',
+}
+
 export function SummaryCards() {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.auth.user)
@@ -253,8 +265,18 @@ export function SummaryCards() {
             {items.map((it) => (
               <StaggerItem
                 key={it.key}
-                className='bg-background/60 rounded-xl border p-3'
+                className={cn(
+                  'relative overflow-hidden rounded-xl border p-3',
+                  STAT_TONE_GRADIENTS[it.tone] ?? STAT_TONE_GRADIENTS.gray
+                )}
               >
+                <div
+                  className={cn(
+                    'absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r',
+                    STAT_TONE_ACCENT[it.tone] ?? STAT_TONE_ACCENT.gray
+                  )}
+                  aria-hidden='true'
+                />
                 <StatCard
                   title={it.title}
                   value={it.value}
@@ -270,8 +292,9 @@ export function SummaryCards() {
           </StaggerContainer>
         </div>
 
-        <div className='bg-warning/10 flex flex-col justify-between gap-4 border-t p-4 sm:p-5 xl:border-t-0 xl:border-l'>
-          <div className='flex flex-col gap-3'>
+        <div className='relative flex flex-col justify-between gap-4 overflow-hidden border-t p-4 sm:p-5 xl:border-t-0 xl:border-l'>
+          <div className='absolute inset-0 bg-gradient-to-br from-warning/8 via-warning/4 to-transparent' aria-hidden='true' />
+          <div className='relative flex flex-col gap-3'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-xs font-medium'>
                 {t('Credit remaining')}
@@ -287,7 +310,7 @@ export function SummaryCards() {
               </span>
             </div>
 
-            <div className='font-mono text-2xl font-semibold tracking-tight'>
+            <div className='text-foreground text-2xl font-semibold tracking-tight tabular-nums'>
               {formatQuota(remainQuota)}
             </div>
 
@@ -337,7 +360,7 @@ export function SummaryCards() {
             </div>
           </div>
 
-          <Button className='justify-between' render={<Link to='/wallet' />}>
+          <Button className='relative justify-between' render={<Link to='/wallet' />}>
             <span>{t('Wallet')}</span>
             <ArrowRight data-icon='inline-end' />
           </Button>

@@ -128,7 +128,7 @@ export function Stats(_props: StatsProps) {
   return (
     <section className='relative z-10 px-6 py-6'>
       <div className='mx-auto max-w-7xl'>
-        <div className='border-border/60 bg-background/65 grid overflow-hidden rounded-[2rem] border shadow-sm backdrop-blur-xl md:grid-cols-4'>
+        <div className='border-border/60 bg-card/65 grid overflow-hidden rounded-[2rem] border shadow-sm backdrop-blur-xl md:grid-cols-4'>
           {stats.map((s, index) => (
             <div
               key={s.label}
@@ -138,13 +138,15 @@ export function Stats(_props: StatsProps) {
                 <div className='absolute top-8 bottom-8 left-0 hidden w-px bg-gradient-to-b from-transparent via-border to-transparent md:block' />
               )}
               <div className='mb-4 text-4xl font-black tracking-tight md:text-5xl'>
-                <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
+                <span className='bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-transparent'>
+                  <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
+                </span>
               </div>
               <div className='text-sm font-semibold'>{s.label}</div>
               <div className='text-muted-foreground mt-1 text-xs'>
                 {s.description}
               </div>
-              <div className='absolute inset-x-6 bottom-0 h-px origin-left scale-x-0 bg-gradient-to-r from-blue-500 via-violet-500 to-transparent transition-transform duration-300 group-hover:scale-x-100' />
+              <div className='absolute inset-x-6 bottom-0 h-px origin-left scale-x-0 bg-gradient-to-r from-primary/40 via-primary/20 to-transparent transition-transform duration-300 group-hover:scale-x-100' />
             </div>
           ))}
         </div>

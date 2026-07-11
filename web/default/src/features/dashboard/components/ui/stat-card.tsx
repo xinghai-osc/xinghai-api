@@ -233,7 +233,7 @@ export function StatCard(props: StatCardProps) {
         </div>
       ) : props.error ? (
         <div className='flex flex-col gap-1'>
-          <div className='text-muted-foreground mt-0.5 text-2xl font-semibold tracking-tight break-all tabular-nums'>
+          <div className='text-muted-foreground mt-0.5 text-2xl font-semibold tracking-tight tabular-nums'>
             --
           </div>
           <p className='text-muted-foreground/60 text-xs'>
@@ -242,7 +242,7 @@ export function StatCard(props: StatCardProps) {
         </div>
       ) : (
         <div className='flex flex-col gap-1'>
-          <div className='text-foreground text-2xl font-semibold tracking-tight break-all tabular-nums'>
+          <div className='text-foreground text-2xl font-semibold tracking-tight tabular-nums'>
             {props.value}
           </div>
           <p className='text-muted-foreground/60 text-xs leading-relaxed'>

@@ -126,16 +126,16 @@ export function Features(_props: FeaturesProps) {
               key={f.key}
               delay={i * 50}
               animation='fade-up'
-              className={`group border-border/60 bg-background/70 relative overflow-hidden rounded-[1.6rem] border p-6 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-950/5 dark:hover:shadow-black/20 ${
+              className={`group border-border/60 bg-card/70 relative overflow-hidden rounded-[1.6rem] border p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 ${
                 f.highlight ? 'md:col-span-2 md:row-span-2 md:p-8' : ''
               }`}
             >
-              <div className='absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
+              <div className='absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
               <div className='relative'>
-                <div className='mb-6 flex size-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-blue-500/15 dark:bg-white dark:text-slate-950'>
+                <div className='mb-6 flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-primary/5 text-foreground shadow-sm ring-1 ring-primary/10'>
                   {featureIcons[f.iconKey as keyof typeof featureIcons]}
                 </div>
-                <h3 className={f.highlight ? 'mb-3 text-2xl font-bold' : 'mb-2 text-base font-bold'}>
+                <h3 className={f.highlight ? 'mb-3 text-2xl font-semibold' : 'mb-2 text-base font-semibold'}>
                   {f.title}
                 </h3>
                 <p className={`text-muted-foreground leading-relaxed ${f.highlight ? 'text-base' : 'text-sm'}`}>
@@ -144,11 +144,11 @@ export function Features(_props: FeaturesProps) {
                 {f.highlight && (
                   <div className='mt-8 grid grid-cols-2 gap-3 text-xs'>
                     <div className='rounded-2xl bg-muted/50 p-4'>
-                      <div className='mb-1 text-2xl font-black'>1</div>
+                      <div className='mb-1 text-2xl font-semibold'>1</div>
                       <div className='text-muted-foreground'>{t('Unified endpoint')}</div>
                     </div>
                     <div className='rounded-2xl bg-muted/50 p-4'>
-                      <div className='mb-1 text-2xl font-black'>∞</div>
+                      <div className='mb-1 text-2xl font-semibold'>∞</div>
                       <div className='text-muted-foreground'>{t('Provider choices')}</div>
                     </div>
                   </div>

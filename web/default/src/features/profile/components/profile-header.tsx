@@ -89,14 +89,17 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
     <Card data-card-hover='false' className='gap-0 overflow-hidden py-0'>
       <CardContent className='p-4 sm:p-5'>
         <div className='flex items-center gap-3 sm:gap-4'>
-          <Avatar className='size-12 rounded-xl text-base sm:size-14 sm:text-lg'>
-            <AvatarFallback
-              className='rounded-xl font-semibold text-white'
-              style={avatarFallbackStyle}
-            >
-              {avatarFallback}
-            </AvatarFallback>
-          </Avatar>
+          <div className='relative'>
+            <div className='absolute -inset-0.5 rounded-xl bg-gradient-to-br from-primary/40 via-primary/20 to-transparent opacity-60' />
+            <Avatar className='relative size-12 rounded-xl text-base sm:size-14 sm:text-lg'>
+              <AvatarFallback
+                className='rounded-xl font-semibold text-white'
+                style={avatarFallbackStyle}
+              >
+                {avatarFallback}
+              </AvatarFallback>
+            </Avatar>
+          </div>
 
           <div className='min-w-0 flex-1 space-y-1'>
             <div className='flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1'>

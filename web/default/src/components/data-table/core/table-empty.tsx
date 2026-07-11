@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Database } from 'lucide-react'
+import { SearchX } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { TableRow, TableCell } from '@/components/design-system/table'
@@ -71,11 +71,15 @@ export function TableEmpty({
     description ?? t('No records found. Try adjusting your filters.')
   return (
     <TableRow>
-      <TableCell colSpan={colSpan} className='h-[400px] p-0'>
+      <TableCell colSpan={colSpan} className='min-h-[400px] p-0'>
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant='icon'>
-              {icon || <Database className='size-6' />}
+              {icon || (
+                <div className='bg-muted/50 flex size-16 items-center justify-center rounded-2xl'>
+                  <SearchX className='text-muted-foreground/60 size-7' />
+                </div>
+              )}
             </EmptyMedia>
             <EmptyTitle>{resolvedTitle}</EmptyTitle>
             <EmptyDescription>{resolvedDescription}</EmptyDescription>

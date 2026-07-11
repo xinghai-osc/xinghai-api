@@ -141,7 +141,7 @@ export function LogStatCards(props: LogStatCardsProps) {
   })
 
   return (
-    <div className='overflow-hidden rounded-lg border'>
+    <div className='overflow-hidden rounded-xl border bg-card shadow-xs'>
       <div className='divide-border/60 grid min-w-0 grid-cols-2 divide-x sm:grid-cols-3 lg:grid-cols-5'>
         {items.map((it, idx) => {
           const Icon = it.icon
@@ -149,7 +149,7 @@ export function LogStatCards(props: LogStatCardsProps) {
             <div
               key={it.title}
               className={cn(
-                'min-w-0 px-3 py-2.5 sm:px-5 sm:py-4',
+                'min-w-0 px-3 py-2.5 transition-colors duration-150 hover:bg-muted/30 sm:px-5 sm:py-4',
                 idx === items.length - 1 &&
                   items.length % 2 !== 0 &&
                   'col-span-2 sm:col-span-1'
@@ -157,7 +157,7 @@ export function LogStatCards(props: LogStatCardsProps) {
             >
               <div className='flex min-w-0 items-center gap-2'>
                 <Icon className='text-muted-foreground/60 size-3.5 shrink-0' />
-                <div className='text-muted-foreground truncate text-xs font-medium tracking-wider uppercase'>
+                <div className='text-muted-foreground truncate text-xs font-medium'>
                   {it.title}
                 </div>
               </div>
@@ -169,7 +169,7 @@ export function LogStatCards(props: LogStatCardsProps) {
                 </div>
               ) : error ? (
                 <>
-                  <div className='text-muted-foreground mt-1.5 text-lg font-bold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'>
+                  <div className='text-muted-foreground mt-1.5 text-lg font-semibold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'>
                     --
                   </div>
                   <div className='text-muted-foreground/40 mt-1 hidden text-xs md:block'>
@@ -179,7 +179,7 @@ export function LogStatCards(props: LogStatCardsProps) {
               ) : (
                 <>
                   <div
-                    className='text-foreground mt-1.5 max-w-full truncate text-lg font-bold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'
+                    className='text-foreground mt-1.5 max-w-full truncate text-lg font-semibold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'
                     title={it.fullValue}
                   >
                     {it.value}
