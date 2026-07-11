@@ -88,12 +88,9 @@ export function useAdminRealNameColumns(): ColumnDef<AdminRealNameRecord>[] {
           REAL_NAME_STATUSES[row.getValue('status') as number]
         if (!config) return null
         return (
-          <StatusBadge
-            label={t(config.label)}
-            variant={config.variant}
-            copyable={false}
-            className='-ml-1.5'
-          />
+          <StatusBadge variant={config.variant} className='-ml-1.5'>
+            {t(config.label)}
+          </StatusBadge>
         )
       },
       filterFn: (row, id, value) => value.includes(String(row.getValue(id))),

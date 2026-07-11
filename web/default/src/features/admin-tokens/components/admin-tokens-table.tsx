@@ -137,11 +137,9 @@ function AdminTokensMobileList({
                 </div>
               </div>
               {statusConfig && (
-                <StatusBadge
-                  label={t(statusConfig.label)}
-                  variant={statusConfig.variant}
-                  copyable={false}
-                />
+                <StatusBadge variant={statusConfig.variant}>
+                  {t(statusConfig.label)}
+                </StatusBadge>
               )}
             </div>
 

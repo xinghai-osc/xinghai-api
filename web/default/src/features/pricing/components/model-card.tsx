@@ -91,7 +91,6 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   const isSubscriptionResistantGroup =
     Boolean(primaryGroup) &&
     props.subscriptionUpgradeGroups?.has(primaryGroup)
-  const groups = props.model.enable_groups || []
   const visibleTags = [...endpoints.slice(0, 2), ...tags.slice(0, 2)]
   const hiddenTagCount =
     Math.max(endpoints.length - 2, 0) + Math.max(tags.length - 2, 0)
@@ -240,7 +239,6 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               props.model.vendor_name ||
               (isTokenBased ? t('Token-based') : t('Per Request'))
             )}
-          </p>
           </p>
         </div>
 

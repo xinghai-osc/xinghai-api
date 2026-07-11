@@ -340,10 +340,7 @@ export function SensitiveWordsSection({
                       words.map((word) => (
                         <StatusBadge
                           key={word}
-                          label={word}
-                          autoColor={word}
                           size='sm'
-                          copyable={false}
                           className='group/badge pr-0.5'
                         >
                           <span className='min-w-0 truncate leading-normal'>
@@ -415,12 +412,9 @@ export function SensitiveWordsSection({
                             key={word}
                             className='bg-muted/20 flex items-center gap-2 rounded-lg border px-3 py-2'
                           >
-                            <StatusBadge
-                              label={word}
-                              autoColor={word}
-                              size='sm'
-                              copyable={false}
-                            />
+                            <StatusBadge size='sm'>
+                              {word}
+                            </StatusBadge>
                             <span className='text-muted-foreground text-xs'>
                               &rarr;
                             </span>

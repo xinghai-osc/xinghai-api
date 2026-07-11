@@ -50,7 +50,7 @@ export const API_KEY_STATUSES: Record<
   },
   [API_KEY_STATUS.EXHAUSTED]: {
     label: 'Exhausted',
-    variant: 'danger',
+    variant: 'destructive',
     value: API_KEY_STATUS.EXHAUSTED,
   },
 } as const

@@ -160,12 +160,9 @@ export function AdminModelLimitsCell({
 
   if (!apiKey.model_limits_enabled || !apiKey.model_limits) {
     return (
-      <StatusBadge
-        label={t('Unlimited')}
-        variant='neutral'
-        copyable={false}
-        className='-ml-1.5'
-      />
+      <StatusBadge variant='neutral' className='-ml-1.5'>
+        {t('Unlimited')}
+      </StatusBadge>
     )
   }
 
@@ -174,11 +171,9 @@ export function AdminModelLimitsCell({
   return (
     <Tooltip>
       <TooltipTrigger render={<BadgeCell />}>
-        <StatusBadge
-          label={t('{{count}} model(s)', { count: models.length })}
-          variant='neutral'
-          copyable={false}
-        />
+        <StatusBadge variant='neutral'>
+          {t('{{count}} model(s)', { count: models.length })}
+        </StatusBadge>
       </TooltipTrigger>
       <TooltipContent side='top' className='max-w-xs'>
         <div className='max-h-[200px] space-y-0.5 overflow-y-auto text-xs'>
@@ -203,12 +198,9 @@ export function AdminIpRestrictionsCell({
 
   if (!allowIps) {
     return (
-      <StatusBadge
-        label={t('No restriction')}
-        variant='neutral'
-        copyable={false}
-        className='-ml-1.5'
-      />
+      <StatusBadge variant='neutral' className='-ml-1.5'>
+        {t('No restriction')}
+      </StatusBadge>
     )
   }
 
@@ -220,11 +212,9 @@ export function AdminIpRestrictionsCell({
   return (
     <Tooltip>
       <TooltipTrigger render={<BadgeCell />}>
-        <StatusBadge
-          label={t('{{count}} IP(s)', { count: ips.length })}
-          variant='neutral'
-          copyable={false}
-        />
+        <StatusBadge variant='neutral'>
+          {t('{{count}} IP(s)', { count: ips.length })}
+        </StatusBadge>
       </TooltipTrigger>
       <TooltipContent side='top' className='max-w-xs'>
         <div className='max-h-[200px] space-y-0.5 overflow-y-auto text-xs'>

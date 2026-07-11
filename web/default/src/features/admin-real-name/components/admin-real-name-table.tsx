@@ -126,11 +126,9 @@ function AdminRealNameMobileList({
                 </div>
               </div>
               {statusConfig && (
-                <StatusBadge
-                  label={t(statusConfig.label)}
-                  variant={statusConfig.variant}
-                  copyable={false}
-                />
+                <StatusBadge variant={statusConfig.variant}>
+                  {t(statusConfig.label)}
+                </StatusBadge>
               )}
             </div>
             <div className='flex items-center justify-end gap-1.5'>

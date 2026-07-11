@@ -114,12 +114,9 @@ export function useAdminTokensColumns(): ColumnDef<AdminApiKey>[] {
           API_KEY_STATUSES[row.getValue('status') as number]
         if (!statusConfig) return null
         return (
-          <StatusBadge
-            label={t(statusConfig.label)}
-            variant={statusConfig.variant}
-            copyable={false}
-            className='-ml-1.5'
-          />
+          <StatusBadge variant={statusConfig.variant} className='-ml-1.5'>
+            {t(statusConfig.label)}
+          </StatusBadge>
         )
       },
       filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
@@ -142,12 +139,9 @@ export function useAdminTokensColumns(): ColumnDef<AdminApiKey>[] {
         const apiKey = row.original
         if (apiKey.unlimited_quota) {
           return (
-            <StatusBadge
-              label={t('Unlimited')}
-              variant='neutral'
-              copyable={false}
-              className='-ml-1.5'
-            />
+            <StatusBadge variant='neutral' className='-ml-1.5'>
+              {t('Unlimited')}
+            </StatusBadge>
           )
         }
 
@@ -208,11 +202,9 @@ export function useAdminTokensColumns(): ColumnDef<AdminApiKey>[] {
               >
                 <GroupBadge group='auto' />
                 {apiKey.cross_group_retry && (
-                  <StatusBadge
-                    label={t('Cross-group')}
-                    variant='info'
-                    copyable={false}
-                  />
+                  <StatusBadge variant='info'>
+                    {t('Cross-group')}
+                  </StatusBadge>
                 )}
               </TooltipTrigger>
               <TooltipContent>
@@ -291,12 +283,9 @@ export function useAdminTokensColumns(): ColumnDef<AdminApiKey>[] {
         const expiredTime = row.getValue('expired_time') as number
         if (expiredTime === -1) {
           return (
-            <StatusBadge
-              label={t('Never')}
-              variant='neutral'
-              copyable={false}
-              className='-ml-1.5'
-            />
+            <StatusBadge variant='neutral' className='-ml-1.5'>
+              {t('Never')}
+            </StatusBadge>
           )
         }
         const isExpired = expiredTime * 1000 < Date.now()
