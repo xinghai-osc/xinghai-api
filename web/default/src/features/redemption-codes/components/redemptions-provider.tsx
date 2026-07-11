@@ -31,6 +31,8 @@ type RedemptionsContextType = {
   triggerRefresh: () => void
   createdKeys: string[]
   setCreatedKeys: React.Dispatch<React.SetStateAction<string[]>>
+  showCreatedKeys: boolean
+  setShowCreatedKeys: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const RedemptionsContext = React.createContext<RedemptionsContextType | null>(
@@ -46,6 +48,7 @@ export function RedemptionsProvider({
   const [currentRow, setCurrentRow] = useState<Redemption | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [createdKeys, setCreatedKeys] = useState<string[]>([])
+  const [showCreatedKeys, setShowCreatedKeys] = useState(false)
 
   const triggerRefresh = () => setRefreshTrigger((prev) => prev + 1)
 
@@ -60,6 +63,8 @@ export function RedemptionsProvider({
         triggerRefresh,
         createdKeys,
         setCreatedKeys,
+        showCreatedKeys,
+        setShowCreatedKeys,
       }}
     >
       {children}

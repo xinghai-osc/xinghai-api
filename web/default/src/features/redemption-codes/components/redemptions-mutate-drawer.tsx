@@ -88,7 +88,8 @@ export function RedemptionsMutateDrawer({
 }: RedemptionsMutateDrawerProps) {
   const { t } = useTranslation()
   const isUpdate = !!currentRow
-  const { triggerRefresh, setCreatedKeys } = useRedemptions()
+  const { triggerRefresh, setCreatedKeys, setShowCreatedKeys } =
+    useRedemptions()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [plans, setPlans] = useState<PlanRecord[]>([])
 
@@ -158,10 +159,11 @@ export function RedemptionsMutateDrawer({
               : t(SUCCESS_MESSAGES.REDEMPTION_CREATED)
           )
           onOpenChange(false)
-          if (count > 1) {
-            setCreatedKeys(createdKeys)
-          }
           triggerRefresh()
+          if (count > 0) {
+            setCreatedKeys(createdKeys)
+            setShowCreatedKeys(true)
+          }
         }
       }
     } finally {

@@ -34,6 +34,7 @@ export function RedemptionsDialogs() {
       />
       <RedemptionsCreatedKeysDialog />
       <RedemptionsDeleteDialog />
+      <RedemptionsCreatedKeysDialog />
     </>
   )
 }
