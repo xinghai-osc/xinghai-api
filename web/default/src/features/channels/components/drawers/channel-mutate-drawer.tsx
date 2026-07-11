@@ -691,10 +691,6 @@ export function ChannelMutateDrawer({
     }
   }, [open, channelId])
 
-  // Check if this is a multi-key channel
-  const isMultiKeyChannel =
-    isEditing && channelData?.data?.channel_info?.is_multi_key === true
-
   // Form setup
   const form = useForm<ChannelFormValues>({
     resolver: zodResolver(channelFormSchema),
@@ -839,6 +835,9 @@ export function ChannelMutateDrawer({
   const supportsMultiKeyAddMode =
     currentType !== 57 && !(currentType === 41 && vertexKeyType === 'api_key')
   const addModeOptions = useMemo(() => ADD_MODE_OPTIONS, [])
+  // When editing, the form-selected mode determines the active key mode.
+  // This lets the UI reflect the user's mode switch before the save is committed.
+  const isMultiKeyChannel = isEditing && multiKeyMode === 'multi_to_single'
 
   const advancedCustomStats = useMemo(
     () => getAdvancedCustomStats(currentAdvancedCustom),
@@ -1327,12 +1326,13 @@ export function ChannelMutateDrawer({
   }, [currentBaseUrl, currentType, form])
 
   useEffect(() => {
-    if (isEditing || supportsMultiKeyAddMode) return
-    if (multiKeyMode && multiKeyMode !== 'single') {
-      form.setValue('multi_key_mode', 'single', {
-        shouldDirty: true,
-        shouldValidate: true,
-      })
+    if (!supportsMultiKeyAddMode) {
+      if (multiKeyMode && multiKeyMode !== 'single') {
+        form.setValue('multi_key_mode', 'single', {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
     }
   }, [form, isEditing, multiKeyMode, supportsMultiKeyAddMode])
 
@@ -2881,7 +2881,68 @@ export function ChannelMutateDrawer({
                             )}
 
                             <ChannelAuthSection>
-                              {!isEditing && (
+                              {isEditing && supportsMultiKeyAddMode ? (
+                                <FormField
+                                  control={form.control}
+                                  name='multi_key_mode'
+                                  render={({ field }) => (
+                                    <FormItem className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+                                      <FormLabel className='text-muted-foreground text-xs font-medium'>
+                                        {t('Key Mode')}
+                                      </FormLabel>
+                                      <Select
+                                        items={[
+                                          {
+                                            value: 'single',
+                                            label: t('Single Key'),
+                                          },
+                                          {
+                                            value: 'multi_to_single',
+                                            label: t(
+                                              'Multi-Key Mode (multiple keys, one channel)'
+                                            ),
+                                          },
+                                        ]}
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                      >
+                                        <FormControl>
+                                          <SelectTrigger
+                                            size='sm'
+                                            className='w-full sm:w-72'
+                                          >
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent
+                                          alignItemWithTrigger={false}
+                                        >
+                                          <SelectGroup>
+                                            <SelectItem value='single'>
+                                              {t('Single Key')}
+                                            </SelectItem>
+                                            <SelectItem value='multi_to_single'>
+                                              {t(
+                                                'Multi-Key Mode (multiple keys, one channel)'
+                                              )}
+                                            </SelectItem>
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormDescription>
+                                        {multiKeyMode === 'multi_to_single'
+                                          ? t(
+                                              'Multiple keys share one channel. Keys are selected by strategy.'
+                                            )
+                                          : t(
+                                              'Single key per channel.'
+                                            )}
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              ) : !isEditing ? (
                                 <FormField
                                   control={form.control}
                                   name='multi_key_mode'
@@ -2925,7 +2986,7 @@ export function ChannelMutateDrawer({
                                     </FormItem>
                                   )}
                                 />
-                              )}
+                              ) : null}
 
                               <FormField
                                 control={form.control}
@@ -3182,6 +3243,66 @@ export function ChannelMutateDrawer({
                                           : t(
                                               'Append mode: New keys will be added to the end of the existing key list'
                                             )}
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
+
+                              {isEditing && isMultiKeyChannel && (
+                                <FormField
+                                  control={form.control}
+                                  name='multi_key_type'
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>
+                                        {t('Multi-Key Strategy')}
+                                      </FormLabel>
+                                      <Select
+                                        items={[
+                                          {
+                                            value: 'random',
+                                            label: t('Random'),
+                                          },
+                                          {
+                                            value: 'polling',
+                                            label: t('Polling'),
+                                          },
+                                        ]}
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                      >
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent
+                                          alignItemWithTrigger={false}
+                                        >
+                                          <SelectGroup>
+                                            <SelectItem value='random'>
+                                              {t('Random')}
+                                            </SelectItem>
+                                            <SelectItem value='polling'>
+                                              {t('Polling')}
+                                            </SelectItem>
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormDescription>
+                                        {multiKeyType === 'polling' ? (
+                                          <span className='text-warning'>
+                                            {t(
+                                              'Polling mode requires Redis and memory cache, otherwise performance will be significantly degraded'
+                                            )}
+                                          </span>
+                                        ) : (
+                                          t(
+                                            'Randomly select a key from the pool for each request'
+                                          )
+                                        )}
                                       </FormDescription>
                                       <FormMessage />
                                     </FormItem>
