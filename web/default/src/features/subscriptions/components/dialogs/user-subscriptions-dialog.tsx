@@ -16,36 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Ban, Check, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { Ban, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { DataTableRowActionMenu, StaticDataTable } from '@/components/data-table'
 import {
-  sideDrawerContentClassName,
-  sideDrawerFormClassName,
-  sideDrawerHeaderClassName,
-} from '@/components/drawer-layout'
-import { GroupBadge } from '@/components/group-badge'
-import { StatusBadge } from '@/components/status-badge'
-import { TableId } from '@/components/table-id'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+  DataTableRowActionMenu,
+  StaticDataTable,
+} from '@/components/data-table'
+import { Button } from '@/components/design-system/button'
 import {
   Select,
   SelectContent,
@@ -53,7 +34,19 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/design-system/select'
+import {
+  sideDrawerContentClassName,
+  sideDrawerFormClassName,
+  sideDrawerHeaderClassName,
+} from '@/components/drawer-layout'
+import { StatusBadge } from '@/components/status-badge'
+import { TableId } from '@/components/table-id'
+import {
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+} from '@/components/ui/dropdown-menu'
 import {
   Sheet,
   SheetContent,
@@ -62,19 +55,17 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
-import { formatLocalCurrencyAmount } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
 
 import {
   getAdminPlans,
   getUserSubscriptions,
   createUserSubscription,
-  updateUserSubscriptionPeriod,
   invalidateUserSubscription,
   deleteUserSubscription,
   resetUserSubscriptionsByPlan,
 } from '../../api'
-import { formatDuration, formatResetPeriod, formatTimestamp } from '../../lib'
+import { formatTimestamp } from '../../lib'
 import type { PlanRecord, UserSubscriptionRecord } from '../../types'
 
 interface Props {
@@ -88,47 +79,17 @@ function SubscriptionStatusBadge(props: {
   sub: UserSubscriptionRecord['subscription']
   t: (key: string) => string
 }) {
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now() / 1000
   const isExpired = (props.sub.end_time || 0) > 0 && props.sub.end_time < now
   const isActive = props.sub.status === 'active' && !isExpired
   if (isActive) {
-    return (
-      <StatusBadge
-        label={props.t('Active')}
-        variant='success'
-        copyable={false}
-      />
-    )
+    return <StatusBadge variant='success'>{props.t('Active')}</StatusBadge>
   }
   if (props.sub.status === 'cancelled') {
-    return (
-      <StatusBadge
-        label={props.t('Invalidated')}
-        variant='neutral'
-        copyable={false}
-      />
-    )
+    return <StatusBadge variant='neutral'>{props.t('Invalidated')}</StatusBadge>
   }
-  return (
-    <StatusBadge
-      label={props.t('Expired')}
-      variant='neutral'
-      copyable={false}
-    />
-  )
-}
-
-const timestampToDateTimeInput = (timestamp?: number) => {
-  if (!timestamp) return ''
-  const date = new Date(timestamp * 1000)
-  const offset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
-}
-
-const dateTimeInputToTimestamp = (value: string) => {
-  if (!value) return 0
-  const timestamp = Math.floor(new Date(value).getTime() / 1000)
-  return Number.isFinite(timestamp) ? timestamp : 0
+  return <StatusBadge variant='neutral'>{props.t('Expired')}</StatusBadge>
 }
 
 export function UserSubscriptionsDialog(props: Props) {
@@ -138,11 +99,6 @@ export function UserSubscriptionsDialog(props: Props) {
   const [plans, setPlans] = useState<PlanRecord[]>([])
   const [subs, setSubs] = useState<UserSubscriptionRecord[]>([])
   const [selectedPlanId, setSelectedPlanId] = useState<string>('')
-  const [editingSub, setEditingSub] = useState<
-    UserSubscriptionRecord['subscription'] | null
-  >(null)
-  const [periodForm, setPeriodForm] = useState({ start: '', end: '' })
-  const [updatingPeriod, setUpdatingPeriod] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [advanceResetTime, setAdvanceResetTime] = useState(true)
   const [resetAction, setResetAction] = useState<{
@@ -161,28 +117,6 @@ export function UserSubscriptionsDialog(props: Props) {
     })
     return map
   }, [plans])
-
-  const selectedPlan = useMemo(
-    () => plans.find((p) => String(p.plan.id) === selectedPlanId)?.plan,
-    [plans, selectedPlanId]
-  )
-
-  const selectedPlanInfo = useMemo(() => {
-    if (!selectedPlan) return []
-    const totalAmount = Number(selectedPlan.total_amount || 0)
-    return [
-      `${t('Validity Period')}: ${formatDuration(selectedPlan, t)}`,
-      formatResetPeriod(selectedPlan, t) !== t('No Reset')
-        ? `${t('Quota Reset')}: ${formatResetPeriod(selectedPlan, t)}`
-        : null,
-      totalAmount > 0
-        ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
-        : `${t('Total Quota')}: ${t('Unlimited')}`,
-      selectedPlan.max_purchase_per_user > 0
-        ? `${t('Purchase Limit')}: ${selectedPlan.max_purchase_per_user}`
-        : null,
-    ].filter(Boolean) as string[]
-  }, [selectedPlan, t])
 
   const loadData = useCallback(async () => {
     if (!props.user?.id) return
@@ -228,41 +162,6 @@ export function UserSubscriptionsDialog(props: Props) {
       toast.error(t('Request failed'))
     } finally {
       setCreating(false)
-    }
-  }
-
-  const openPeriodEditor = (sub: UserSubscriptionRecord['subscription']) => {
-    setEditingSub(sub)
-    setPeriodForm({
-      start: timestampToDateTimeInput(sub.start_time),
-      end: timestampToDateTimeInput(sub.end_time),
-    })
-  }
-
-  const handleUpdatePeriod = async () => {
-    if (!editingSub) return
-    const startTime = dateTimeInputToTimestamp(periodForm.start)
-    const endTime = dateTimeInputToTimestamp(periodForm.end)
-    if (!startTime || !endTime || endTime <= startTime) {
-      toast.error(t('Invalid subscription period'))
-      return
-    }
-    setUpdatingPeriod(true)
-    try {
-      const res = await updateUserSubscriptionPeriod(editingSub.id, {
-        start_time: startTime,
-        end_time: endTime,
-      })
-      if (res.success) {
-        toast.success(t('Updated successfully'))
-        setEditingSub(null)
-        await loadData()
-        props.onSuccess?.()
-      }
-    } catch {
-      toast.error(t('Request failed'))
-    } finally {
-      setUpdatingPeriod(false)
     }
   }
 
@@ -328,84 +227,41 @@ export function UserSubscriptionsDialog(props: Props) {
           </SheetHeader>
 
           <div className={sideDrawerFormClassName()}>
-            <div className='space-y-3 rounded-lg border p-3'>
-              <div className='flex gap-2'>
-                <Select
-                  items={plans.map((p) => ({
-                    value: String(p.plan.id),
-                    label: (
-                      <>
-                        {p.plan.title}(
-                        {formatLocalCurrencyAmount(p.plan.price_amount)})
-                      </>
-                    ),
-                  }))}
-                  value={selectedPlanId}
-                  onValueChange={(v) => v !== null && setSelectedPlanId(v)}
-                >
-                  <SelectTrigger className='flex-1'>
-                    <SelectValue placeholder={t('Select subscription plan')} />
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    <SelectGroup>
-                      {plans.map((p) => (
-                        <SelectItem key={p.plan.id} value={String(p.plan.id)}>
-                          {p.plan.title} (
-                          {formatLocalCurrencyAmount(p.plan.price_amount)})
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={handleCreate}
-                  disabled={creating || !selectedPlanId}
-                >
-                  <Plus className='mr-1 h-4 w-4' />
-                  {t('Add subscription')}
-                </Button>
-              </div>
-
-              {selectedPlan && (
-                <div className='space-y-2 text-sm'>
-                  <div className='flex items-start justify-between gap-3'>
-                    <div className='min-w-0'>
-                      <div className='truncate font-medium'>
-                        {selectedPlan.title}
-                      </div>
-                      {selectedPlan.subtitle && (
-                        <div className='text-muted-foreground truncate text-xs'>
-                          {selectedPlan.subtitle}
-                        </div>
-                      )}
-                    </div>
-                    <div className='text-primary shrink-0 font-semibold'>
-                      {formatLocalCurrencyAmount(selectedPlan.price_amount)}
-                    </div>
-                  </div>
-
-                  <div className='grid gap-1.5 sm:grid-cols-2'>
-                    {selectedPlanInfo.map((label) => (
-                      <div
-                        key={label}
-                        className='text-muted-foreground flex items-center gap-2 text-xs'
-                      >
-                        <Check className='text-primary h-3 w-3 shrink-0' />
-                        <span>{label}</span>
-                      </div>
+            <div className='flex gap-2'>
+              <Select
+                items={plans.map((p) => ({
+                  value: String(p.plan.id),
+                  label: (
+                    <>
+                      {p.plan.title}($
+                      {Number(p.plan.price_amount || 0).toFixed(2)})
+                    </>
+                  ),
+                }))}
+                value={selectedPlanId}
+                onValueChange={(v) => v !== null && setSelectedPlanId(v)}
+              >
+                <SelectTrigger className='flex-1'>
+                  <SelectValue placeholder={t('Select subscription plan')} />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    {plans.map((p) => (
+                      <SelectItem key={p.plan.id} value={String(p.plan.id)}>
+                        {p.plan.title} ($
+                        {Number(p.plan.price_amount || 0).toFixed(2)})
+                      </SelectItem>
                     ))}
-                    {selectedPlan.upgrade_group && (
-                      <div className='text-muted-foreground flex items-center gap-2 text-xs'>
-                        <Check className='text-primary h-3 w-3 shrink-0' />
-                        <span className='flex items-center gap-1.5'>
-                          {t('Upgrade Group')}:
-                          <GroupBadge group={selectedPlan.upgrade_group} />
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={handleCreate}
+                disabled={creating || !selectedPlanId}
+              >
+                <Plus className='mr-1 h-4 w-4' />
+                {t('Add subscription')}
+              </Button>
             </div>
 
             <StaticDataTable
@@ -490,9 +346,6 @@ export function UserSubscriptionsDialog(props: Props) {
 
                     return (
                       <DataTableRowActionMenu ariaLabel={t('Actions')}>
-                        <DropdownMenuItem onClick={() => openPeriodEditor(sub)}>
-                          {t('Edit time')}
-                        </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={!isActive}
                           onClick={() => {
@@ -548,50 +401,6 @@ export function UserSubscriptionsDialog(props: Props) {
           </div>
         </SheetContent>
       </Sheet>
-
-      <Dialog
-        open={!!editingSub}
-        onOpenChange={(v) => !v && setEditingSub(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('Edit subscription time')}</DialogTitle>
-            <DialogDescription>
-              {t('Modify the start and end time of this user subscription.')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className='space-y-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>{t('Start time')}</label>
-              <Input
-                type='datetime-local'
-                value={periodForm.start}
-                onChange={(e) =>
-                  setPeriodForm((prev) => ({ ...prev, start: e.target.value }))
-                }
-              />
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>{t('End time')}</label>
-              <Input
-                type='datetime-local'
-                value={periodForm.end}
-                onChange={(e) =>
-                  setPeriodForm((prev) => ({ ...prev, end: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setEditingSub(null)}>
-              {t('Cancel')}
-            </Button>
-            <Button onClick={handleUpdatePeriod} disabled={updatingPeriod}>
-              {t('Save')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {confirmAction && (
         <ConfirmDialog

@@ -22,17 +22,22 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { Button } from '@/components/design-system/button'
+import { Input } from '@/components/design-system/input'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/design-system/tabs'
 import { Dialog } from '@/components/dialog'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -49,7 +54,9 @@ import {
 import { useChannels } from '../channels-provider'
 
 function normalizeModelNameList(models: readonly string[]): string[] {
-  return [...new Set(models.map((m) => normalizeModelName(m)).filter(Boolean))]
+  return Array.from(
+    new Set(models.map((m) => normalizeModelName(m)).filter(Boolean))
+  )
 }
 
 type FetchModelsDialogProps = {
@@ -342,8 +349,8 @@ export function FetchModelsDialog({
                   {redirectOnlySet.has(normalizeModelName(model)) && (
                     <Tooltip>
                       <TooltipTrigger
-                        render={<Info className='h-3.5 w-3.5 text-amber-500' />}
-                       />
+                        render={<Info className='text-warning h-3.5 w-3.5' />}
+                      ></TooltipTrigger>
                       <TooltipContent>
                         {t('From model redirect, not yet added to models list')}
                       </TooltipContent>
@@ -381,7 +388,7 @@ export function FetchModelsDialog({
           t('Fetch available models from upstream')
         )
       }
-      contentClassName='max-w-3xl'
+      contentClassName='sm:max-w-3xl'
       contentHeight='auto'
       bodyClassName='space-y-4'
       footer={

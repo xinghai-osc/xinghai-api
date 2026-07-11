@@ -23,6 +23,8 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { DateTimePicker } from '@/components/datetime-picker'
+import { Button } from '@/components/design-system/button'
+import { Input } from '@/components/design-system/input'
 import {
   SideDrawerSection,
   sideDrawerContentClassName,
@@ -30,7 +32,6 @@ import {
   sideDrawerFormClassName,
   sideDrawerHeaderClassName,
 } from '@/components/drawer-layout'
-import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -40,7 +41,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -88,7 +88,7 @@ export function RedemptionsMutateDrawer({
 }: RedemptionsMutateDrawerProps) {
   const { t } = useTranslation()
   const isUpdate = !!currentRow
-  const { triggerRefresh } = useRedemptions()
+  const { triggerRefresh, setCreatedKeys } = useRedemptions()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [plans, setPlans] = useState<PlanRecord[]>([])
 
@@ -148,7 +148,8 @@ export function RedemptionsMutateDrawer({
         // Create mode
         const result = await createRedemption(basePayload)
         if (result.success) {
-          const count = result.data?.length || 0
+          const createdKeys = result.data || []
+          const count = createdKeys.length
           toast.success(
             count > 1
               ? t('Successfully created {{count}} redemption codes', {
@@ -157,6 +158,9 @@ export function RedemptionsMutateDrawer({
               : t(SUCCESS_MESSAGES.REDEMPTION_CREATED)
           )
           onOpenChange(false)
+          if (count > 1) {
+            setCreatedKeys(createdKeys)
+          }
           triggerRefresh()
         }
       }
@@ -319,7 +323,6 @@ export function RedemptionsMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
-                          size='sm'
                           onClick={() => handleSetExpiry(0, 0, 0)}
                         >
                           {t('Never')}
@@ -327,7 +330,6 @@ export function RedemptionsMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
-                          size='sm'
                           onClick={() => handleSetExpiry(1, 0, 0)}
                         >
                           {t('1M')}
@@ -335,7 +337,6 @@ export function RedemptionsMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
-                          size='sm'
                           onClick={() => handleSetExpiry(0, 7, 0)}
                         >
                           {t('1W')}
@@ -343,7 +344,6 @@ export function RedemptionsMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
-                          size='sm'
                           onClick={() => handleSetExpiry(0, 1, 0)}
                         >
                           {t('1 Day')}

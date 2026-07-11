@@ -17,11 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Check, ChevronsUpDown } from 'lucide-react'
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/design-system/button'
 import {
   Command,
   CommandEmpty,
@@ -29,7 +28,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
+} from '@/components/design-system/command'
+import { Badge } from '@/components/ui/badge'
 import {
   Popover,
   PopoverContent,
@@ -42,7 +42,6 @@ export type ApiKeyGroupOption = {
   label: string
   desc?: string
   ratio?: number | string
-  subscription?: boolean
 }
 
 type ApiKeyGroupComboboxProps = {
@@ -63,19 +62,19 @@ function formatGroupRatio(
 
 function getRatioBadgeClassName(ratio: ApiKeyGroupOption['ratio']) {
   if (typeof ratio !== 'number') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+    return 'border-success/25 bg-success/10 text-success'
   }
 
   if (ratio > 5) {
-    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300'
+    return 'border-destructive/25 bg-destructive/10 text-destructive'
   }
   if (ratio > 3) {
-    return 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-300'
+    return 'border-warning/30 bg-warning/10 text-warning'
   }
   if (ratio > 1) {
-    return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300'
+    return 'border-info/25 bg-info/10 text-info'
   }
-  return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+  return 'border-success/25 bg-success/10 text-success'
 }
 
 function GroupRatioBadge({ ratio }: { ratio: ApiKeyGroupOption['ratio'] }) {
@@ -88,24 +87,11 @@ function GroupRatioBadge({ ratio }: { ratio: ApiKeyGroupOption['ratio'] }) {
     <Badge
       variant='outline'
       className={cn(
-        'max-w-24 shrink-0 truncate text-[10px] sm:max-w-none sm:text-xs',
+        'max-w-24 shrink-0 truncate text-xs sm:max-w-none sm:text-xs',
         getRatioBadgeClassName(ratio)
       )}
     >
       {label}
-    </Badge>
-  )
-}
-
-function SubscriptionBadge() {
-  const { t } = useTranslation()
-
-  return (
-    <Badge
-      variant='outline'
-      className='border-violet-200 bg-violet-50 text-[10px] text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300 sm:text-xs'
-    >
-      {t('This group uses your subscription')}
     </Badge>
   )
 }
@@ -137,11 +123,11 @@ export function ApiKeyGroupCombobox({
     })
   }, [options, searchValue])
 
-  const handleSelect = useCallback((selectedValue: string) => {
+  const handleSelect = (selectedValue: string) => {
     onValueChange(selectedValue)
     setOpen(false)
     setSearchValue('')
-  }, [onValueChange])
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -153,11 +139,7 @@ export function ApiKeyGroupCombobox({
             role='combobox'
             aria-expanded={open}
             disabled={disabled}
-            className={cn(
-              'border-input bg-muted/40 hover:bg-muted/55 hover:text-foreground active:bg-background data-popup-open:border-ring data-popup-open:bg-background data-popup-open:ring-ring/20 h-auto min-h-14 w-full justify-between gap-2 rounded-lg px-3 py-2 text-start shadow-none transition-[background-color,border-color,box-shadow] duration-150 data-popup-open:ring-[3px] sm:min-h-20 sm:gap-3 sm:px-4 sm:py-3',
-              selectedOption?.subscription &&
-                'border-violet-300 bg-violet-50/70 ring-violet-200/60 dark:border-violet-800 dark:bg-violet-950/30'
-            )}
+            className='border-input bg-muted/40 hover:bg-muted/55 hover:text-foreground active:bg-background data-popup-open:border-ring data-popup-open:bg-background data-popup-open:ring-ring/20 h-auto min-h-14 w-full justify-between gap-2 rounded-lg px-3 py-2 text-start shadow-none transition-[background-color,border-color,box-shadow] duration-150 data-popup-open:ring-[3px] sm:h-auto sm:min-h-20 sm:gap-3 sm:px-4 sm:py-3'
           />
         }
       >
@@ -167,16 +149,13 @@ export function ApiKeyGroupCombobox({
               {selectedOption?.label || placeholder || t('Select a group')}
             </span>
             {selectedOption?.desc && (
-              <span className='text-muted-foreground block truncate text-[11px] sm:text-xs'>
+              <span className='text-muted-foreground block truncate text-xs sm:text-xs'>
                 {selectedOption.desc}
               </span>
             )}
           </span>
-          <span className='flex shrink-0 items-center gap-2'>
-            {selectedOption?.subscription && <SubscriptionBadge />}
-            <span className='hidden sm:block'>
-              <GroupRatioBadge ratio={selectedOption?.ratio} />
-            </span>
+          <span className='hidden sm:block'>
+            <GroupRatioBadge ratio={selectedOption?.ratio} />
           </span>
         </span>
         <ChevronsUpDown className='h-4 w-4 shrink-0 opacity-50' />
@@ -201,11 +180,7 @@ export function ApiKeyGroupCombobox({
                   key={option.value}
                   value={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className={cn(
-                    'data-[selected=true]:bg-muted items-start gap-3 rounded-lg px-3 py-3 transition-colors',
-                    option.subscription &&
-                      'border border-violet-200 bg-violet-50/70 dark:border-violet-900/50 dark:bg-violet-950/20'
-                  )}
+                  className='data-[selected=true]:bg-muted items-start gap-3 rounded-lg px-3 py-3 transition-colors'
                 >
                   <Check
                     className={cn(
@@ -223,10 +198,7 @@ export function ApiKeyGroupCombobox({
                       </span>
                     )}
                   </span>
-                  <span className='flex shrink-0 items-center gap-2'>
-                    {option.subscription && <SubscriptionBadge />}
-                    <GroupRatioBadge ratio={option.ratio} />
-                  </span>
+                  <GroupRatioBadge ratio={option.ratio} />
                 </CommandItem>
               ))}
             </CommandGroup>

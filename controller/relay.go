@@ -65,6 +65,51 @@ func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewA
 	return err
 }
 
+func returnSensitiveBlockedResponse(c *gin.Context, info *relaycommon.RelayInfo, words ...string) *types.NewAPIError {
+	if info.IsStream {
+		helper.SetEventStreamHeaders(c)
+		blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), helper.ResponseModelName(info), nil, words...)
+		switch info.RelayFormat {
+		case types.RelayFormatClaude:
+			if info.ClaudeConvertInfo == nil {
+				info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}
+			}
+			info.SendResponseCount++
+			for _, claudeResp := range service.StreamResponseOpenAI2Claude(blockedResponse, info) {
+				if err := helper.ClaudeData(c, *claudeResp); err != nil {
+					return types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+				}
+			}
+		case types.RelayFormatGemini:
+			geminiResp := service.StreamResponseOpenAI2Gemini(blockedResponse, info)
+			if geminiResp != nil {
+				responseBody, err := common.Marshal(geminiResp)
+				if err != nil {
+					return types.NewOpenAIError(err, types.ErrorCodeJsonMarshalFailed, http.StatusInternalServerError)
+				}
+				c.Render(-1, common.CustomEvent{Data: "data: " + string(responseBody)})
+			}
+		default:
+			if err := helper.ObjectData(c, blockedResponse); err != nil {
+				return types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+			}
+			helper.Done(c)
+		}
+		return nil
+	}
+
+	blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(helper.GetResponseID(c), common.GetTimestamp(), helper.ResponseModelName(info), dto.Usage{}, words...)
+	switch info.RelayFormat {
+	case types.RelayFormatClaude:
+		c.JSON(http.StatusOK, service.ResponseOpenAI2Claude(blockedResponse, info))
+	case types.RelayFormatGemini:
+		c.JSON(http.StatusOK, service.ResponseOpenAI2Gemini(blockedResponse, info))
+	default:
+		c.JSON(http.StatusOK, blockedResponse)
+	}
+	return nil
+}
+
 func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	requestId := c.GetString(common.RequestIdKey)
@@ -137,6 +182,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		contains, words := service.CheckSensitiveText(meta.CombineText)
 		if contains {
 			logger.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ", ")))
+			if service.ShouldReturnSensitiveResponse(words...) {
+				newAPIError = returnSensitiveBlockedResponse(c, relayInfo, words...)
+				return
+			}
 			newAPIError = types.NewErrorWithStatusCode(errors.New(service.GetSensitiveBlockResponse(words...)), types.ErrorCodeSensitiveWordsDetected, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 			return
 		}

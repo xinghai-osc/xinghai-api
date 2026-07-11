@@ -17,24 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  Loader2,
-  RefreshCw,
-  Trash2,
-  Power,
-  PowerOff,
-  DollarSign,
-} from 'lucide-react'
+import { Loader2, RefreshCw, Trash2, Power, PowerOff } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { StaticDataTable } from '@/components/data-table'
-import { Dialog } from '@/components/dialog'
-import { StatusBadge } from '@/components/status-badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/components/design-system/button'
 import {
   Select,
   SelectContent,
@@ -42,7 +32,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/design-system/select'
+import { Dialog } from '@/components/dialog'
+import { StatusBadge } from '@/components/status-badge'
 import { Separator } from '@/components/ui/separator'
 import {
   ADMIN_PERMISSION_ACTIONS,
@@ -59,26 +51,16 @@ import {
   enableAllMultiKeys,
   disableAllMultiKeys,
   deleteDisabledMultiKeys,
-  checkMultiKeyBalance,
-  checkAllMultiKeyBalances,
-  setMultiKeyConfig,
 } from '../../api'
 import { MULTI_KEY_FILTER_OPTIONS } from '../../constants'
 import {
   channelsQueryKeys,
   formatTimestamp,
-  formatBalance,
   getMultiKeyStatusConfig,
   getMultiKeyConfirmMessage,
-  handleTestChannel,
   isDestructiveAction,
 } from '../../lib'
-import type {
-  KeyStatus,
-  KeyTestResult,
-  MultiKeyConfigForm,
-  MultiKeyConfirmAction,
-} from '../../types'
+import type { KeyStatus, MultiKeyConfirmAction } from '../../types'
 import { useChannels } from '../channels-provider'
 import { StatisticsCard } from './multi-key-statistics-card'
 import { MultiKeyTableRowActions } from './multi-key-table-row-actions'
@@ -106,7 +88,7 @@ export function MultiKeyManageDialog({
   const [isLoading, setIsLoading] = useState(false)
   const [keys, setKeys] = useState<KeyStatus[]>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [enabledCount, setEnabledCount] = useState(0)
@@ -118,28 +100,12 @@ export function MultiKeyManageDialog({
   const [confirmAction, setConfirmAction] =
     useState<MultiKeyConfirmAction | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
-  const [testResults, setTestResults] = useState<
-    Record<number, KeyTestResult>
-  >({})
-  const [balanceResults, setBalanceResults] = useState<Record<number, number>>(
-    {}
-  )
-  const [queryingBalanceKeys, setQueryingBalanceKeys] = useState<
-    Record<number, boolean>
-  >({})
-  const [isQueryingAllBalances, setIsQueryingAllBalances] = useState(false)
-  const [configForm, setConfigForm] = useState<MultiKeyConfigForm | null>(null)
-  const [isSavingConfig, setIsSavingConfig] = useState(false)
 
   // Reset and load data when dialog opens
   useEffect(() => {
     if (open && currentRow) {
       setCurrentPage(1)
       setStatusFilter(null)
-      setBalanceResults({})
-      setQueryingBalanceKeys({})
-      setIsQueryingAllBalances(false)
-      setConfigForm(null)
       loadKeyStatus(1, pageSize, null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,7 +131,7 @@ export function MultiKeyManageDialog({
         setKeys(response.data.keys || [])
         setTotal(response.data.total || 0)
         setCurrentPage(response.data.page || 1)
-        setPageSize(response.data.page_size || 10)
+        setPageSize(response.data.page_size || 20)
         setTotalPages(response.data.total_pages || 0)
         setEnabledCount(response.data.enabled_count || 0)
         setManualDisabledCount(response.data.manual_disabled_count || 0)
@@ -183,7 +149,7 @@ export function MultiKeyManageDialog({
   }
 
   const handleStatusFilterChange = (value: string) => {
-    const newFilter = value === 'all' ? null : Number.parseInt(value)
+    const newFilter = value === 'all' ? null : parseInt(value)
     setStatusFilter(newFilter)
     setCurrentPage(1)
     loadKeyStatus(1, pageSize, newFilter)
@@ -194,140 +160,7 @@ export function MultiKeyManageDialog({
     loadKeyStatus(newPage, pageSize)
   }
 
-  const handleTestKey = async (keyIndex: number): Promise<void> => {
-    if (!currentRow) return
-
-    setTestResults((prev) => ({
-      ...prev,
-      [keyIndex]: { status: 'testing' },
-    }))
-
-    await handleTestChannel(
-      currentRow.id,
-      {
-        channelName: `${currentRow.name} #${keyIndex + 1}`,
-        keyIndex,
-      },
-      (success, responseTime, error, errorCode) => {
-        setTestResults((prev) => ({
-          ...prev,
-          [keyIndex]: {
-            status: success ? 'success' : 'error',
-            responseTime,
-            error,
-            errorCode,
-          },
-        }))
-      }
-    )
-  }
-
-  const handleQueryKeyBalance = async (keyIndex: number): Promise<void> => {
-    if (!currentRow) return
-
-    setQueryingBalanceKeys((prev) => ({ ...prev, [keyIndex]: true }))
-    try {
-      const response = await checkMultiKeyBalance(currentRow.id, keyIndex)
-      if (response.success && response.data) {
-        setBalanceResults((prev) => ({
-          ...prev,
-          [keyIndex]: response.data?.balance ?? 0,
-        }))
-      } else {
-        toast.error(response.message || t('Failed to query balance'))
-      }
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t('Failed to query balance')
-      )
-    } finally {
-      setQueryingBalanceKeys((prev) => ({ ...prev, [keyIndex]: false }))
-    }
-  }
-
-  const handleEditConfig = (key: KeyStatus): void => {
-    setConfigForm({
-      keyIndex: key.index,
-      weight: String(key.weight || 0),
-      priority: String(key.priority || 0),
-    })
-  }
-
-  const handleSaveConfig = async (): Promise<void> => {
-    if (!currentRow || !configForm) return
-
-    const weight = Number(configForm.weight)
-    const priority = Number(configForm.priority)
-    if (!Number.isInteger(weight) || weight < 0) {
-      toast.error(t('Weight must be a non-negative integer'))
-      return
-    }
-    if (!Number.isInteger(priority)) {
-      toast.error(t('Priority must be an integer'))
-      return
-    }
-
-    setIsSavingConfig(true)
-    try {
-      const response = await setMultiKeyConfig(
-        currentRow.id,
-        configForm.keyIndex,
-        weight,
-        priority
-      )
-      if (response.success) {
-        toast.success(response.message || t('Configuration saved'))
-        setConfigForm(null)
-        loadKeyStatus(currentPage, pageSize)
-      } else {
-        toast.error(response.message || t('Operation failed'))
-      }
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : t('Operation failed')
-      )
-    } finally {
-      setIsSavingConfig(false)
-    }
-  }
-
-  const handleQueryAllBalances = async (): Promise<void> => {
-    if (!currentRow) return
-
-    setIsQueryingAllBalances(true)
-    try {
-      const response = await checkAllMultiKeyBalances(currentRow.id)
-      if (response.success && response.data) {
-        const newBalances: Record<number, number> = {}
-        for (const item of response.data) {
-          newBalances[item.index] = item.balance
-        }
-        setBalanceResults(newBalances)
-        const errorCount = response.data.filter((item) => item.error).length
-        if (errorCount > 0) {
-          toast.success(
-            `${t('Balance queried successfully')} (${errorCount} ${t('failed')})`
-          )
-        } else {
-          toast.success(t('Balance queried successfully'))
-        }
-      } else {
-        toast.error(response.message || t('Failed to query balance'))
-      }
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t('Failed to query balance')
-      )
-    } finally {
-      setIsQueryingAllBalances(false)
-    }
-  }
-
-  const performAction = async (): Promise<void> => {
+  const performAction = async () => {
     if (!confirmAction || !currentRow) return
     if (
       !canEditSensitive &&
@@ -383,118 +216,9 @@ export function MultiKeyManageDialog({
     }
   }
 
-  const renderTableBody = () => {
-    if (isLoading) {
-      return (
-        <div className='flex items-center justify-center py-12'>
-          <Loader2 className='text-muted-foreground h-8 w-8 animate-spin' />
-        </div>
-      )
-    }
-    if (keys.length === 0) {
-      return (
-        <div className='text-muted-foreground py-12 text-center'>
-          {t('No keys found')}
-        </div>
-      )
-    }
-    return (
-      <StaticDataTable
-        className='rounded-none border-0'
-        tableClassName='min-w-[900px]'
-        data={keys.map((k) => ({
-          ...k,
-          balance:
-            balanceResults[k.index] !== undefined
-              ? balanceResults[k.index]
-              : k.balance,
-        }))}
-        getRowKey={(key) => key.index}
-        columns={[
-          {
-            id: 'index',
-            header: t('Index'),
-            className: 'w-20',
-            cellClassName: 'font-mono text-sm',
-            cell: (key) => `#${key.index + 1}`,
-          },
-          {
-            id: 'status',
-            header: t('Status'),
-            className: 'w-32',
-            cell: (key) => renderStatusBadge(key.status),
-          },
-          {
-            id: 'balance',
-            header: t('Balance'),
-            className: 'w-40',
-            cellClassName: 'text-sm',
-            cell: (key) =>
-              key.balance !== undefined && key.balance !== null
-                ? formatBalance(key.balance)
-                : '-',
-          },
-          {
-            id: 'weight',
-            header: t('Weight'),
-            className: 'w-24',
-            cellClassName: 'font-mono text-sm',
-            cell: (key) => key.weight || 0,
-          },
-          {
-            id: 'priority',
-            header: t('Priority'),
-            className: 'w-24',
-            cellClassName: 'font-mono text-sm',
-            cell: (key) => key.priority || 0,
-          },
-          {
-            id: 'reason',
-            header: t('Disabled Reason'),
-            className: 'min-w-[160px]',
-            cellClassName: 'max-w-xs truncate text-sm',
-            cell: (key) => key.reason || '-',
-          },
-          {
-            id: 'disabled-time',
-            header: t('Disabled Time'),
-            className: 'w-44',
-            cellClassName: 'text-muted-foreground text-sm',
-            cell: (key) => formatKeyTimestamp(key.disabled_time),
-          },
-          {
-            id: 'actions',
-            header: t('Actions'),
-            className: 'w-56 text-right',
-            cell: (key) => (
-              <MultiKeyTableRowActions
-                keyIndex={key.index}
-                status={key.status}
-                testResult={testResults[key.index]}
-                isQueryingBalance={queryingBalanceKeys[key.index]}
-                canDelete={canEditSensitive}
-                onAction={setConfirmAction}
-                onTest={handleTestKey}
-                onQueryBalance={handleQueryKeyBalance}
-                onEditConfig={() => handleEditConfig(key)}
-              />
-            ),
-          },
-        ]}
-      />
-    )
-  }
-
   const renderStatusBadge = (status: number) => {
     const config = getMultiKeyStatusConfig(status)
-    return (
-      <StatusBadge
-        label={t(config.label)}
-        variant={config.variant}
-        showDot
-        copyable={false}
-      />
-    )
+    return <StatusBadge variant={config.variant}>{t(config.label)}</StatusBadge>
   }
 
   const formatKeyTimestamp = (timestamp?: number) => {
@@ -512,28 +236,20 @@ export function MultiKeyManageDialog({
         title={
           <>
             {t('Multi-Key Management')}
-            <StatusBadge
-              label={currentRow.name}
-              variant='neutral'
-              copyable={false}
-            />
+            <StatusBadge variant='neutral'>{currentRow.name}</StatusBadge>
             {currentRow.channel_info?.multi_key_mode && (
-              <StatusBadge
-                label={
-                  currentRow.channel_info.multi_key_mode === 'random'
-                    ? t('Random')
-                    : t('Polling')
-                }
-                variant='neutral'
-                copyable={false}
-              />
+              <StatusBadge variant='neutral'>
+                {currentRow.channel_info.multi_key_mode === 'random'
+                  ? t('Random')
+                  : t('Polling')}
+              </StatusBadge>
             )}
           </>
         }
         description={t(
           'Manage multi-key status and configuration for this channel'
         )}
-        contentClassName='flex max-h-[90vh] max-w-5xl flex-col'
+        contentClassName='flex max-h-[90vh] flex-col sm:max-w-5xl'
         titleClassName='flex items-center gap-2'
         contentHeight='min(72vh, 720px)'
         bodyClassName='space-y-4'
@@ -564,9 +280,9 @@ export function MultiKeyManageDialog({
           <div className='flex shrink-0 items-center justify-between'>
             <Select
               items={MULTI_KEY_FILTER_OPTIONS.map((option) => ({
-                  value: option.value,
-                  label: t(option.label),
-                }))}
+                value: option.value,
+                label: t(option.label),
+              }))}
               value={statusFilter === null ? 'all' : statusFilter.toString()}
               onValueChange={(v) => v !== null && handleStatusFilterChange(v)}
             >
@@ -587,32 +303,15 @@ export function MultiKeyManageDialog({
             <div className='flex items-center gap-2'>
               <Button
                 variant='outline'
-                size='sm'
                 onClick={() => loadKeyStatus()}
                 disabled={isLoading}
               >
                 <RefreshCw className='h-4 w-4' />
               </Button>
 
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={handleQueryAllBalances}
-                disabled={isQueryingAllBalances || isLoading}
-              >
-                {isQueryingAllBalances && (
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                )}
-                {!isQueryingAllBalances && (
-                  <DollarSign className='mr-2 h-4 w-4' />
-                )}
-                {t('Query All Balances')}
-              </Button>
-
               {manualDisabledCount + autoDisabledCount > 0 && (
                 <Button
                   variant='default'
-                  size='sm'
                   onClick={() => setConfirmAction({ type: 'enable-all' })}
                 >
                   <Power className='mr-2 h-4 w-4' />
@@ -623,7 +322,6 @@ export function MultiKeyManageDialog({
               {enabledCount > 0 && (
                 <Button
                   variant='destructive'
-                  size='sm'
                   onClick={() => setConfirmAction({ type: 'disable-all' })}
                 >
                   <PowerOff className='mr-2 h-4 w-4' />
@@ -634,7 +332,6 @@ export function MultiKeyManageDialog({
               {autoDisabledCount > 0 && (
                 <Button
                   variant='destructive'
-                  size='sm'
                   onClick={() => {
                     if (!canEditSensitive) return
                     setConfirmAction({ type: 'delete-disabled' })
@@ -660,7 +357,66 @@ export function MultiKeyManageDialog({
 
           {/* Table */}
           <div className='min-h-0 flex-1 overflow-auto rounded-md border'>
-            {renderTableBody()}
+            {isLoading && (
+              <div className='flex items-center justify-center py-12'>
+                <Loader2 className='text-muted-foreground h-8 w-8 animate-spin' />
+              </div>
+            )}
+            {!isLoading && keys.length === 0 && (
+              <div className='text-muted-foreground py-12 text-center'>
+                {t('No keys found')}
+              </div>
+            )}
+            {!isLoading && keys.length > 0 && (
+              <StaticDataTable
+                className='rounded-none border-0'
+                tableClassName='min-w-[800px]'
+                data={keys}
+                getRowKey={(key) => key.index}
+                columns={[
+                  {
+                    id: 'index',
+                    header: t('Index'),
+                    className: 'w-20',
+                    cellClassName: 'font-mono text-sm',
+                    cell: (key) => `#${key.index + 1}`,
+                  },
+                  {
+                    id: 'status',
+                    header: t('Status'),
+                    className: 'w-32',
+                    cell: (key) => renderStatusBadge(key.status),
+                  },
+                  {
+                    id: 'reason',
+                    header: t('Disabled Reason'),
+                    className: 'min-w-[200px]',
+                    cellClassName: 'max-w-xs truncate text-sm',
+                    cell: (key) => key.reason || '-',
+                  },
+                  {
+                    id: 'disabled-time',
+                    header: t('Disabled Time'),
+                    className: 'w-44',
+                    cellClassName: 'text-muted-foreground text-sm',
+                    cell: (key) => formatKeyTimestamp(key.disabled_time),
+                  },
+                  {
+                    id: 'actions',
+                    header: t('Actions'),
+                    className: 'text-right',
+                    cell: (key) => (
+                      <MultiKeyTableRowActions
+                        keyIndex={key.index}
+                        status={key.status}
+                        canDelete={canEditSensitive}
+                        onAction={setConfirmAction}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            )}
           </div>
 
           {/* Pagination */}
@@ -675,7 +431,6 @@ export function MultiKeyManageDialog({
               <div className='flex gap-2'>
                 <Button
                   variant='outline'
-                  size='sm'
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1 || isLoading}
                 >
@@ -683,7 +438,6 @@ export function MultiKeyManageDialog({
                 </Button>
                 <Button
                   variant='outline'
-                  size='sm'
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages || isLoading}
                 >
@@ -693,74 +447,6 @@ export function MultiKeyManageDialog({
             </div>
           )}
         </div>
-      </Dialog>
-
-      <Dialog
-        open={configForm !== null}
-        onOpenChange={(open) => !open && setConfigForm(null)}
-        title={t('Key Configuration')}
-        description={t('Set the weight and priority for this key')}
-        contentClassName='sm:max-w-md'
-        footer={
-          <>
-            <Button
-              variant='outline'
-              onClick={() => setConfigForm(null)}
-              disabled={isSavingConfig}
-            >
-              {t('Cancel')}
-            </Button>
-            <Button onClick={handleSaveConfig} disabled={isSavingConfig}>
-              {isSavingConfig && (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              )}
-              {t('Save')}
-            </Button>
-          </>
-        }
-      >
-        {configForm && (
-          <div className='space-y-4'>
-            <div className='text-muted-foreground text-sm'>
-              {t('Index')}: #{configForm.keyIndex + 1}
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium' htmlFor='multi-key-weight'>
-                {t('Weight')}
-              </label>
-              <Input
-                id='multi-key-weight'
-                type='number'
-                min={0}
-                step={1}
-                value={configForm.weight}
-                onChange={(event) =>
-                  setConfigForm({ ...configForm, weight: event.target.value })
-                }
-              />
-            </div>
-            <div className='space-y-2'>
-              <label
-                className='text-sm font-medium'
-                htmlFor='multi-key-priority'
-              >
-                {t('Priority')}
-              </label>
-              <Input
-                id='multi-key-priority'
-                type='number'
-                step={1}
-                value={configForm.priority}
-                onChange={(event) =>
-                  setConfigForm({ ...configForm, priority: event.target.value })
-                }
-              />
-            </div>
-            <p className='text-muted-foreground text-xs'>
-              {t('Higher priority keys are selected first. Weight is used among keys with the same priority.')}
-            </p>
-          </div>
-        )}
       </Dialog>
 
       {/* Confirmation Dialog */}

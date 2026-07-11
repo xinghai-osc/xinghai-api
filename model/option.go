@@ -179,6 +179,7 @@ func InitOptionMap() {
 	common.OptionMap["CheckSensitiveOnCompletionEnabled"] = strconv.FormatBool(setting.CheckSensitiveOnCompletionEnabled)
 	common.OptionMap["SensitiveBlockResponse"] = setting.SensitiveBlockResponse
 	common.OptionMap["SensitiveWordResponses"] = setting.SensitiveWordResponsesToString()
+	common.OptionMap["SensitiveWordActions"] = setting.SensitiveWordActionsToString()
 	common.OptionMap["StopOnSensitiveEnabled"] = strconv.FormatBool(setting.StopOnSensitiveEnabled)
 	common.OptionMap["SensitiveWords"] = setting.SensitiveWordsToString()
 	common.OptionMap["StreamCacheQueueLength"] = strconv.Itoa(setting.StreamCacheQueueLength)
@@ -590,6 +591,8 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.SensitiveBlockResponse = value
 	case "SensitiveWordResponses":
 		setting.SensitiveWordResponsesFromString(value)
+	case "SensitiveWordActions":
+		setting.SensitiveWordActionsFromString(value)
 	case "AutomaticDisableKeywords":
 		operation_setting.AutomaticDisableKeywordsFromString(value)
 	case "AutomaticDisableStatusCodes":

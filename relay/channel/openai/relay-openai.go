@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"

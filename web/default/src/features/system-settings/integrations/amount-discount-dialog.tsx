@@ -22,8 +22,9 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
+import { Button } from '@/components/design-system/button'
+import { Input } from '@/components/design-system/input'
 import { Dialog } from '@/components/dialog'
-import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -33,7 +34,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 
 const createAmountDiscountDialogSchema = (t: (key: string) => string) =>
   z.object({
@@ -195,7 +195,7 @@ export function AmountDiscountDialog({
                 <FormDescription>
                   {t('Final price multiplier (0.95 = 5% discount')}
                   {discountPercentage > 0 && (
-                    <span className='ml-1 font-medium text-green-600 dark:text-green-400'>
+                    <span className='text-status-success ml-1 font-medium'>
                       = {discountPercentage}
                       {t('% off')}
                     </span>

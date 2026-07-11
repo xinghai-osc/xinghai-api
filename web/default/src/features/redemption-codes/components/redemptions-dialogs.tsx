@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { RedemptionsCreatedKeysDialog } from './redemptions-created-keys-dialog'
 import { RedemptionsDeleteDialog } from './redemptions-delete-dialog'
 import { RedemptionsMutateDrawer } from './redemptions-mutate-drawer'
 import { useRedemptions } from './redemptions-provider'
@@ -31,6 +32,7 @@ export function RedemptionsDialogs() {
         onOpenChange={(isOpen) => !isOpen && setOpen(null)}
         currentRow={isUpdate ? currentRow || undefined : undefined}
       />
+      <RedemptionsCreatedKeysDialog />
       <RedemptionsDeleteDialog />
     </>
   )

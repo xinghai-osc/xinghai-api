@@ -21,9 +21,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { Button } from '@/components/design-system/button'
+import { Input } from '@/components/design-system/input'
 import { Dialog } from '@/components/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCountdown } from '@/hooks/use-countdown'
 
@@ -123,6 +123,11 @@ export function EmailBindDialog({
     }
   }
 
+  let sendCodeLabel = sendingCode ? t('Sending...') : t('Send')
+  if (isActive) {
+    sendCodeLabel = `${secondsLeft}s`
+  }
+
   return (
     <Dialog
       open={open}
@@ -189,11 +194,7 @@ export function EmailBindDialog({
               onClick={handleSendCode}
               disabled={sendingCode || isActive || !email}
             >
-              {isActive
-                ? `${secondsLeft}s`
-                : sendingCode
-                  ? t('Sending...')
-                  : t('Send')}
+              {sendCodeLabel}
             </Button>
           </div>
         </div>

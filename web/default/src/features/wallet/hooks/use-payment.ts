@@ -49,13 +49,14 @@ export function usePayment() {
       try {
         setCalculating(true)
 
-        const isStripe = isStripePayment(paymentType)
-        const isPancake = isWaffoPancakePayment(paymentType)
-        const response = isStripe
-          ? await calculateStripeAmount({ amount: topupAmount })
-          : isPancake
-            ? await calculateWaffoPancakeAmount({ amount: topupAmount })
-            : await calculateAmount({ amount: topupAmount })
+        let response
+        if (isStripePayment(paymentType)) {
+          response = await calculateStripeAmount({ amount: topupAmount })
+        } else if (isWaffoPancakePayment(paymentType)) {
+          response = await calculateWaffoPancakeAmount({ amount: topupAmount })
+        } else {
+          response = await calculateAmount({ amount: topupAmount })
+        }
 
         if (isApiSuccess(response) && response.data) {
           const calculatedAmount = Number.parseFloat(response.data)

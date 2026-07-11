@@ -18,67 +18,55 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Skeleton } from '@/components/ui/skeleton'
 
-import { VIEW_MODES, type ViewMode } from '../constants'
+import { DEFAULT_VIEW_MODE, VIEW_MODES, type ViewMode } from '../constants'
 
-const CARD_SKELETON_KEYS = [
-  'card-skeleton-1',
-  'card-skeleton-2',
-  'card-skeleton-3',
-  'card-skeleton-4',
-  'card-skeleton-5',
-  'card-skeleton-6',
-  'card-skeleton-7',
-  'card-skeleton-8',
-  'card-skeleton-9',
+const CARD_SKELETONS = [
+  'card-1',
+  'card-2',
+  'card-3',
+  'card-4',
+  'card-5',
+  'card-6',
+  'card-7',
+  'card-8',
+  'card-9',
 ]
-const FILTER_WIDTHS = [80, 90, 75, 85, 70]
-const TABLE_COLUMNS = [
-  { key: 'model', width: 200 },
-  { key: 'input', width: 100 },
-  { key: 'output', width: 100 },
-  { key: 'cached', width: 100 },
-  { key: 'quota', width: 80 },
-  { key: 'actions', width: 100 },
+const PRICE_COLUMNS = ['input', 'cached', 'output', 'groups']
+const TABLE_ROWS = [
+  'row-1',
+  'row-2',
+  'row-3',
+  'row-4',
+  'row-5',
+  'row-6',
+  'row-7',
+  'row-8',
+  'row-9',
+  'row-10',
 ]
-const TABLE_ROW_KEYS = [
-  'table-row-skeleton-1',
-  'table-row-skeleton-2',
-  'table-row-skeleton-3',
-  'table-row-skeleton-4',
-  'table-row-skeleton-5',
-  'table-row-skeleton-6',
-  'table-row-skeleton-7',
-  'table-row-skeleton-8',
-  'table-row-skeleton-9',
-  'table-row-skeleton-10',
-]
-const PAGINATION_SKELETON_KEYS = [
-  'pagination-skeleton-1',
-  'pagination-skeleton-2',
-  'pagination-skeleton-3',
-  'pagination-skeleton-4',
-]
+const PAGINATION_ITEMS = ['previous', 'page-1', 'page-2', 'next']
 
 export interface LoadingSkeletonProps {
   viewMode?: ViewMode
 }
 
 export function LoadingSkeleton(props: LoadingSkeletonProps) {
-  const viewMode = props.viewMode ?? VIEW_MODES.CARD
+  const viewMode = props.viewMode ?? DEFAULT_VIEW_MODE
 
   return (
-    <div className='space-y-5'>
-      <div className='space-y-1.5'>
-        <Skeleton className='h-8 w-40' />
-        <Skeleton className='h-4 w-52' />
+    <div>
+      <div className='mb-8 max-w-3xl space-y-2'>
+        <Skeleton className='h-6 w-48' />
+        <Skeleton className='h-4 w-full max-w-xl' />
       </div>
-      <Skeleton className='h-10 w-full rounded-lg' />
-      <FilterBarSkeleton />
-      {viewMode === VIEW_MODES.TABLE ? (
-        <TableContentSkeleton />
-      ) : (
-        <CardContentSkeleton />
-      )}
+      <div className='space-y-4'>
+        <FilterBarSkeleton />
+        {viewMode === VIEW_MODES.TABLE ? (
+          <TableContentSkeleton />
+        ) : (
+          <CardContentSkeleton />
+        )}
+      </div>
     </div>
   )
 }
@@ -86,11 +74,11 @@ export function LoadingSkeleton(props: LoadingSkeletonProps) {
 function CardContentSkeleton() {
   return (
     <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-      {CARD_SKELETON_KEYS.map((key) => (
-        <div key={key} className='rounded-xl border p-5'>
+      {CARD_SKELETONS.map((key) => (
+        <div key={key} className='rounded-lg border p-4'>
           <div className='flex items-start justify-between gap-3'>
             <div className='flex min-w-0 items-start gap-3'>
-              <Skeleton className='size-10 shrink-0 rounded-xl' />
+              <Skeleton className='size-9 shrink-0 rounded-lg' />
               <div className='min-w-0 flex-1 space-y-2'>
                 <Skeleton className='h-5 w-36' />
                 <Skeleton className='h-3.5 w-48' />
@@ -119,25 +107,17 @@ function CardContentSkeleton() {
 
 function FilterBarSkeleton() {
   return (
-    <div className='space-y-3'>
-      <div className='flex items-center gap-3'>
-        <div className='flex flex-1 flex-wrap items-center gap-2'>
-          {FILTER_WIDTHS.map((width) => (
-            <Skeleton
-              key={`filter-width-${width}`}
-              className='h-8 rounded-lg'
-              style={{ width: `${width}px` }}
-            />
-          ))}
-        </div>
-        <div className='flex items-center gap-2'>
-          <Skeleton className='h-8 w-24 rounded-lg' />
-          <Skeleton className='h-8 w-20 rounded-lg' />
-          <Skeleton className='h-8 w-24' />
-          <Skeleton className='h-8 w-20 rounded-lg' />
+    <div>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center'>
+        <Skeleton className='h-7 w-full sm:h-8 sm:max-w-sm' />
+        <div className='flex flex-wrap items-center gap-2 sm:ml-auto'>
+          <Skeleton className='h-7 w-20 sm:h-8' />
+          <Skeleton className='h-7 w-24 sm:h-8' />
+          <Skeleton className='h-7 w-28 sm:h-8' />
+          <Skeleton className='h-7 w-16 sm:h-8' />
         </div>
       </div>
-      <Skeleton className='h-5 w-24' />
+      <Skeleton className='mt-3 h-4 w-24' />
     </div>
   )
 }
@@ -147,27 +127,21 @@ function TableContentSkeleton() {
     <div className='space-y-4'>
       <div className='overflow-hidden rounded-lg border'>
         <div className='bg-muted/30 border-b px-4 py-3'>
-          <div className='flex items-center gap-4'>
-            {TABLE_COLUMNS.map((col) => (
-              <Skeleton
-                key={col.key}
-                className='h-4'
-                style={{ width: `${col.width}px` }}
-              />
+          <div className='grid grid-cols-[minmax(200px,2fr)_repeat(3,minmax(100px,1fr))_minmax(120px,1fr)] gap-4'>
+            <Skeleton className='h-4 w-32' />
+            {PRICE_COLUMNS.map((column) => (
+              <Skeleton key={column} className='h-4 w-20' />
             ))}
           </div>
         </div>
-        {TABLE_ROW_KEYS.map((rowKey) => (
+        {TABLE_ROWS.map((row) => (
           <div
-            key={rowKey}
-            className='flex items-center gap-4 border-b px-4 py-3 last:border-b-0'
+            key={row}
+            className='grid grid-cols-[minmax(200px,2fr)_repeat(3,minmax(100px,1fr))_minmax(120px,1fr)] gap-4 border-b px-4 py-3 last:border-b-0'
           >
-            {TABLE_COLUMNS.map((col) => (
-              <Skeleton
-                key={`${rowKey}-${col.key}`}
-                className='h-5'
-                style={{ width: `${col.width}px` }}
-              />
+            <Skeleton className='h-5 w-40' />
+            {PRICE_COLUMNS.map((column) => (
+              <Skeleton key={`${row}-${column}`} className='h-5 w-20' />
             ))}
           </div>
         ))}
@@ -175,8 +149,8 @@ function TableContentSkeleton() {
       <div className='flex items-center justify-between'>
         <Skeleton className='h-5 w-32' />
         <div className='flex items-center gap-2'>
-          {PAGINATION_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className='size-8' />
+          {PAGINATION_ITEMS.map((item) => (
+            <Skeleton key={item} className='size-8' />
           ))}
         </div>
       </div>

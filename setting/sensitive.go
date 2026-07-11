@@ -8,6 +8,11 @@ var CheckSensitiveOnCompletionEnabled = false
 var SensitiveBlockResponse = "Sensitive words detected"
 var SensitiveWordResponses = map[string]string{}
 
+// SensitiveWordActions maps a sensitive word to its action mode.
+// "error" (default): return an HTTP error to the client.
+// "return": return a normal-format response with the replacement content.
+var SensitiveWordActions = map[string]string{}
+
 // StopOnSensitiveEnabled 如果检测到敏感词，是否立刻停止生成，否则替换敏感词
 var StopOnSensitiveEnabled = true
 
@@ -67,10 +72,52 @@ func SensitiveWordResponsesFromString(s string) {
 	}
 }
 
+func SensitiveWordActionsToString() string {
+	lines := make([]string, 0, len(SensitiveWordActions))
+	for _, word := range SensitiveWords {
+		action, ok := SensitiveWordActions[strings.ToLower(strings.TrimSpace(word))]
+		if !ok || strings.TrimSpace(action) == "" {
+			continue
+		}
+		lines = append(lines, strings.TrimSpace(word)+"=>"+action)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func SensitiveWordActionsFromString(s string) {
+	SensitiveWordActions = map[string]string{}
+	lines := strings.Split(s, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "=>", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		word := strings.ToLower(strings.TrimSpace(parts[0]))
+		action := strings.ToLower(strings.TrimSpace(parts[1]))
+		if word != "" && (action == "error" || action == "return") {
+			SensitiveWordActions[word] = action
+		}
+	}
+}
+
 func ShouldCheckPromptSensitive() bool {
 	return CheckSensitiveEnabled && CheckSensitiveOnPromptEnabled
 }
 
 func ShouldCheckCompletionSensitive() bool {
 	return CheckSensitiveEnabled && CheckSensitiveOnCompletionEnabled
+}
+
+// SensitiveWordAction returns the action mode for a given sensitive word.
+// Defaults to "error" if not explicitly configured.
+func SensitiveWordAction(word string) string {
+	action := SensitiveWordActions[strings.ToLower(strings.TrimSpace(word))]
+	if action == "return" {
+		return "return"
+	}
+	return "error"
 }

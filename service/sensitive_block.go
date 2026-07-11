@@ -8,6 +8,8 @@ import (
 	"github.com/QuantumNous/new-api/setting"
 )
 
+const SensitiveActionReturn = "return"
+
 func GetSensitiveBlockResponse(words ...string) string {
 	for _, word := range words {
 		response := strings.TrimSpace(setting.SensitiveWordResponses[strings.ToLower(strings.TrimSpace(word))])
@@ -20,6 +22,15 @@ func GetSensitiveBlockResponse(words ...string) string {
 		return "Sensitive words detected"
 	}
 	return setting.SensitiveBlockResponse
+}
+
+func ShouldReturnSensitiveResponse(words ...string) bool {
+	for _, word := range words {
+		if setting.SensitiveWordAction(word) == SensitiveActionReturn {
+			return true
+		}
+	}
+	return false
 }
 
 func BuildSensitiveBlockedOpenAIResponse(id string, created any, model string, usage dto.Usage, words ...string) *dto.OpenAITextResponse {
