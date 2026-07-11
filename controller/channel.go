@@ -1125,6 +1125,16 @@ func UpdateChannel(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if requestedMode == "single" {
+		// Update reloads the channel from the database, where the zero-value
+		// ChannelInfo was skipped by GORM. Restore the requested value before
+		// forcing the column update.
+		channel.ChannelInfo = model.ChannelInfo{}
+		if err = channel.SaveChannelInfo(); err != nil {
+			common.ApiError(c, err)
+			return
+		}
+	}
 	if channel.Status != common.ChannelStatusEnabled {
 		channel.ActivateBackupChannel()
 	}
