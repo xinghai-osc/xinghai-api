@@ -400,6 +400,7 @@ export type SecuritySettings = {
   StopOnSensitiveEnabled: boolean
   SensitiveBlockResponse: string
   SensitiveWordResponses: string
+  SensitiveWordActions: string
   SensitiveWords: string
   'fetch_setting.enable_ssrf_protection': boolean
   'fetch_setting.allow_private_ip': boolean

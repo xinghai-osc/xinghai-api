@@ -54,6 +54,7 @@ const SECURITY_SECTIONS = [
           StopOnSensitiveEnabled: settings.StopOnSensitiveEnabled,
           SensitiveBlockResponse: settings.SensitiveBlockResponse,
           SensitiveWordResponses: settings.SensitiveWordResponses,
+          SensitiveWordActions: settings.SensitiveWordActions,
           SensitiveWords: settings.SensitiveWords,
         }}
       />

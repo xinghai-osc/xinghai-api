@@ -294,6 +294,9 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		}
 		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
 			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
+			if !service.ShouldReturnSensitiveResponse(words...) {
+				return nil, types.NewErrorWithStatusCode(errors.New(service.GetSensitiveBlockResponse(words...)), types.ErrorCodeSensitiveWordsDetected, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
 			blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(simpleResponse.Id, simpleResponse.Created, simpleResponse.Model, simpleResponse.Usage, words...)
 			simpleResponse = *blockedResponse
 			responseBody, err = common.Marshal(blockedResponse)

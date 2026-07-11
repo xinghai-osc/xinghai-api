@@ -34,6 +34,14 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { StatusBadge } from '@/components/status-badge'
 
@@ -54,6 +62,7 @@ const sensitiveSchema = z.object({
   SensitiveBlockResponse: z.string().optional(),
   SensitiveWords: z.string().optional(),
   SensitiveWordResponses: z.string().optional(),
+  SensitiveWordActions: z.string().optional(),
 })
 
 type SensitiveFormValues = z.infer<typeof sensitiveSchema>
@@ -97,6 +106,31 @@ function formatWordResponses(map: Map<string, string>): string {
   return lines.join('\n')
 }
 
+function parseWordActions(raw: string | undefined): Map<string, string> {
+  const map = new Map<string, string>()
+  if (!raw) return map
+  raw.split('\n').forEach((line) => {
+    const trimmed = line.trim()
+    if (!trimmed) return
+    const idx = trimmed.indexOf('=>')
+    if (idx === -1) return
+    const word = trimmed.slice(0, idx).trim()
+    const action = trimmed.slice(idx + 2).trim()
+    if (word && action) {
+      map.set(word, action)
+    }
+  })
+  return map
+}
+
+function formatWordActions(map: Map<string, string>): string {
+  const lines: string[] = []
+  map.forEach((action, word) => {
+    lines.push(`${word}=>${action}`)
+  })
+  return lines.join('\n')
+}
+
 export function SensitiveWordsSection({
   defaultValues,
 }: SensitiveWordsSectionProps) {
@@ -123,9 +157,16 @@ export function SensitiveWordsSection({
     [form.watch('SensitiveWordResponses')]
   )
 
+  const wordActionsMap = useMemo(
+    () => parseWordActions(form.watch('SensitiveWordActions')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.watch('SensitiveWordActions')]
+  )
+
   const [newWord, setNewWord] = useState('')
   const [newResponseWord, setNewResponseWord] = useState('')
   const [newResponseText, setNewResponseText] = useState('')
+  const [newResponseAction, setNewResponseAction] = useState('error')
 
   const addWord = useCallback(() => {
     const trimmed = newWord.trim()
@@ -139,7 +180,7 @@ export function SensitiveWordsSection({
     (word: string) => {
       const updated = words.filter((w) => w !== word)
       form.setValue('SensitiveWords', updated.join('\n'), { shouldDirty: true })
-      // also remove any per-word response for this word
+      // also remove any per-word response and action for this word
       const nextResponses = new Map(wordResponsesMap)
       if (nextResponses.has(word)) {
         nextResponses.delete(word)
@@ -149,8 +190,17 @@ export function SensitiveWordsSection({
           { shouldDirty: true }
         )
       }
+      const nextActions = new Map(wordActionsMap)
+      if (nextActions.has(word)) {
+        nextActions.delete(word)
+        form.setValue(
+          'SensitiveWordActions',
+          formatWordActions(nextActions),
+          { shouldDirty: true }
+        )
+      }
     },
-    [words, wordResponsesMap, form]
+    [words, wordResponsesMap, wordActionsMap, form]
   )
 
   const addWordResponse = useCallback(() => {
@@ -162,9 +212,20 @@ export function SensitiveWordsSection({
     form.setValue('SensitiveWordResponses', formatWordResponses(next), {
       shouldDirty: true,
     })
+    const action = newResponseAction === 'return' ? 'return' : 'error'
+    const nextActions = new Map(wordActionsMap)
+    if (action === 'return') {
+      nextActions.set(word, action)
+    } else {
+      nextActions.delete(word)
+    }
+    form.setValue('SensitiveWordActions', formatWordActions(nextActions), {
+      shouldDirty: true,
+    })
     setNewResponseWord('')
     setNewResponseText('')
-  }, [newResponseWord, newResponseText, wordResponsesMap, form])
+    setNewResponseAction('error')
+  }, [newResponseWord, newResponseText, newResponseAction, wordResponsesMap, wordActionsMap, form])
 
   const removeWordResponse = useCallback(
     (word: string) => {
@@ -173,8 +234,13 @@ export function SensitiveWordsSection({
       form.setValue('SensitiveWordResponses', formatWordResponses(next), {
         shouldDirty: true,
       })
+      const nextActions = new Map(wordActionsMap)
+      nextActions.delete(word)
+      form.setValue('SensitiveWordActions', formatWordActions(nextActions), {
+        shouldDirty: true,
+      })
     },
-    [wordResponsesMap, form]
+    [wordResponsesMap, wordActionsMap, form]
   )
 
   const onSubmit = async (values: SensitiveFormValues) => {
@@ -421,6 +487,37 @@ export function SensitiveWordsSection({
                             <span className='min-w-0 flex-1 truncate text-sm'>
                               {response}
                             </span>
+                            <Select
+                              value={wordActionsMap.get(word) || 'error'}
+                              onValueChange={(val) => {
+                                if (val === null) return
+                                const nextActions = new Map(wordActionsMap)
+                                if (val === 'return') {
+                                  nextActions.set(word, val)
+                                } else {
+                                  nextActions.delete(word)
+                                }
+                                form.setValue(
+                                  'SensitiveWordActions',
+                                  formatWordActions(nextActions),
+                                  { shouldDirty: true }
+                                )
+                              }}
+                            >
+                              <SelectTrigger className='h-6 w-auto min-w-[90px] px-2 text-xs'>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectItem value='error'>
+                                    {t('Block')}
+                                  </SelectItem>
+                                  <SelectItem value='return'>
+                                    {t('Reply')}
+                                  </SelectItem>
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
                             <button
                               type='button'
                               className='hover:bg-foreground/10 inline-flex size-5 shrink-0 items-center justify-center rounded-full transition-colors'
@@ -451,6 +548,24 @@ export function SensitiveWordsSection({
                       value={newResponseText}
                       onChange={(e) => setNewResponseText(e.target.value)}
                     />
+                    <Select
+                      value={newResponseAction}
+                      onValueChange={(val) => { if (val !== null) setNewResponseAction(val) }}
+                    >
+                      <SelectTrigger className='h-8 w-auto min-w-[90px] px-2 text-xs'>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value='error'>
+                            {t('Block')}
+                          </SelectItem>
+                          <SelectItem value='return'>
+                            {t('Reply')}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                     <Button
                       type='button'
                       variant='outline'

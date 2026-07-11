@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -65,6 +66,9 @@ func OaiResponsesToChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		}
 		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
 			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
+			if !service.ShouldReturnSensitiveResponse(words...) {
+				return nil, types.NewErrorWithStatusCode(errors.New(service.GetSensitiveBlockResponse(words...)), types.ErrorCodeSensitiveWordsDetected, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
 			chatResp = service.BuildSensitiveBlockedOpenAIResponse(chatResp.Id, chatResp.Created, chatResp.Model, chatResp.Usage, words...)
 		}
 	}
