@@ -82,6 +82,7 @@ var OptionMapRWMutex sync.RWMutex
 
 var ItemsPerPage = 20
 var MaxRecentItems = 1000
+var MaxLogPageSize = 100
 
 var PasswordLoginEnabled = true
 var PasswordRegisterEnabled = true

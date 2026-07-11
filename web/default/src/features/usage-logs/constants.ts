@@ -42,6 +42,7 @@ export const DEFAULT_LOG_STATS: LogStatistics = {
 export const DEFAULT_LOGS_DATA = {
   items: [],
   total: 0,
+  has_more: false,
 }
 
 // ============================================================================

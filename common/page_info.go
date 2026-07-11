@@ -7,8 +7,9 @@ import (
 )
 
 type PageInfo struct {
-	Page     int `json:"page"`      // page num 页码
-	PageSize int `json:"page_size"` // page size 页大小
+	Page     int  `json:"page"`      // page num 页码
+	PageSize int  `json:"page_size"` // page size 页大小
+	HasMore  bool `json:"has_more"`  // whether there are more pages
 
 	Total int `json:"total"` // 总条数，后设置
 	Items any `json:"items"` // 数据，后设置
@@ -32,6 +33,7 @@ func (p *PageInfo) GetPage() int {
 
 func (p *PageInfo) SetTotal(total int) {
 	p.Total = total
+	p.HasMore = p.GetStartIdx()+p.PageSize < total
 }
 
 func (p *PageInfo) SetItems(items any) {
@@ -74,8 +76,11 @@ func GetPageQuery(c *gin.Context) *PageInfo {
 		}
 	}
 
-	if pageInfo.PageSize > 100 {
-		pageInfo.PageSize = 100
+	if pageInfo.PageSize < 0 {
+		pageInfo.PageSize = ItemsPerPage
+	}
+	if pageInfo.PageSize > MaxLogPageSize {
+		pageInfo.PageSize = MaxLogPageSize
 	}
 
 	return pageInfo

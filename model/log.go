@@ -564,8 +564,6 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	return logs, total, err
 }
 
-const logSearchCountLimit = 10000
-
 func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
@@ -597,12 +595,12 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 	// 隐藏重试中间过程的失败日志，普通用户只看到最终结果（管理员可见全部）
 	tx = tx.Where("logs.other NOT LIKE ?", `%"is_retry_intermediate":true%`)
-	err = tx.Model(&Log{}).Limit(logSearchCountLimit).Count(&total).Error
+	err = tx.Model(&Log{}).Count(&total).Error
 	if err != nil {
 		common.SysError("failed to count user logs: " + err.Error())
 		return nil, 0, errors.New("查询日志失败")
 	}
-	order := "logs.id desc"
+	order := "logs.created_at desc, logs.id desc"
 	if common.UsingLogDatabase(common.DatabaseTypeClickHouse) {
 		order = clickHouseLogOrder("logs.")
 	}
