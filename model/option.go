@@ -183,6 +183,19 @@ func InitOptionMap() {
 	common.OptionMap["StopOnSensitiveEnabled"] = strconv.FormatBool(setting.StopOnSensitiveEnabled)
 	common.OptionMap["SensitiveWords"] = setting.SensitiveWordsToString()
 	common.OptionMap["StreamCacheQueueLength"] = strconv.Itoa(setting.StreamCacheQueueLength)
+	common.OptionMap["ContentCheckEnabled"] = strconv.FormatBool(setting.ContentCheckEnabled)
+	common.OptionMap["ContentCheckOnPromptEnabled"] = strconv.FormatBool(setting.ContentCheckOnPromptEnabled)
+	common.OptionMap["ContentCheckOnCompletionEnabled"] = strconv.FormatBool(setting.ContentCheckOnCompletionEnabled)
+	common.OptionMap["ContentCheckCompletionStreamBuffered"] = strconv.FormatBool(setting.ContentCheckCompletionStreamBuffered)
+	common.OptionMap["ContentCheckModel"] = setting.ContentCheckModel
+	common.OptionMap["ContentCheckBaseURL"] = setting.ContentCheckBaseURL
+	common.OptionMap["ContentCheckAPIKey"] = setting.ContentCheckAPIKey
+	common.OptionMap["ContentCheckSystemPrompt"] = setting.ContentCheckSystemPrompt
+	common.OptionMap["ContentCheckTimeout"] = strconv.Itoa(setting.ContentCheckTimeout)
+	common.OptionMap["ContentCheckMaxInputLength"] = strconv.Itoa(setting.ContentCheckMaxInputLength)
+	common.OptionMap["ContentCheckBlockResponse"] = setting.ContentCheckBlockResponse
+	common.OptionMap["ContentCheckAction"] = setting.ContentCheckAction
+	common.OptionMap["ContentCheckFailAction"] = setting.ContentCheckFailAction
 	common.OptionMap["AutomaticDisableKeywords"] = operation_setting.AutomaticDisableKeywordsToString()
 	common.OptionMap["AutomaticDisableStatusCodes"] = operation_setting.AutomaticDisableStatusCodesToString()
 	common.OptionMap["AutomaticRetryStatusCodes"] = operation_setting.AutomaticRetryStatusCodesToString()
@@ -369,6 +382,14 @@ func updateOptionMap(key string, value string) (err error) {
 			setting.ModelRequestRateLimitEnabled = boolValue
 		case "StopOnSensitiveEnabled":
 			setting.StopOnSensitiveEnabled = boolValue
+		case "ContentCheckEnabled":
+			setting.ContentCheckEnabled = boolValue
+		case "ContentCheckOnPromptEnabled":
+			setting.ContentCheckOnPromptEnabled = boolValue
+		case "ContentCheckOnCompletionEnabled":
+			setting.ContentCheckOnCompletionEnabled = boolValue
+		case "ContentCheckCompletionStreamBuffered":
+			setting.ContentCheckCompletionStreamBuffered = boolValue
 		case "SMTPSSLEnabled":
 			common.SMTPSSLEnabled = boolValue
 		case "SMTPStartTLSEnabled":
@@ -603,6 +624,24 @@ func updateOptionMap(key string, value string) (err error) {
 		err = operation_setting.AutomaticRetryErrorCodesFromString(value)
 	case "StreamCacheQueueLength":
 		setting.StreamCacheQueueLength, _ = strconv.Atoi(value)
+	case "ContentCheckModel":
+		setting.ContentCheckModel = value
+	case "ContentCheckBaseURL":
+		setting.ContentCheckBaseURL = value
+	case "ContentCheckAPIKey":
+		setting.ContentCheckAPIKey = value
+	case "ContentCheckSystemPrompt":
+		setting.ContentCheckSystemPrompt = value
+	case "ContentCheckTimeout":
+		setting.ContentCheckTimeout, _ = strconv.Atoi(value)
+	case "ContentCheckMaxInputLength":
+		setting.ContentCheckMaxInputLength, _ = strconv.Atoi(value)
+	case "ContentCheckBlockResponse":
+		setting.ContentCheckBlockResponse = value
+	case "ContentCheckAction":
+		setting.ContentCheckAction = value
+	case "ContentCheckFailAction":
+		setting.ContentCheckFailAction = value
 	case "PayMethods":
 		err = operation_setting.UpdatePayMethodsByJsonString(value)
 	case "WaffoPayMethods":

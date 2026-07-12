@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { ContentCheckSection } from '../request-limits/content-check-section'
 import { RateLimitSection } from '../request-limits/rate-limit-section'
 import { SensitiveWordsSection } from '../request-limits/sensitive-words-section'
 import { SSRFSection } from '../request-limits/ssrf-section'
@@ -92,6 +93,31 @@ const SECURITY_SECTIONS = [
         defaultValues={{
           'token_setting.max_user_tokens':
             settings['token_setting.max_user_tokens'],
+        }}
+      />
+    ),
+  },
+  {
+    id: 'content-check',
+    titleKey: 'Content Check',
+    build: (settings: SecuritySettings) => (
+      <ContentCheckSection
+        defaultValues={{
+          ContentCheckEnabled: settings.ContentCheckEnabled,
+          ContentCheckOnPromptEnabled: settings.ContentCheckOnPromptEnabled,
+          ContentCheckOnCompletionEnabled:
+            settings.ContentCheckOnCompletionEnabled,
+          ContentCheckCompletionStreamBuffered:
+            settings.ContentCheckCompletionStreamBuffered,
+          ContentCheckModel: settings.ContentCheckModel,
+          ContentCheckBaseURL: settings.ContentCheckBaseURL,
+          ContentCheckAPIKey: settings.ContentCheckAPIKey,
+          ContentCheckSystemPrompt: settings.ContentCheckSystemPrompt,
+          ContentCheckTimeout: settings.ContentCheckTimeout,
+          ContentCheckMaxInputLength: settings.ContentCheckMaxInputLength,
+          ContentCheckBlockResponse: settings.ContentCheckBlockResponse,
+          ContentCheckAction: settings.ContentCheckAction,
+          ContentCheckFailAction: settings.ContentCheckFailAction,
         }}
       />
     ),

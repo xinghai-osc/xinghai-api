@@ -15,6 +15,7 @@ import (
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/service/relayconvert"
+	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -122,9 +123,10 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	// 检查是否为音频模型
 	isAudioModel := strings.Contains(strings.ToLower(model), "audio")
+	bufferStream := setting.ShouldBufferStreamForContentCheck()
 
 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
-		if lastStreamData != "" {
+		if lastStreamData != "" && !bufferStream {
 			if err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent); err != nil {
 				common.SysLog("error handling stream format: " + err.Error())
 				sr.Error(err)
@@ -169,18 +171,60 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		logger.LogError(c, fmt.Sprintf("error handling last response: %s, lastStreamData: [%s]", err.Error(), lastStreamData))
 	}
 
-	if info.RelayFormat == types.RelayFormatOpenAI {
-		if shouldSendLastResp {
-			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
-		}
-	}
-
 	if !containStreamUsage {
 		usage = service.ResponseText2Usage(c, responseTextBuilder.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
 		usage.CompletionTokens += toolCount * 7
 	}
 
 	applyUsagePostProcessing(info, usage, common.StringToByteSlice(lastStreamData))
+
+	if bufferStream {
+		responseText := responseTextBuilder.String()
+		if responseText != "" {
+			allowed, reason, checkErr := service.CheckContentWithExternalModel(c.Request.Context(), responseText)
+			if checkErr != nil {
+				if setting.ContentCheckFailAction == "block" {
+					return nil, types.NewErrorWithStatusCode(
+						fmt.Errorf("%s", setting.ContentCheckBlockResponse),
+						types.ErrorCodeContentCheckBlocked, http.StatusBadRequest,
+						types.ErrOptionWithSkipRetry())
+				}
+				logger.LogWarn(c, fmt.Sprintf("外部内容检测完成输出失败（放行）: %s", checkErr.Error()))
+			} else if !allowed {
+				blockMsg := setting.ContentCheckBlockResponse
+				if reason != "" {
+					blockMsg = fmt.Sprintf("%s: %s", setting.ContentCheckBlockResponse, reason)
+				}
+				logger.LogWarn(c, fmt.Sprintf("外部内容检测拦截完成输出: %s", blockMsg))
+				if setting.ContentCheckAction == "return" {
+					blockedResp := service.BuildSensitiveBlockedOpenAIResponse(responseId, createAt, model, *usage, blockMsg)
+					helper.SetEventStreamHeaders(c)
+					blockedBytes, _ := common.Marshal(blockedResp)
+					_ = helper.ObjectData(c, blockedResp)
+					HandleFinalResponse(c, info, "", responseId, createAt, model, systemFingerprint, usage, false)
+					_ = blockedBytes
+				} else {
+					return nil, types.NewErrorWithStatusCode(
+						fmt.Errorf("%s", blockMsg), types.ErrorCodeContentCheckBlocked,
+						http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				}
+				return usage, nil
+			}
+		}
+		if info.RelayFormat == types.RelayFormatOpenAI {
+			if shouldSendLastResp {
+				_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
+			}
+		}
+		HandleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
+		return usage, nil
+	}
+
+	if info.RelayFormat == types.RelayFormatOpenAI {
+		if shouldSendLastResp {
+			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
+		}
+	}
 
 	HandleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
 
@@ -251,6 +295,38 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	}
 
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
+
+	if setting.ShouldCheckCompletionContent() {
+		responseText := service.ExtractResponseText(&simpleResponse)
+		if responseText != "" {
+			allowed, reason, checkErr := service.CheckContentWithExternalModel(c.Request.Context(), responseText)
+			if checkErr != nil {
+				if setting.ContentCheckFailAction == "block" {
+					return nil, types.NewErrorWithStatusCode(
+						fmt.Errorf("%s", setting.ContentCheckBlockResponse),
+						types.ErrorCodeContentCheckBlocked, http.StatusBadRequest,
+						types.ErrOptionWithSkipRetry())
+				}
+				logger.LogWarn(c, fmt.Sprintf("外部内容检测完成输出失败（放行）: %s", checkErr.Error()))
+			} else if !allowed {
+				blockMsg := setting.ContentCheckBlockResponse
+				if reason != "" {
+					blockMsg = fmt.Sprintf("%s: %s", setting.ContentCheckBlockResponse, reason)
+				}
+				logger.LogWarn(c, fmt.Sprintf("外部内容检测拦截完成输出: %s", blockMsg))
+				if setting.ContentCheckAction == "return" {
+					simpleResponse = *service.BuildSensitiveBlockedOpenAIResponse(
+						simpleResponse.Id, simpleResponse.Created, simpleResponse.Model,
+						simpleResponse.Usage, blockMsg)
+					responseBody, _ = common.Marshal(simpleResponse)
+				} else {
+					return nil, types.NewErrorWithStatusCode(
+						fmt.Errorf("%s", blockMsg), types.ErrorCodeContentCheckBlocked,
+						http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				}
+			}
+		}
+	}
 
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:

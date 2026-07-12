@@ -110,6 +110,23 @@ func returnSensitiveBlockedResponse(c *gin.Context, info *relaycommon.RelayInfo,
 	return nil
 }
 
+func returnContentBlockedOrError(c *gin.Context, info *relaycommon.RelayInfo, message string) *types.NewAPIError {
+	if setting.ContentCheckAction == "return" {
+		blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(helper.GetResponseID(c), common.GetTimestamp(), helper.ResponseModelName(info), dto.Usage{})
+		blockedResponse.Choices[0].Message.SetStringContent(message)
+		switch info.RelayFormat {
+		case types.RelayFormatClaude:
+			c.JSON(http.StatusOK, service.ResponseOpenAI2Claude(blockedResponse, info))
+		case types.RelayFormatGemini:
+			c.JSON(http.StatusOK, service.ResponseOpenAI2Gemini(blockedResponse, info))
+		default:
+			c.JSON(http.StatusOK, blockedResponse)
+		}
+		return nil
+	}
+	return types.NewErrorWithStatusCode(errors.New(message), types.ErrorCodeContentCheckBlocked, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+}
+
 func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	requestId := c.GetString(common.RequestIdKey)
@@ -169,10 +186,11 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 
 	needSensitiveCheck := setting.ShouldCheckPromptSensitive()
+	needContentCheck := setting.ShouldCheckPromptContent()
 	needCountToken := constant.CountToken
-	// Avoid building huge CombineText (strings.Join) when token counting and sensitive check are both disabled.
+	// Avoid building huge CombineText (strings.Join) when token counting, sensitive check, and content check are all disabled.
 	var meta *types.TokenCountMeta
-	if needSensitiveCheck || needCountToken {
+	if needSensitiveCheck || needContentCheck || needCountToken {
 		meta = request.GetTokenCountMeta()
 	} else {
 		meta = fastTokenCountMetaForPricing(request)
@@ -187,6 +205,26 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 				return
 			}
 			newAPIError = types.NewErrorWithStatusCode(errors.New(service.GetSensitiveBlockResponse(words...)), types.ErrorCodeSensitiveWordsDetected, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			return
+		}
+	}
+
+	if needContentCheck && meta != nil && meta.CombineText != "" {
+		allowed, reason, checkErr := service.CheckContentWithExternalModel(c.Request.Context(), meta.CombineText)
+		if checkErr != nil {
+			if setting.ContentCheckFailAction == "block" {
+				logger.LogWarn(c, fmt.Sprintf("外部内容检测失败（拦截）: %s", checkErr.Error()))
+				newAPIError = returnContentBlockedOrError(c, relayInfo, setting.ContentCheckBlockResponse)
+				return
+			}
+			logger.LogWarn(c, fmt.Sprintf("外部内容检测失败（放行）: %s", checkErr.Error()))
+		} else if !allowed {
+			blockMsg := setting.ContentCheckBlockResponse
+			if reason != "" {
+				blockMsg = fmt.Sprintf("%s: %s", setting.ContentCheckBlockResponse, reason)
+			}
+			logger.LogWarn(c, fmt.Sprintf("外部内容检测拦截: %s", blockMsg))
+			newAPIError = returnContentBlockedOrError(c, relayInfo, blockMsg)
 			return
 		}
 	}

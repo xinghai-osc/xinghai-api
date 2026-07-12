@@ -402,6 +402,19 @@ export type SecuritySettings = {
   SensitiveWordResponses: string
   SensitiveWordActions: string
   SensitiveWords: string
+  ContentCheckEnabled: boolean
+  ContentCheckOnPromptEnabled: boolean
+  ContentCheckOnCompletionEnabled: boolean
+  ContentCheckCompletionStreamBuffered: boolean
+  ContentCheckModel: string
+  ContentCheckBaseURL: string
+  ContentCheckAPIKey: string
+  ContentCheckSystemPrompt: string
+  ContentCheckTimeout: number
+  ContentCheckMaxInputLength: number
+  ContentCheckBlockResponse: string
+  ContentCheckAction: string
+  ContentCheckFailAction: string
   'fetch_setting.enable_ssrf_protection': boolean
   'fetch_setting.allow_private_ip': boolean
   'fetch_setting.domain_filter_mode': boolean
