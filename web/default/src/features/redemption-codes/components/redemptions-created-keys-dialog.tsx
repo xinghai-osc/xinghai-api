@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useTranslation } from 'react-i18next'
 
 import { CopyButton } from '@/components/copy-button'
-import { Button } from '@/components/design-system/button'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogClose,
@@ -28,7 +28,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/design-system/dialog'
+} from '@/components/ui/dialog'
 
 import { useRedemptions } from './redemptions-provider'
 

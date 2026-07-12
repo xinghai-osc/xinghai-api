@@ -37,6 +37,7 @@ import { CopyButton } from '@/components/copy-button'
 import { StaticDataTable } from '@/components/data-table'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { GroupBadge } from '@/components/group-badge'
+import { StatusBadge } from '@/components/status-badge'
 import { PublicLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
 import {
@@ -858,6 +859,7 @@ function GroupPricingSection(props: {
   usdExchangeRate: number
   tokenUnit: TokenUnit
   showRechargePrice?: boolean
+  subscriptionUpgradeGroups?: Set<string>
 }) {
   const { t } = useTranslation()
   const showRechargePrice = props.showRechargePrice ?? false
@@ -977,7 +979,14 @@ function GroupPricingSection(props: {
             return (
               <div key={group} className='overflow-hidden rounded-lg border'>
                 <div className='bg-muted/20 flex items-center justify-between gap-3 border-b px-3 py-2'>
-                  <GroupBadge group={group} size='sm' />
+                  <div className='flex items-center gap-2'>
+                    <GroupBadge group={group} size='sm' />
+                    {props.subscriptionUpgradeGroups?.has(group) && (
+                      <StatusBadge variant='success' size='sm'>
+                        {t('Price Resistance')}
+                      </StatusBadge>
+                    )}
+                  </div>
                   <span className='text-muted-foreground font-mono text-xs'>
                     {ratio}x
                   </span>
@@ -1058,7 +1067,16 @@ function GroupPricingSection(props: {
             header: t('Group'),
             className: thClass,
             cellClassName: 'py-2.5',
-            cell: (group) => <GroupBadge group={group} size='sm' />,
+            cell: (group) => (
+              <div className='flex items-center gap-2'>
+                <GroupBadge group={group} size='sm' />
+                {props.subscriptionUpgradeGroups?.has(group) && (
+                  <StatusBadge variant='success' size='sm'>
+                    {t('Price Resistance')}
+                  </StatusBadge>
+                )}
+              </div>
+            ),
           },
           {
             id: 'ratio',
@@ -1135,6 +1153,7 @@ export interface ModelDetailsContentProps {
   usdExchangeRate: number
   tokenUnit: TokenUnit
   showRechargePrice?: boolean
+  subscriptionUpgradeGroups?: Set<string>
 }
 
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
@@ -1190,6 +1209,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
               usdExchangeRate={props.usdExchangeRate}
               tokenUnit={props.tokenUnit}
               showRechargePrice={showRechargePrice}
+              subscriptionUpgradeGroups={props.subscriptionUpgradeGroups}
             />
           </section>
 

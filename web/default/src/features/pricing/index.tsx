@@ -49,6 +49,7 @@ export function Pricing() {
     usableGroup,
     endpointMap,
     autoGroups,
+    subscriptionUpgradeGroups,
     isLoading,
     priceRate,
     usdExchangeRate,
@@ -131,6 +132,7 @@ export function Pricing() {
           tokenUnit={tokenUnit}
           showRechargePrice={showRechargePrice}
           selectedGroup={groupFilter}
+          subscriptionUpgradeGroups={subscriptionUpgradeGroups}
         />
       )
     }
@@ -280,6 +282,7 @@ export function Pricing() {
               usdExchangeRate={usdExchangeRate ?? 1}
               tokenUnit={tokenUnit}
               showRechargePrice={showRechargePrice}
+              subscriptionUpgradeGroups={subscriptionUpgradeGroups}
             />
           )}
         </PageTransition>

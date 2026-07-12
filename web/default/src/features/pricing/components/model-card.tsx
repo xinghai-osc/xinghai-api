@@ -20,6 +20,7 @@ import { ChevronRight, Copy } from 'lucide-react'
 import { memo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { StatusBadge } from '@/components/status-badge'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
@@ -44,6 +45,7 @@ export interface ModelCardProps {
   tokenUnit?: TokenUnit
   showRechargePrice?: boolean
   selectedGroup?: string
+  subscriptionUpgradeGroups?: Set<string>
   perf?: ModelPerfBadgeData
 }
 
@@ -79,7 +81,10 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       })
     : null
 
-  const primaryGroup = groups[0]
+  const primaryGroup = props.selectedGroup ?? groups[0]
+  const isSubscriptionResistantGroup =
+    Boolean(primaryGroup) &&
+    props.subscriptionUpgradeGroups?.has(primaryGroup)
   const bottomTags = [...endpoints.slice(0, 2), ...tags.slice(0, 2)]
   const hiddenCount =
     Math.max(groups.length - 1, 0) +
@@ -250,7 +255,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
           {primaryGroup && (
             <span className='text-muted-foreground text-sm font-medium'>
-              {primaryGroup}
+              {isSubscriptionResistantGroup ? (
+                <StatusBadge variant='success' size='sm'>
+                  {t('Price Resistance')}
+                </StatusBadge>
+              ) : (
+                primaryGroup
+              )}
             </span>
           )}
           <ModelBillingModeBadge model={props.model} />

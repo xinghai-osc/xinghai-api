@@ -41,7 +41,7 @@ export const REAL_NAME_STATUSES: Record<number, RealNameStatusConfig> = {
   },
   [REAL_NAME_STATUS.FAILED]: {
     label: 'Failed',
-    variant: 'destructive',
+    variant: 'danger',
     value: REAL_NAME_STATUS.FAILED,
   },
 } as const
