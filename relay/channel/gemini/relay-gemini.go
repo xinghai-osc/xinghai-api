@@ -55,7 +55,7 @@ func patchGeminiZeroCompletionUsage(c *gin.Context, info *relaycommon.RelayInfo,
 		usage.CompletionTokens = imageCount * 1400
 	}
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-	// Overwrite the metadata-derived billing usage: effectiveBillingUsage prefers
+	// Overwrite the metadata-derived billing usage: EffectiveBillingUsage prefers
 	// BillingUsage during settlement, so keeping the prompt-only metadata there
 	// would still bill zero completion tokens.
 	usage.BillingUsage = dto.NewEstimatedGeminiChatBillingUsage(usage)

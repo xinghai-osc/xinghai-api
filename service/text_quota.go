@@ -175,8 +175,19 @@ func composeTieredTextQuota(relayInfo *relaycommon.RelayInfo, summary textQuotaS
 	return total
 }
 
+// CalculateTextQuota computes the text quota for the given usage, mirroring the
+// production settlement path. It applies the EffectiveBillingUsage remap (so an
+// upstream billing_usage overrides the top-level usage) before summarizing, and
+// returns the resulting quota. Used by non-relay callers (e.g. channel tests)
+// that need a single quota value without running the full PostTextConsumeQuota
+// settle/refund flow.
+func CalculateTextQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) int {
+	summary := calculateTextQuotaSummary(ctx, relayInfo, EffectiveBillingUsage(usage))
+	return summary.Quota
+}
+
 // calculateTextQuotaSummary expects a usage already remapped by
-// effectiveBillingUsage; PostTextConsumeQuota performs that remap once and shares
+// EffectiveBillingUsage; PostTextConsumeQuota performs that remap once and shares
 // the result with tiered billing, affinity observation and logging.
 func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) textQuotaSummary {
 	summary := textQuotaSummary{
@@ -346,7 +357,7 @@ func usageSemanticFromUsage(relayInfo *relaycommon.RelayInfo, usage *dto.Usage) 
 
 func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent []string) {
 	originUsage := usage
-	billingUsage := effectiveBillingUsage(usage)
+	billingUsage := EffectiveBillingUsage(usage)
 	if usage == nil {
 		extraContent = append(extraContent, "上游无计费信息")
 	}

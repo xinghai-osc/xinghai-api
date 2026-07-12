@@ -139,7 +139,7 @@ func GetChannelWithCondition(group string, model string, retry int, requestPath 
 	if err != nil {
 		return nil, err
 	}
-	abilities = filterAbilitiesByRequestPathAndModel(abilities, requestPath, model)
+	abilities = filterAbilitiesByRequestPath(abilities, requestPath)
 	channel := Channel{}
 	if len(abilities) > 0 {
 		filteredAbilities := make([]Ability, 0, len(abilities))
@@ -178,12 +178,14 @@ func GetChannelWithCondition(group string, model string, retry int, requestPath 
 	return &channel, err
 }
 
-// filterAbilitiesByRequestPathAndModel restricts candidates by request path and
-// model for the DB (non-memory-cache) selection path. Only Advanced Custom
-// (type 58) channels are path-checked: kept only when one of their routes matches
-// requestPath and model; all other channel types always pass. When requestPath is
-// empty, filtering is skipped.
-func filterAbilitiesByRequestPathAndModel(abilities []Ability, requestPath string, model string) []Ability {
+// filterAbilitiesByRequestPath restricts candidates by request path for the DB
+// (non-memory-cache) selection path. Only Advanced Custom (type 58) channels are
+// path-checked: kept only when one of their routes matches requestPath and the
+// ability's model; all other channel types always pass. When requestPath is
+// empty, filtering is skipped. Each ability is checked against its own Model so
+// this works both for single-model selection (GetChannelWithCondition) and for
+// listing all models enabled for a path (GetGroupEnabledModelsForPath).
+func filterAbilitiesByRequestPath(abilities []Ability, requestPath string) []Ability {
 	if requestPath == "" || len(abilities) == 0 {
 		return abilities
 	}
@@ -218,7 +220,7 @@ func filterAbilitiesByRequestPathAndModel(abilities []Ability, requestPath strin
 			filtered = append(filtered, ability)
 			continue
 		}
-		if config != nil && config.SupportsPathForModel(requestPath, model) {
+		if config != nil && config.SupportsPathForModel(requestPath, ability.Model) {
 			filtered = append(filtered, ability)
 		}
 	}

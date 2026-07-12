@@ -17,7 +17,11 @@ const (
 	usageBillingPathGeminiEstimated    = "billing-usage-gemini-estimated"
 )
 
-func effectiveBillingUsage(usage *dto.Usage) *dto.Usage {
+// EffectiveBillingUsage returns the usage to bill on, applying the billing_usage
+// remap used by the production settle path: when usage carries an upstream
+// billing_usage override, that billing usage is returned instead of the
+// top-level usage. Otherwise the passed usage is returned as-is.
+func EffectiveBillingUsage(usage *dto.Usage) *dto.Usage {
 	if billingUsage, ok := usageFromBillingUsage(usage); ok {
 		return billingUsage
 	}

@@ -54,10 +54,17 @@ func InitChannelCache() {
 		if channel.Status != common.ChannelStatusEnabled {
 			continue // skip disabled channels
 		}
+		disabledSet := channel.GetDisabledModelSet()
 		groups := strings.Split(channel.Group, ",")
 		for _, group := range groups {
+			if newGroup2model2channels[group] == nil {
+				newGroup2model2channels[group] = make(map[string][]int)
+			}
 			models := strings.Split(channel.Models, ",")
 			for _, model := range models {
+				if disabledSet != nil && disabledSet[model] {
+					continue // skip per-channel disabled models
+				}
 				if _, ok := newGroup2model2channels[group][model]; !ok {
 					newGroup2model2channels[group][model] = make([]int, 0)
 				}
@@ -112,9 +119,13 @@ func SyncChannelCache(frequency int) {
 }
 
 func GetRandomSatisfiedChannel(group string, model string, retry int, requestPath string) (*Channel, error) {
+	return GetRandomSatisfiedChannelWithCondition(group, model, retry, requestPath, nil)
+}
+
+func GetRandomSatisfiedChannelWithCondition(group string, model string, retry int, requestPath string, condition func(*Channel) bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, retry, requestPath)
+		return GetChannelWithCondition(group, model, retry, requestPath, condition)
 	}
 
 	channelSyncLock.RLock()
@@ -128,6 +139,10 @@ func GetRandomSatisfiedChannel(group string, model string, retry int, requestPat
 		normalizedModel := ratio_setting.FormatMatchingModelName(model)
 		channels = filterChannelsByRequestPathAndModel(group2model2channels[group][normalizedModel], requestPath, model)
 	}
+
+	// Apply request-condition filter (API type allow/deny, excluded channels, quota)
+	// after path filtering so candidates satisfy both the routing and policy constraints.
+	channels = filterChannelsByCondition(channels, condition)
 
 	if len(channels) == 0 {
 		return nil, nil
@@ -236,6 +251,24 @@ func filterChannelsByRequestPathAndModel(channels []int, requestPath string, mod
 	return filtered
 }
 
+// filterChannelsByCondition restricts candidate channel IDs by a caller-supplied
+// predicate. Channels that are missing from the cache or fail the condition are
+// dropped. A nil condition is a pass-through. Caller must hold channelSyncLock
+// (read lock). The cached slice is never mutated.
+func filterChannelsByCondition(channelIds []int, condition func(*Channel) bool) []int {
+	if len(channelIds) == 0 || condition == nil {
+		return channelIds
+	}
+	filtered := make([]int, 0, len(channelIds))
+	for _, channelId := range channelIds {
+		channel, ok := channelsIDM[channelId]
+		if ok && condition(channel) {
+			filtered = append(filtered, channelId)
+		}
+	}
+	return filtered
+}
+
 func CacheGetChannel(id int) (*Channel, error) {
 	if !common.MemoryCacheEnabled {
 		return GetChannelById(id, true)
@@ -291,6 +324,83 @@ func CacheUpdateChannelStatus(id int, status int) {
 			}
 		}
 	}
+}
+
+// CacheUpdateChannelDisabledModels incrementally updates the in-memory cache
+// when a channel's DisabledModels list changes, without a full resync.
+// disabledSet is the new set of disabled model names for the channel.
+func CacheUpdateChannelDisabledModels(id int, disabledSet map[string]bool) {
+	if !common.MemoryCacheEnabled {
+		return
+	}
+	channelSyncLock.Lock()
+	defer channelSyncLock.Unlock()
+	channel, ok := channelsIDM[id]
+	if !ok {
+		return
+	}
+	// Update the cached channel's DisabledModels field so future lookups are consistent.
+	channel.DisabledModels = joinDisabledModels(disabledSet)
+
+	if channel.Status != common.ChannelStatusEnabled {
+		return // disabled channels are already absent from group2model2channels
+	}
+
+	// For each group this channel belongs to, remove the channel from newly-disabled
+	// models and add it back to newly-enabled models.
+	groups := strings.Split(channel.Group, ",")
+	models := strings.Split(channel.Models, ",")
+	for _, group := range groups {
+		model2channels := group2model2channels[group]
+		if model2channels == nil {
+			continue
+		}
+		for _, model := range models {
+			disabled := disabledSet != nil && disabledSet[model]
+			list := model2channels[model]
+			idx := -1
+			for i, cid := range list {
+				if cid == id {
+					idx = i
+					break
+				}
+			}
+			if disabled {
+				// remove channel from this model's list
+				if idx >= 0 {
+					model2channels[model] = append(list[:idx], list[idx+1:]...)
+				}
+			} else {
+				// add channel back to this model's list (and re-sort by priority)
+				if idx < 0 {
+					model2channels[model] = append(list, id)
+					sort.Slice(model2channels[model], func(i, j int) bool {
+						ci := channelsIDM[model2channels[model][i]]
+						cj := channelsIDM[model2channels[model][j]]
+						if ci == nil || cj == nil {
+							return false
+						}
+						return ci.GetPriority() > cj.GetPriority()
+					})
+				}
+			}
+		}
+	}
+}
+
+// joinDisabledModels serializes a disabled-model set into a deterministic,
+// comma-separated string. Keys are sorted so equal sets produce identical
+// strings, which keeps cache comparisons stable.
+func joinDisabledModels(set map[string]bool) string {
+	if len(set) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return strings.Join(keys, ",")
 }
 
 func CacheUpdateChannel(channel *Channel) {

@@ -589,15 +589,21 @@ func attachTestBillingRequestInput(info *relaycommon.RelayInfo, request dto.Requ
 }
 
 func settleTestQuota(c *gin.Context, info *relaycommon.RelayInfo, usage *dto.Usage) (int, *billingexpr.TieredResult) {
-	if usage != nil && info != nil && info.TieredBillingSnapshot != nil {
-		isClaudeUsageSemantic := usage.UsageSemantic == "anthropic" || info.GetFinalRequestRelayFormat() == types.RelayFormatClaude
+	// Mirror the production settle path: bill on the effective billing usage so
+	// an upstream billing_usage override takes precedence over the top-level usage.
+	billingUsage := usage
+	if usage != nil {
+		billingUsage = service.EffectiveBillingUsage(usage)
+	}
+	if billingUsage != nil && info != nil && info.TieredBillingSnapshot != nil {
+		isClaudeUsageSemantic := billingUsage.UsageSemantic == "anthropic" || info.GetFinalRequestRelayFormat() == types.RelayFormatClaude
 		usedVars := billingexpr.UsedVars(info.TieredBillingSnapshot.ExprString)
-		if ok, quota, result := service.TryTieredSettle(info, service.BuildTieredTokenParams(usage, isClaudeUsageSemantic, usedVars)); ok {
+		if ok, quota, result := service.TryTieredSettle(info, service.BuildTieredTokenParams(billingUsage, isClaudeUsageSemantic, usedVars)); ok {
 			return quota, result
 		}
 	}
 
-	return service.CalculateTextQuota(c, info, usage), nil
+	return service.CalculateTextQuota(c, info, billingUsage), nil
 }
 
 func buildTestLogOther(c *gin.Context, info *relaycommon.RelayInfo, priceData types.PriceData, usage *dto.Usage, tieredResult *billingexpr.TieredResult) map[string]interface{} {
