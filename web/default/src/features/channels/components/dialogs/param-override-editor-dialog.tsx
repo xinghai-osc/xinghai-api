@@ -3329,7 +3329,7 @@ function SyncFieldsEditor(syncFieldsEditorProps: SyncFieldsEditorProps) {
               )
             }
           >
-            {preset.label}
+            {t(preset.label)}
           </Button>
         ))}
       </div>

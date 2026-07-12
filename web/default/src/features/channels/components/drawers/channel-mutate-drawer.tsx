@@ -1421,16 +1421,17 @@ export function ChannelMutateDrawer({
     try {
       await withVerification(fetchChannelKey, {
         preferredMethod: 'passkey',
-        title: 'Verify to view channel key',
-        description:
-          'Use Passkey or 2FA to confirm your identity before revealing this channel key.',
+        title: t('Verify to view channel key'),
+        description: t(
+          'Use Passkey or 2FA to confirm your identity before revealing this channel key.'
+        ),
       })
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message)
       }
     }
-  }, [channelId, withVerification, fetchChannelKey])
+  }, [channelId, withVerification, fetchChannelKey, t])
 
   const handleRefreshCodexCredential = useCallback(async () => {
     if (!channelId) return
@@ -1655,7 +1656,7 @@ export function ChannelMutateDrawer({
       if (!isEditing && !data.key?.trim()) {
         form.setError('key', {
           type: 'manual',
-          message: ERROR_MESSAGES.REQUIRED_KEY,
+          message: t(ERROR_MESSAGES.REQUIRED_KEY),
         })
         return
       }
@@ -2843,10 +2844,10 @@ export function ChannelMutateDrawer({
                                                 key={label}
                                                 variant='outline'
                                                 className='max-w-[12rem]'
-                                                title={label}
+                                                title={t(label)}
                                               >
                                                 <span className='truncate'>
-                                                  {label}
+                                                  {t(label)}
                                                 </span>
                                               </Badge>
                                             )

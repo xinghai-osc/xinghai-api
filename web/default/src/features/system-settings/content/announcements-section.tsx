@@ -401,10 +401,10 @@ export function AnnouncementsSection({
               header: t('Type'),
               cell: (announcement) => (
                 <StatusBadge
-                  label={
+                  label={t(
                     typeOptions.find((opt) => opt.value === announcement.type)
-                      ?.label
-                  }
+                      ?.label ?? ''
+                  )}
                   variant={
                     typeOptions.find((opt) => opt.value === announcement.type)
                       ?.badgeVariant ?? 'neutral'
@@ -529,7 +529,7 @@ export function AnnouncementsSection({
                           <div
                             className={`h-3 w-3 rounded-full ${option.color}`}
                           />
-                          {option.label}
+                           {t(option.label)}
                         </div>
                       ),
                     }))}
@@ -551,7 +551,7 @@ export function AnnouncementsSection({
                               <div
                                 className={`h-3 w-3 rounded-full ${option.color}`}
                               />
-                              {option.label}
+                              {t(option.label)}
                             </div>
                           </SelectItem>
                         ))}

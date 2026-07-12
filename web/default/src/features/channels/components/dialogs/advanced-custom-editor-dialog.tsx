@@ -751,7 +751,7 @@ function RouteGroupEditor({
           <Select value={incomingPath} onValueChange={onIncomingPathChange}>
             <SelectTrigger className='h-9 max-w-full lg:max-w-[420px]'>
               <SelectValue className='min-w-0 truncate'>
-                {incomingPathLabel}
+                {t(incomingPathLabel)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent
@@ -766,7 +766,7 @@ function RouteGroupEditor({
                     className={longSelectItemClass}
                   >
                     <div className='flex min-w-0 flex-col gap-1 leading-snug whitespace-normal'>
-                      <span>{option.label}</span>
+                      <span>{t(option.label)}</span>
                       <span className='text-muted-foreground font-mono text-xs break-all'>
                         {option.value}
                       </span>

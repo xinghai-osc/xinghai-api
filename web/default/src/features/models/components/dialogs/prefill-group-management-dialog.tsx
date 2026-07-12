@@ -197,7 +197,7 @@ export function PrefillGroupManagementDialog({
                 <CardTitle className='flex flex-wrap items-center gap-2'>
                   {group.name}
                   <StatusBadge variant={meta.badge} size='sm' copyable={false}>
-                    {meta.label}
+                    {t(meta.label)}
                     <span className='text-muted-foreground/30'>·</span>
                     <span className='text-muted-foreground font-mono'>
                       #{group.id}
@@ -237,9 +237,9 @@ export function PrefillGroupManagementDialog({
             </CardHeader>
             <CardContent className='space-y-3'>
               <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-medium tracking-wide uppercase'>
-                <span>Items</span>
+                <span>{t('Items')}</span>
                 <StatusBadge
-                  label={`${parsedItems.length} item${parsedItems.length === 1 ? '' : 's'}`}
+                  label={t('{{count}} items', { count: parsedItems.length })}
                   variant='neutral'
                   size='sm'
                   copyable={false}
@@ -257,7 +257,7 @@ export function PrefillGroupManagementDialog({
                   ))}
                   {parsedItems.length > 6 && (
                     <StatusBadge
-                      label={`+${parsedItems.length - 6} more`}
+                      label={t('+{{count}} more', { count: parsedItems.length - 6 })}
                       variant='neutral'
                       size='sm'
                       copyable={false}
@@ -311,7 +311,7 @@ export function PrefillGroupManagementDialog({
             cellClassName: 'align-top',
             cell: ({ meta }) => (
               <StatusBadge
-                label={meta.label}
+                label={t(meta.label)}
                 variant={meta.badge}
                 size='sm'
                 copyable={false}
@@ -338,7 +338,7 @@ export function PrefillGroupManagementDialog({
                       ))}
                       {parsedItems.length > 6 && (
                         <StatusBadge
-                          label={`+${parsedItems.length - 6} more`}
+                          label={t('+{{count}} more', { count: parsedItems.length - 6 })}
                           variant='neutral'
                           size='sm'
                           copyable={false}
@@ -354,8 +354,7 @@ export function PrefillGroupManagementDialog({
                   )}
                 </div>
                 <div className='text-muted-foreground mt-2 text-xs font-medium tracking-wide uppercase'>
-                  {parsedItems.length} item
-                  {parsedItems.length === 1 ? '' : 's'}
+                  {t('{{count}} items', { count: parsedItems.length })}
                 </div>
               </>
             ),

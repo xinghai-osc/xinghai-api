@@ -75,14 +75,14 @@ function UsageLogsContent() {
   const tabNavGroups = useMemo<NavGroup[]>(
     () => [
       {
-        title: 'Task Logs',
+        title: t('Task Logs'),
         items: TASK_LOG_SECTIONS.map((section) => ({
           title: SECTION_META[section].titleKey,
           url: `/usage-logs/${section}`,
         })),
       },
     ],
-    []
+    [t]
   )
   const filteredTabGroups = useSidebarConfig(tabNavGroups)
   const visibleSections = useMemo(

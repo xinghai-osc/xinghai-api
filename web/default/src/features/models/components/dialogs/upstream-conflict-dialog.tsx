@@ -197,7 +197,7 @@ export function UpstreamConflictDialog({
   const columns = useMemo<ColumnDef<ConflictFieldRow>[]>(() => {
     const modelColumn: ColumnDef<ConflictFieldRow> = {
       accessorKey: 'modelName',
-      header: 'Model',
+      header: t('Model'),
       cell: ({ row }) => (
         <div className='flex items-start gap-3'>
           {isMobile ? (
@@ -228,7 +228,7 @@ export function UpstreamConflictDialog({
 
     const diffColumn: ColumnDef<ConflictFieldRow> = {
       id: 'actions',
-      header: 'Diff',
+      header: t('Diff'),
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => (
@@ -243,12 +243,12 @@ export function UpstreamConflictDialog({
             }
           >
             <MousePointerClick className='h-3.5 w-3.5' />
-            {!isMobile && 'View diff'}
+            {!isMobile && t('View diff')}
           </PopoverTrigger>
           <PopoverContent className='w-[min(90vw,24rem)] space-y-4 text-sm'>
             <div>
               <StatusBadge
-                label='Local'
+                label={t('Local')}
                 variant='neutral'
                 size='sm'
                 copyable={false}
@@ -260,7 +260,7 @@ export function UpstreamConflictDialog({
             </div>
             <div>
               <StatusBadge
-                label='Upstream'
+                label={t('Upstream')}
                 variant='info'
                 size='sm'
                 copyable={false}
@@ -307,7 +307,7 @@ export function UpstreamConflictDialog({
       modelColumn,
       {
         accessorKey: 'fieldLabel',
-        header: 'Field',
+        header: t('Field'),
         cell: ({ row }) => (
           <StatusBadge
             label={row.original.fieldLabel}
@@ -321,12 +321,12 @@ export function UpstreamConflictDialog({
       },
       {
         accessorKey: 'localValue',
-        header: 'Local Value',
+        header: t('Local Value'),
         cell: ({ row }) => <ValuePreview value={row.original.localValue} />,
       },
       {
         accessorKey: 'upstreamValue',
-        header: 'Upstream Value',
+        header: t('Upstream Value'),
         cell: ({ row }) => <ValuePreview value={row.original.upstreamValue} />,
       },
     ]

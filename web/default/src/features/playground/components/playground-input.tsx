@@ -381,7 +381,7 @@ export function PlaygroundInput({
             suggestion={text}
           >
             {Icon && <Icon size={16} style={{ color }} />}
-            {text}
+            {t(text)}
           </Suggestion>
         ))}
       </Suggestions>
