@@ -220,6 +220,12 @@ export type DataTablePageProps<TData> = {
   tableHeaderClassName?: string
 
   /**
+   * Desktop `<TableBody>` className override.
+   * Use for row height overrides (e.g. `[&>tr]:h-10` for compact rows).
+   */
+  tableBodyClassName?: string
+
+  /**
    * Opt into the table/card view toggle. Defaults to `false`, so existing
    * pages render the table only and behave exactly as before. When enabled, a
    * {@link DataTableViewModeToggle} is injected into the default toolbar
@@ -415,6 +421,7 @@ function renderMobile<TData>(
             '[background-color:var(--table-header)]',
             props.tableHeaderClassName
           )}
+          tableBodyClassName={props.tableBodyClassName}
           getColumnClassName={props.getColumnClassName}
           pinnedColumns={props.pinnedColumns}
           containerClassName={cn(
@@ -515,6 +522,7 @@ function renderDesktop<TData>(
         fixedHeight && '[background-color:var(--table-header)]',
         props.tableHeaderClassName
       )}
+      tableBodyClassName={props.tableBodyClassName}
       getColumnClassName={props.getColumnClassName}
       pinnedColumns={props.pinnedColumns}
       containerClassName={cn(
