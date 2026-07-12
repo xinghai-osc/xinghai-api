@@ -558,23 +558,23 @@ export function CustomSidebarSection({
                     'Add sub-items to create a collapsible menu. When sub-items exist, the URL field is ignored.'
                   )}
                 </FormDescription>
-                {subItems.map((sub, index) => (
+                {subItems.map((sub) => (
                   <div
-                    key={index}
+                    key={`sub-item-${sub.title}-${sub.url}`}
                     className='flex items-start gap-2 rounded-md border p-3'
                   >
                     <div className='grid flex-1 grid-cols-2 gap-2'>
                       <Input
                         value={sub.title}
                         onChange={(e) =>
-                          updateSubItem(index, 'title', e.target.value)
+                          updateSubItem(subItems.indexOf(sub), 'title', e.target.value)
                         }
                         placeholder={t('Sub-item title')}
                       />
                       <Input
                         value={sub.url}
                         onChange={(e) =>
-                          updateSubItem(index, 'url', e.target.value)
+                          updateSubItem(subItems.indexOf(sub), 'url', e.target.value)
                         }
                         placeholder={t('/sub-page or https://...')}
                       />
@@ -583,7 +583,7 @@ export function CustomSidebarSection({
                       type='button'
                       variant='ghost'
                       size='sm'
-                      onClick={() => removeSubItem(index)}
+                      onClick={() => removeSubItem(subItems.indexOf(sub))}
                       className='shrink-0'
                     >
                       <Trash2 className='h-4 w-4' />

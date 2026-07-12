@@ -84,8 +84,8 @@ export function DataTableBulkActions<TData>({
     const buttons = buttonsRef.current
     if (!buttons) return
 
-    const currentIndex = [...buttons].findIndex(
-      (button) => button === document.activeElement
+    const currentIndex = [...buttons].indexOf(
+      document.activeElement as HTMLButtonElement
     )
 
     switch (event.key) {
@@ -108,7 +108,7 @@ export function DataTableBulkActions<TData>({
         break
       case 'End':
         event.preventDefault()
-        buttons[buttons.length - 1]?.focus()
+        buttons.item(buttons.length - 1)?.focus()
         break
       case 'Escape': {
         // Check if the Escape key came from a dropdown trigger or content

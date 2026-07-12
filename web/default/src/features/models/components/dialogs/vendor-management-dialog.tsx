@@ -146,11 +146,12 @@ export function VendorManagementDialog({
         </div>
 
         {/* Vendor List */}
-        {isLoading ? (
+        {isLoading && (
           <div className='flex items-center justify-center py-12'>
             <Loader2 className='h-8 w-8 animate-spin' />
           </div>
-        ) : filteredVendors.length === 0 ? (
+        )}
+        {!isLoading && filteredVendors.length === 0 && (
           <Empty className='border'>
             <EmptyHeader>
               <EmptyMedia variant='icon'>
@@ -168,7 +169,8 @@ export function VendorManagementDialog({
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
-        ) : (
+        )}
+        {!isLoading && filteredVendors.length > 0 && (
           <div className='rounded-lg border'>
             <div className='divide-y'>
               {filteredVendors.map((vendor) => (

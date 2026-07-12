@@ -178,14 +178,14 @@ export function parseThinkTags(content: string): {
     if (openPos === -1) {
       // No more think tags, add remaining content
       if (currentPos < content.length) {
-        visibleParts.push(content.substring(currentPos))
+        visibleParts.push(content.slice(currentPos))
       }
       break
     }
 
     // Add visible content before this tag
     if (openPos > currentPos) {
-      visibleParts.push(content.substring(currentPos, openPos))
+      visibleParts.push(content.slice(currentPos, openPos))
     }
 
     // Look for matching </think> tag
@@ -193,13 +193,13 @@ export function parseThinkTags(content: string): {
 
     if (closePos === -1) {
       // Unclosed tag: rest is reasoning buffer
-      reasoningParts.push(content.substring(openPos + 7))
+      reasoningParts.push(content.slice(openPos + 7))
       hasUnclosed = true
       break
     }
 
     // Extract reasoning content between tags
-    reasoningParts.push(content.substring(openPos + 7, closePos))
+    reasoningParts.push(content.slice(openPos + 7, closePos))
     currentPos = closePos + 8
   }
 

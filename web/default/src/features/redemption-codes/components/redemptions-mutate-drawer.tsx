@@ -123,7 +123,7 @@ export function RedemptionsMutateDrawer({
         if (result.success && result.data) {
           form.reset(transformRedemptionToFormDefaults(result.data))
         }
-      })
+      }).catch(() => {})
     } else if (open && !isUpdate) {
       // For create, reset to defaults
       form.reset(REDEMPTION_FORM_DEFAULT_VALUES)

@@ -65,7 +65,7 @@ export function TwoFABackupDialog({
       } else {
         toast.error(response.message || t('Failed to regenerate backup codes'))
       }
-    } catch (_error) {
+    } catch {
       toast.error(t('Failed to regenerate backup codes'))
     } finally {
       setLoading(false)
@@ -107,8 +107,7 @@ export function TwoFABackupDialog({
       contentHeight='auto'
       bodyClassName='space-y-4'
       footer={
-        <>
-          {backupCodes.length === 0 ? (
+          backupCodes.length === 0 ? (
             <>
               <Button
                 variant='outline'
@@ -124,8 +123,7 @@ export function TwoFABackupDialog({
             </>
           ) : (
             <Button onClick={handleDone}>{t('Done')}</Button>
-          )}
-        </>
+          )
       }
     >
       <div className='space-y-4 py-4'>
@@ -163,9 +161,9 @@ export function TwoFABackupDialog({
 
             <div className='rounded-lg border p-4'>
               <div className='grid grid-cols-2 gap-2'>
-                {backupCodes.map((code, index) => (
+                {backupCodes.map((code) => (
                   <div
-                    key={index}
+                    key={code}
                     className='bg-muted rounded-md p-2 text-center font-mono text-sm'
                   >
                     {code}

@@ -62,9 +62,9 @@ function isDisabledApiKeyRow(apiKey: AdminApiKey) {
 function AdminTokensMobileSkeleton() {
   return (
     <div className='divide-border overflow-hidden rounded-lg border'>
-      {Array.from({ length: 5 }).map((_, index) => (
+      {Array.from({ length: 5 }, (_, index) => `admin-token-skeleton-${index}`).map((key) => (
         <div
-          key={index}
+          key={key}
           className='space-y-2 border-b px-3 py-2.5 last:border-b-0'
         >
           <div className='flex items-center justify-between'>

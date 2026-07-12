@@ -285,13 +285,18 @@ export function SystemTasksPanel() {
       </div>
 
       <div aria-busy={tasksQuery.isFetching}>
-        {loading ? (
+        {(() => {
+          if (loading) {
+            return (
           <div className='space-y-2 p-4 sm:p-5'>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className='h-9 w-full rounded-md' />
+            {Array.from({ length: 4 }, (_, i) => `task-skel-${i}`).map((key) => (
+              <Skeleton key={key} className='h-9 w-full rounded-md' />
             ))}
           </div>
-        ) : tasksQuery.isError ? (
+            )
+          }
+          if (tasksQuery.isError) {
+            return (
           <ErrorState
             title={t('We could not load system tasks.')}
             description={
@@ -304,7 +309,10 @@ export function SystemTasksPanel() {
             }}
             className='min-h-[260px]'
           />
-        ) : tasks.length === 0 ? (
+            )
+          }
+          if (tasks.length === 0) {
+            return (
           <div className='px-4 py-10 text-center sm:px-5'>
             <div className='bg-muted mx-auto mb-3 flex size-10 items-center justify-center rounded-lg'>
               <ListChecks
@@ -316,12 +324,14 @@ export function SystemTasksPanel() {
               {t('No system tasks yet.')}
             </p>
           </div>
-        ) : (
-          <div className='space-y-4 p-4 sm:p-5'>
-            <div>
-              <div className='mb-2 flex items-center justify-between gap-3'>
-                <div>
-                  <h4 className='text-sm font-medium'>{t('Active Tasks')}</h4>
+            )
+          }
+          return (
+            <div className='space-y-4 p-4 sm:p-5'>
+              <div>
+                <div className='mb-2 flex items-center justify-between gap-3'>
+                  <div>
+                    <h4 className='text-sm font-medium'>{t('Active Tasks')}</h4>
                   <p className='text-muted-foreground mt-0.5 text-xs'>
                     {t('Tasks currently pending or running.')}
                   </p>
@@ -356,7 +366,8 @@ export function SystemTasksPanel() {
               )}
             </div>
           </div>
-        )}
+          )
+        })()}
       </div>
     </section>
   )

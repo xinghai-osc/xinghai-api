@@ -87,7 +87,9 @@ export function AdminRealNameMutateDialog() {
         setDescription(record.description || '')
         setProvider(record.provider || 'tencent_faceid')
       })
+      .catch(() => {})
       .finally(() => setIsLoadingRecord(false))
+      .catch(() => {})
   }, [editingRecord, t])
 
   const handleClose = (nextOpen: boolean) => {

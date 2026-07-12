@@ -417,13 +417,16 @@ export function CreateDeploymentDrawer({
                     </FormControl>
                     {open && field.value?.trim() ? (
                       <div className='text-muted-foreground text-xs'>
-                        {isCheckingName
-                          ? t('Checking name...')
-                          : nameAvailable === true
-                            ? t('Name is available')
-                            : nameAvailable === false
-                              ? t('Name is not available')
-                              : ''}
+                        {(() => {
+                          if (isCheckingName) return t('Checking name...')
+                          if (nameAvailable === true) {
+                            return t('Name is available')
+                          }
+                          if (nameAvailable === false) {
+                            return t('Name is not available')
+                          }
+                          return ''
+                        })()}
                       </div>
                     ) : null}
                     <FormMessage />

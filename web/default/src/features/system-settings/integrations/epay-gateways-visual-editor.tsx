@@ -234,8 +234,8 @@ export function EpayGatewaysVisualEditor({
 
           {/* Mobile card view */}
           <div className='divide-y md:hidden'>
-            {gateways.map((gateway, index) => (
-              <div key={`${gateway.id}-${index}`} className='p-4'>
+            {gateways.map((gateway) => (
+              <div key={gateway.id} className='p-4'>
                 <div className='mb-3 flex items-start justify-between'>
                   <div className='flex-1'>
                     <div className='mb-1 font-medium'>{gateway.name}</div>

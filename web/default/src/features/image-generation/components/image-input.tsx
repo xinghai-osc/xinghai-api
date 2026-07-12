@@ -72,15 +72,16 @@ interface ImageInputProps {
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.addEventListener('load', () => {
       if (typeof reader.result === 'string') {
         resolve(reader.result)
         return
       }
       reject(new Error('Failed to read image file'))
-    }
-    reader.onerror = () =>
+    })
+    reader.addEventListener('error', () =>
       reject(reader.error ?? new Error('Failed to read image file'))
+    )
     reader.readAsDataURL(file)
   })
 }

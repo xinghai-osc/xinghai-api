@@ -333,7 +333,7 @@ function formatTokenHint(n: number | string | null | undefined): string {
 function formatNumberDraft(value: number | string): string {
   if (value === '') return ''
   if (typeof value === 'number')
-    return Number.isFinite(value) ? String(value) : '0'
+    {return Number.isFinite(value) ? String(value) : '0'}
   return value
 }
 
@@ -436,12 +436,10 @@ function ConditionRow({ condition, onChange, onRemove }: ConditionRowProps) {
   return (
     <div className='flex items-center gap-2'>
       <Select
-        items={[
-          ...CONDITION_INPUT_OPTIONS.map((option) => ({
+        items={CONDITION_INPUT_OPTIONS.map((option) => ({
             value: option.value,
             label: t(option.labelKey),
-          })),
-        ]}
+          }))}
         value={condition.var}
         onValueChange={(value) =>
           onChange({ ...condition, var: value as TierConditionInput['var'] })
@@ -665,12 +663,16 @@ function VisualTierCard({
             {t('Always matches (default tier).')}
           </p>
         ) : (
-          tier.conditions.map((condition, conditionIndex) => (
+          tier.conditions.map((condition) => (
             <ConditionRow
-              key={conditionIndex}
+              key={`condition-${condition.var}-${condition.op}-${condition.value}`}
               condition={condition}
-              onChange={(next) => handleConditionChange(conditionIndex, next)}
-              onRemove={() => handleConditionRemove(conditionIndex)}
+              onChange={(next) => handleConditionChange(
+                tier.conditions.indexOf(condition), next
+              )}
+              onRemove={() => handleConditionRemove(
+                tier.conditions.indexOf(condition)
+              )}
             />
           ))
         )}
@@ -847,15 +849,15 @@ function VisualEditor({ visualConfig, onChange }: VisualEditorProps) {
           'Each tier supports up to 2 conditions. The last tier without conditions is the fallback.'
         )}
       </p>
-      {config.tiers.map((tier, index) => (
+      {config.tiers.map((tier) => (
         <VisualTierCard
-          key={index}
+          key={`tier-${tier.label || 'default'}-${(tier.conditions[0]?.var ?? '') + (tier.conditions[0]?.op ?? '') + (tier.conditions[0]?.value ?? '')}`}
           tier={tier}
-          index={index}
+          index={config.tiers.indexOf(tier)}
           total={config.tiers.length}
-          onChange={(next) => handleTierChange(index, next)}
-          onRemove={() => handleRemoveTier(index)}
-          onAddCondition={() => handleAddCondition(index)}
+          onChange={(next) => handleTierChange(config.tiers.indexOf(tier), next)}
+          onRemove={() => handleRemoveTier(config.tiers.indexOf(tier))}
+          onAddCondition={() => handleAddCondition(config.tiers.indexOf(tier))}
         />
       ))}
       <Button
@@ -967,12 +969,12 @@ function RuleConditionRow({
         return timeFunc
     }
   }
-  const sourceLabel =
-    condition.source === SOURCE_PARAM
-      ? t('Body param')
-      : condition.source === SOURCE_HEADER
-        ? t('Header')
-        : t('Time')
+  let sourceLabel = t('Time')
+  if (condition.source === SOURCE_PARAM) {
+    sourceLabel = t('Body param')
+  } else if (condition.source === SOURCE_HEADER) {
+    sourceLabel = t('Header')
+  }
 
   const handleSourceChange = (source: string) => {
     if (source === SOURCE_TIME) {
@@ -992,12 +994,10 @@ function RuleConditionRow({
   const renderTimeCondition = (timeCond: TimeCondition) => (
     <>
       <Select
-        items={[
-          ...TIME_FUNCS.map((fn) => ({
+        items={TIME_FUNCS.map((fn) => ({
             value: fn,
             label: getTimeFuncLabel(fn),
-          })),
-        ]}
+          }))}
         value={timeCond.timeFunc}
         onValueChange={(value) =>
           onChange({ ...timeCond, timeFunc: value as TimeFunc })
@@ -1017,12 +1017,10 @@ function RuleConditionRow({
         </SelectContent>
       </Select>
       <Select
-        items={[
-          ...COMMON_TIMEZONES.map((tz) => ({
+        items={COMMON_TIMEZONES.map((tz) => ({
             value: tz.value,
             label: tz.label,
-          })),
-        ]}
+          }))}
         value={timeCond.timezone}
         onValueChange={(value) =>
           value !== null && onChange({ ...timeCond, timezone: value })
@@ -1045,12 +1043,10 @@ function RuleConditionRow({
         </SelectContent>
       </Select>
       <Select
-        items={[
-          ...matchOptions.map((option) => ({
+        items={matchOptions.map((option) => ({
             value: option.value,
             label: getMatchLabel(option.value),
-          })),
-        ]}
+          }))}
         value={timeCond.mode}
         onValueChange={(v) => v !== null && handleModeChange(v)}
       >
@@ -1111,12 +1107,10 @@ function RuleConditionRow({
         className='w-44'
       />
       <Select
-        items={[
-          ...matchOptions.map((option) => ({
+        items={matchOptions.map((option) => ({
             value: option.value,
             label: getMatchLabel(option.value),
-          })),
-        ]}
+          }))}
         value={phCond.mode}
         onValueChange={(v) => v !== null && handleModeChange(v)}
       >
@@ -1239,16 +1233,18 @@ function RuleGroupCard({
       </div>
 
       <div className='space-y-2'>
-        {group.conditions.map((condition, conditionIndex) => (
+        {group.conditions.map((condition) => (
           <RuleConditionRow
-            key={conditionIndex}
+            key={`rule-cond-${JSON.stringify(condition)}`}
             condition={condition}
-            onChange={(next) => handleConditionChange(conditionIndex, next)}
+            onChange={(next) => handleConditionChange(
+              group.conditions.indexOf(condition), next
+            )}
             onRemove={() =>
               onChange({
                 ...group,
                 conditions: group.conditions.filter(
-                  (_, i) => i !== conditionIndex
+                  (_, i) => i !== group.conditions.indexOf(condition)
                 ),
               })
             }
@@ -1562,7 +1558,7 @@ function LlmPromptHelper({ modelName }: LlmPromptHelperProps) {
 
   const prompt = useMemo(() => {
     if (modelName) {
-      return LLM_PROMPT_TEMPLATE + `\n\nCurrent model: ${modelName}`
+      return `${LLM_PROMPT_TEMPLATE  }\n\nCurrent model: ${modelName}`
     }
     return LLM_PROMPT_TEMPLATE
   }, [modelName])
@@ -1835,19 +1831,20 @@ export const TieredPricingEditor = memo(function TieredPricingEditor({
               </Alert>
             ) : (
               <>
-                {requestRuleGroups.map((group, groupIndex) => (
+                {requestRuleGroups.map((group) => (
                   <RuleGroupCard
-                    key={groupIndex}
+                    key={`group-${group.multiplier}`}
                     group={group}
-                    index={groupIndex}
+                    index={requestRuleGroups.indexOf(group)}
                     onChange={(next) => {
+                      const groupIndex = requestRuleGroups.indexOf(group)
                       const updated = [...requestRuleGroups]
                       updated[groupIndex] = next
                       handleRuleGroupsChange(updated)
                     }}
                     onRemove={() =>
                       handleRuleGroupsChange(
-                        requestRuleGroups.filter((_, i) => i !== groupIndex)
+                        requestRuleGroups.filter((_, i) => i !== requestRuleGroups.indexOf(group))
                       )
                     }
                   />

@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
 import { Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -79,6 +79,7 @@ export function CacheStatsDialog(props: Props) {
         if (seq !== seqRef.current) return
         setLoading(false)
       })
+      .catch(() => {})
   }, [props.open, props.target, t])
 
   const rows = useMemo(() => {
@@ -158,6 +159,49 @@ export function CacheStatsDialog(props: Props) {
     }
   }
 
+  let cacheBody: ReactNode
+  if (loading) {
+    cacheBody = (
+      <div className='text-muted-foreground py-8 text-center text-sm'>
+        {t('Loading...')}
+      </div>
+    )
+  } else if (rows.length > 0) {
+    cacheBody = (
+      <div className='space-y-2'>
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className='flex justify-between gap-4 border-b pb-1 text-sm'
+          >
+            <span className='text-muted-foreground'>{row.key}</span>
+            <span className='text-right font-medium break-all'>
+              {row.value}
+            </span>
+          </div>
+        ))}
+        {props.target?.rule_name && props.target?.key_fp ? (
+          <Button
+            variant='destructive'
+            size='sm'
+            className='mt-2'
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={loading}
+          >
+            <Trash2 className='mr-1 h-3 w-3' />
+            {t('Delete Affinity')}
+          </Button>
+        ) : null}
+      </div>
+    )
+  } else {
+    cacheBody = (
+      <div className='text-muted-foreground py-8 text-center text-sm'>
+        {t('No data available')}
+      </div>
+    )
+  }
+
   return (
     <>
       <Dialog
@@ -173,41 +217,7 @@ export function CacheStatsDialog(props: Props) {
           'Hit criteria: If cached tokens exist in usage, it counts as a hit.'
         )}
       </p>
-      {loading ? (
-        <div className='text-muted-foreground py-8 text-center text-sm'>
-          {t('Loading...')}
-        </div>
-      ) : rows.length > 0 ? (
-        <div className='space-y-2'>
-          {rows.map((row) => (
-            <div
-              key={row.key}
-              className='flex justify-between gap-4 border-b pb-1 text-sm'
-            >
-              <span className='text-muted-foreground'>{row.key}</span>
-              <span className='text-right font-medium break-all'>
-                {row.value}
-              </span>
-            </div>
-          ))}
-          {props.target?.rule_name && props.target?.key_fp ? (
-            <Button
-              variant='destructive'
-              size='sm'
-              className='mt-2'
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={loading}
-            >
-              <Trash2 className='mr-1 h-3 w-3' />
-              {t('Delete Affinity')}
-            </Button>
-          ) : null}
-        </div>
-      ) : (
-        <div className='text-muted-foreground py-8 text-center text-sm'>
-          {t('No data available')}
-        </div>
-      )}
+      {cacheBody}
     </Dialog>
 
     <ConfirmDialog

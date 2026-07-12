@@ -131,21 +131,27 @@ export function AdminApiKeyCell({ apiKey }: { apiKey: AdminApiKey }) {
             />
           }
         >
-          {isLoading ? (
-            <Loader2 className='size-3.5 animate-spin' />
-          ) : isCopied ? (
-            <Check className='size-3.5 text-green-600' />
-          ) : (
-            <Copy className='size-3.5' />
-          )}
-        </TooltipTrigger>
-        <TooltipContent>
-          {isLoading
-            ? t('Loading...')
-            : isCopied
-              ? t('Copied!')
-              : t('Copy API key')}
-        </TooltipContent>
+        {(() => {
+          if (isLoading) {
+            return <Loader2 className='size-3.5 animate-spin' />
+          }
+          if (isCopied) {
+            return <Check className='size-3.5 text-green-600' />
+          }
+          return <Copy className='size-3.5' />
+        })()}
+      </TooltipTrigger>
+      <TooltipContent>
+        {(() => {
+          if (isLoading) {
+            return t('Loading...')
+          }
+          if (isCopied) {
+            return t('Copied!')
+          }
+          return t('Copy API key')
+        })()}
+      </TooltipContent>
       </Tooltip>
     </div>
   )

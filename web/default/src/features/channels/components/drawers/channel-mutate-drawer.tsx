@@ -2894,7 +2894,9 @@ export function ChannelMutateDrawer({
                             )}
 
                             <ChannelAuthSection>
-                              {isEditing && supportsMultiKeyAddMode ? (
+                              {(() => {
+                                if (isEditing && supportsMultiKeyAddMode) {
+                                  return (
                                 <FormField
                                   control={form.control}
                                   name='multi_key_mode'
@@ -2955,7 +2957,10 @@ export function ChannelMutateDrawer({
                                     </FormItem>
                                   )}
                                 />
-                              ) : !isEditing ? (
+                                  )
+                                }
+                                if (!isEditing) {
+                                  return (
                                 <FormField
                                   control={form.control}
                                   name='multi_key_mode'
@@ -2999,7 +3004,10 @@ export function ChannelMutateDrawer({
                                     </FormItem>
                                   )}
                                 />
-                              ) : null}
+                                  )
+                                }
+                                return null
+                              })()}
 
                               <FormField
                                 control={form.control}
