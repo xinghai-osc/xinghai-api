@@ -136,4 +136,5 @@ var channelNonSensitiveFields = map[string]struct{}{
 	"multi_key_type":      {},
 	"disabled_models":     {},
 	"quota_limit":         {},
+	"backup_channel_id":   {},
 }

@@ -64,7 +64,11 @@ func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointTyp
 	return normalized
 }
 
-func resolveChannelTestUserID(_ *gin.Context) (int, error) {
+func resolveChannelTestUserID(c *gin.Context) (int, error) {
+	if c != nil && c.GetInt("id") > 0 {
+		return c.GetInt("id"), nil
+	}
+
 	var rootUser model.User
 	if err := model.DB.Select("id").Where("role = ?", common.RoleRootUser).First(&rootUser).Error; err != nil {
 		return 0, fmt.Errorf("failed to resolve channel test user: %w", err)
