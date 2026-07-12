@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -23,6 +24,11 @@ type TopUp struct {
 	CreateTime      int64   `json:"create_time"`
 	CompleteTime    int64   `json:"complete_time"`
 	Status          string  `json:"status"`
+}
+
+type TopUpWithUser struct {
+	TopUp
+	Username string `json:"username" gorm:"column:username"`
 }
 
 const (
@@ -204,8 +210,8 @@ func GetUserTopUps(userId int, pageInfo *common.PageInfo) (topups []*TopUp, tota
 	return topups, total, nil
 }
 
-// GetAllTopUps 获取全平台的充值记录（管理员使用，不限制时间窗口）
-func GetAllTopUps(pageInfo *common.PageInfo) (topups []*TopUp, total int64, err error) {
+// GetAllTopUps 获取全平台的充值记录（管理员使用，不限制时间窗口），附带用户名
+func GetAllTopUps(pageInfo *common.PageInfo) (topups []*TopUpWithUser, total int64, err error) {
 	tx := DB.Begin()
 	if tx.Error != nil {
 		return nil, 0, tx.Error
@@ -221,7 +227,13 @@ func GetAllTopUps(pageInfo *common.PageInfo) (topups []*TopUp, total int64, err 
 		return nil, 0, err
 	}
 
-	if err = tx.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error; err != nil {
+	if err = tx.Table("top_ups").
+		Select("top_ups.*, users.username").
+		Joins("LEFT JOIN users ON top_ups.user_id = users.id").
+		Order("top_ups.id desc").
+		Limit(pageInfo.GetPageSize()).
+		Offset(pageInfo.GetStartIdx()).
+		Find(&topups).Error; err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
@@ -277,8 +289,8 @@ func SearchUserTopUps(userId int, keyword string, pageInfo *common.PageInfo) (to
 	return topups, total, nil
 }
 
-// SearchAllTopUps 按订单号搜索全平台充值记录（管理员使用，不限制时间窗口）
-func SearchAllTopUps(keyword string, pageInfo *common.PageInfo) (topups []*TopUp, total int64, err error) {
+// SearchAllTopUps 按订单号或用户名搜索全平台充值记录（管理员使用，不限制时间窗口）
+func SearchAllTopUps(keyword string, pageInfo *common.PageInfo) (topups []*TopUpWithUser, total int64, err error) {
 	tx := DB.Begin()
 	if tx.Error != nil {
 		return nil, 0, tx.Error
@@ -289,23 +301,40 @@ func SearchAllTopUps(keyword string, pageInfo *common.PageInfo) (topups []*TopUp
 		}
 	}()
 
-	query := tx.Model(&TopUp{})
-	if keyword != "" {
-		pattern, perr := sanitizeLikePattern(keyword)
-		if perr != nil {
-			tx.Rollback()
-			return nil, 0, perr
-		}
-		query = query.Where("trade_no LIKE ? ESCAPE '!'", pattern)
+	pattern, perr := sanitizeLikePattern(keyword)
+	if perr != nil {
+		tx.Rollback()
+		return nil, 0, perr
 	}
 
-	if err = query.Limit(searchTopUpCountHardLimit).Count(&total).Error; err != nil {
+	whereClause := "top_ups.trade_no LIKE ? ESCAPE '!' OR users.username LIKE ? ESCAPE '!'"
+	args := []interface{}{pattern, pattern}
+
+	// Also match user_id if keyword is numeric
+	if _, numErr := strconv.Atoi(keyword); numErr == nil {
+		whereClause += " OR top_ups.user_id = ?"
+		args = append(args, keyword)
+	}
+
+	baseQuery := tx.Table("top_ups").
+		Joins("LEFT JOIN users ON top_ups.user_id = users.id").
+		Where(whereClause, args...)
+	countQuery := tx.Model(&TopUp{}).
+		Joins("LEFT JOIN users ON top_ups.user_id = users.id").
+		Where(whereClause, args...)
+
+	if err = countQuery.Limit(searchTopUpCountHardLimit).Count(&total).Error; err != nil {
 		tx.Rollback()
 		common.SysError("failed to count search topups: " + err.Error())
 		return nil, 0, errors.New("搜索充值记录失败")
 	}
 
-	if err = query.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error; err != nil {
+	if err = baseQuery.
+		Select("top_ups.*, users.username").
+		Order("top_ups.id desc").
+		Limit(pageInfo.GetPageSize()).
+		Offset(pageInfo.GetStartIdx()).
+		Find(&topups).Error; err != nil {
 		tx.Rollback()
 		common.SysError("failed to search topups: " + err.Error())
 		return nil, 0, errors.New("搜索充值记录失败")

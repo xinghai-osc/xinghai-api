@@ -32,6 +32,7 @@ import {
   ListTodo,
   MessageSquare,
   Radio,
+  ReceiptText,
   ServerCog,
   Settings,
   Ticket,
@@ -140,6 +141,11 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           title: t('Users'),
           url: '/users',
           icon: Users,
+        },
+        {
+          title: t('Orders'),
+          url: '/admin/topups',
+          icon: ReceiptText,
         },
         {
           title: t('API Key Management'),
