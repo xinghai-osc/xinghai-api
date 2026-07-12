@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useTranslation } from 'react-i18next'
 
 import { CopyableStatusBadge, StatusBadge } from '@/components/status-badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
@@ -90,8 +90,15 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
       <CardContent className='p-4 sm:p-5'>
         <div className='flex items-center gap-3 sm:gap-4'>
           <div className='relative'>
-            <div className='absolute -inset-0.5 rounded-xl bg-gradient-to-br from-primary/40 via-primary/20 to-transparent opacity-60' />
+            <div className='from-primary/40 via-primary/20 absolute -inset-0.5 rounded-xl bg-gradient-to-br to-transparent opacity-60' />
             <Avatar className='relative size-12 rounded-xl text-base sm:size-14 sm:text-lg'>
+              {profile.avatar_url && (
+                <AvatarImage
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className='rounded-xl object-cover'
+                />
+              )}
               <AvatarFallback
                 className='rounded-xl font-semibold text-white'
                 style={avatarFallbackStyle}

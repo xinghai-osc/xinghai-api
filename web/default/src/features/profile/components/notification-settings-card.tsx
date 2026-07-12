@@ -28,11 +28,13 @@ import {
   ToggleGroupItem,
 } from '@/components/design-system/toggle-group'
 import { PasswordInput } from '@/components/password-input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { TitledCard } from '@/components/ui/titled-card'
+import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
 import { ROLE } from '@/lib/roles'
 
 import { updateUserSettings } from '../api'
@@ -88,6 +90,8 @@ export function NotificationSettingsCard({
     accept_unset_model_ratio_model: false,
     record_ip_log: false,
     upstream_model_update_notify_enabled: false,
+    show_in_personal_ranking: false,
+    avatar_url: '',
   })
 
   // Update form field helper
@@ -117,6 +121,8 @@ export function NotificationSettingsCard({
         record_ip_log: parsed.record_ip_log || false,
         upstream_model_update_notify_enabled:
           parsed.upstream_model_update_notify_enabled || false,
+        show_in_personal_ranking: parsed.show_in_personal_ranking || false,
+        avatar_url: parsed.avatar_url ?? profile.avatar_url ?? '',
       })
     }
   }, [profile])
@@ -343,6 +349,53 @@ export function NotificationSettingsCard({
         </>
       )}
 
+      <div className='space-y-3 border-t pt-5 sm:pt-6'>
+        <div>
+          <h4 className='text-sm font-medium'>{t('Profile')}</h4>
+          <p className='text-muted-foreground mt-0.5 text-xs'>
+            {t('Customize how your account appears')}
+          </p>
+        </div>
+
+        <div className='space-y-1.5'>
+          <Label htmlFor='avatarUrl'>{t('Avatar URL')}</Label>
+          <div className='flex items-center gap-3'>
+            <Avatar className='size-12 shrink-0 rounded-xl'>
+              {settings.avatar_url && (
+                <AvatarImage
+                  src={settings.avatar_url}
+                  alt={profile?.username || profile?.display_name || ''}
+                  className='rounded-xl object-cover'
+                />
+              )}
+              <AvatarFallback
+                className='rounded-xl font-semibold text-white'
+                style={getUserAvatarStyle(
+                  profile?.username || profile?.display_name || ''
+                )}
+              >
+                {getUserAvatarFallback(
+                  profile?.username || profile?.display_name || ''
+                )}
+              </AvatarFallback>
+            </Avatar>
+            <Input
+              id='avatarUrl'
+              type='url'
+              className='flex-1'
+              value={settings.avatar_url}
+              onChange={(event) =>
+                updateField('avatar_url', event.target.value)
+              }
+              placeholder='https://example.com/avatar.png'
+            />
+          </div>
+          <p className='text-muted-foreground text-xs'>
+            {t('Enter an HTTP or HTTPS image URL for your avatar')}
+          </p>
+        </div>
+      </div>
+
       {/* Preferences Section */}
       <div className='space-y-3 border-t pt-5 sm:pt-6'>
         <div>
@@ -393,6 +446,28 @@ export function NotificationSettingsCard({
               checked={settings.accept_unset_model_ratio_model}
               onCheckedChange={(checked) =>
                 updateField('accept_unset_model_ratio_model', checked)
+              }
+            />
+          </div>
+
+          {/* Show In Personal Ranking */}
+          <div className='flex items-start justify-between gap-3 p-3 sm:items-center sm:p-4'>
+            <div className='space-y-0.5'>
+              <Label htmlFor='showInPersonalRanking'>
+                {t('Join Personal Usage Ranking')}
+              </Label>
+              <p className='text-muted-foreground text-xs'>
+                {t(
+                  'Show your display name and usage on the public personal usage ranking'
+                )}
+              </p>
+            </div>
+            <Switch
+              id='showInPersonalRanking'
+              className='shrink-0'
+              checked={settings.show_in_personal_ranking}
+              onCheckedChange={(checked) =>
+                updateField('show_in_personal_ranking', checked)
               }
             />
           </div>
