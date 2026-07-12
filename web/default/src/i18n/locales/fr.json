@@ -1670,6 +1670,7 @@
     "Enter key, format: AccessKey|SecretAccessKey|Region": "Entrez la clé, format : AccessKey|SecretAccessKey|Region",
     "Enter key, one per line, format: AccessKey|SecretAccessKey|Region": "Entrez la clé, une par ligne, format : AccessKey|SecretAccessKey|Region",
     "Enter model name": "Entrez le nom du modèle",
+    "Enter multiple keywords separated by newlines. Duplicate keywords will be ignored. Remove a keyword by clicking the X on its tag.": "Entrez plusieurs mots-clés séparés par des sauts de ligne. Les mots-clés en double seront ignorés. Supprimez un mot-clé en cliquant sur le X de son étiquette.",
     "Enter new key to update": "Saisir la nouvelle clé à mettre à jour",
     "Enter new key to update, or leave empty to keep current key": "Saisir la nouvelle clé à mettre à jour, ou laisser vide pour conserver la clé actuelle",
     "Enter new tag name (leave empty to disband tag)": "Saisir le nouveau nom de tag (laisser vide pour dissoudre le tag)",

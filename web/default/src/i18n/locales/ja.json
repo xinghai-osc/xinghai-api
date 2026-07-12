@@ -1670,6 +1670,7 @@
     "Enter key, format: AccessKey|SecretAccessKey|Region": "キーを入力してください、形式: AccessKey | SecretAccessKey | Region",
     "Enter key, one per line, format: AccessKey|SecretAccessKey|Region": "キーを入力してください。1行に1つ、形式: AccessKey | SecretAccessKey | Region",
     "Enter model name": "モデル名を入力",
+    "Enter multiple keywords separated by newlines. Duplicate keywords will be ignored. Remove a keyword by clicking the X on its tag.": "複数のキーワードを改行区切りで入力してください。重複するキーワードは無視されます。タグの X をクリックしてキーワードを削除できます。",
     "Enter new key to update": "更新する新しいキーを入力",
     "Enter new key to update, or leave empty to keep current key": "更新する新しいキーを入力するか、空欄にして現在のキーを保持",
     "Enter new tag name (leave empty to disband tag)": "新しいタグ名を入力してください（タグを解散するには空欄にしてください）",

@@ -34,6 +34,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -169,9 +170,15 @@ export function SensitiveWordsSection({
   const [newResponseAction, setNewResponseAction] = useState('error')
 
   const addWord = useCallback(() => {
-    const trimmed = newWord.trim()
-    if (!trimmed) return
-    const updated = [...words, trimmed]
+    const lines = newWord
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+    if (lines.length === 0) return
+    const existing = new Set(words)
+    const unique = lines.filter((w) => !existing.has(w))
+    if (unique.length === 0) return
+    const updated = [...words, ...unique]
     form.setValue('SensitiveWords', updated.join('\n'), { shouldDirty: true })
     setNewWord('')
   }, [newWord, words, form])
@@ -428,16 +435,11 @@ export function SensitiveWordsSection({
                   {/* Add word input */}
                   <div className='flex gap-2'>
                     <FormControl>
-                      <Input
+                      <Textarea
                         placeholder={t('Enter one keyword per line')}
                         value={newWord}
                         onChange={(e) => setNewWord(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            addWord()
-                          }
-                        }}
+                        rows={3}
                       />
                     </FormControl>
                     <Button
@@ -446,6 +448,7 @@ export function SensitiveWordsSection({
                       size='sm'
                       onClick={addWord}
                       disabled={!newWord.trim()}
+                      className='self-end'
                     >
                       {t('Add')}
                     </Button>
@@ -453,7 +456,7 @@ export function SensitiveWordsSection({
                 </div>
                 <FormDescription>
                   {t(
-                    'Add keywords one at a time or paste multiple lines. Remove a keyword by clicking the X on its tag.'
+                    'Enter multiple keywords separated by newlines. Duplicate keywords will be ignored. Remove a keyword by clicking the X on its tag.'
                   )}
                 </FormDescription>
                 <FormMessage />

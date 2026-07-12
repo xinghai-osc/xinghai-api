@@ -1670,6 +1670,7 @@
     "Enter key, format: AccessKey|SecretAccessKey|Region": "Введите ключ, формат: AccessKey|SecretAccessKey|Region",
     "Enter key, one per line, format: AccessKey|SecretAccessKey|Region": "Введите ключ, по одному на строку, формат: AccessKey|SecretAccessKey|Region",
     "Enter model name": "Введите имя модели",
+    "Enter multiple keywords separated by newlines. Duplicate keywords will be ignored. Remove a keyword by clicking the X on its tag.": "Введите несколько ключевых слов, разделяя их переносом строки. Дублирующиеся ключевые слова будут проигнорированы. Удалите ключевое слово, нажав X на его метке.",
     "Enter new key to update": "Введите новый ключ для обновления",
     "Enter new key to update, or leave empty to keep current key": "Введите новый ключ для обновления или оставьте пустым, чтобы сохранить текущий ключ",
     "Enter new tag name (leave empty to disband tag)": "Введите новое имя тега (оставьте пустым, чтобы удалить тег)",

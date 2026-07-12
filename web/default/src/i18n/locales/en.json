@@ -1670,6 +1670,7 @@
     "Enter key, format: AccessKey|SecretAccessKey|Region": "Enter key, format: AccessKey|SecretAccessKey|Region",
     "Enter key, one per line, format: AccessKey|SecretAccessKey|Region": "Enter key, one per line, format: AccessKey|SecretAccessKey|Region",
     "Enter model name": "Enter model name",
+    "Enter multiple keywords separated by newlines. Duplicate keywords will be ignored. Remove a keyword by clicking the X on its tag.": "Enter multiple keywords separated by newlines. Duplicate keywords will be ignored. Remove a keyword by clicking the X on its tag.",
     "Enter new key to update": "Enter new key to update",
     "Enter new key to update, or leave empty to keep current key": "Enter new key to update, or leave empty to keep current key",
     "Enter new tag name (leave empty to disband tag)": "Enter new tag name (leave empty to disband tag)",
