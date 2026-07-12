@@ -22,6 +22,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OpenAIModel struct {
@@ -131,20 +132,22 @@ func GetAllChannels(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "获取标签数量失败，请稍后重试"})
 			return
 		}
+		selectedTags := make([]string, 0, len(tags))
 		for _, tag := range tags {
-			if tag == nil || *tag == "" {
-				continue
+			if tag != nil && *tag != "" {
+				selectedTags = append(selectedTags, *tag)
 			}
-			var tagChannels []*model.Channel
-			err := sortOptions.Apply(buildChannelListQuery(groupFilter, statusFilter, typeFilter).Where("tag = ?", *tag)).
-				Omit("key").
-				Find(&tagChannels).Error
+		}
+		if len(selectedTags) > 0 {
+			query := buildChannelListQuery(groupFilter, statusFilter, typeFilter).
+				Where("tag IN ?", selectedTags).
+				Order(clause.OrderByColumn{Column: clause.Column{Name: "tag"}})
+			err = sortOptions.Apply(query).Omit("key").Find(&channelData).Error
 			if err != nil {
 				common.SysError("failed to get channels by tag: " + err.Error())
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": "获取标签渠道失败，请稍后重试"})
 				return
 			}
-			channelData = append(channelData, tagChannels...)
 		}
 	} else {
 		if err := buildChannelListQuery(groupFilter, statusFilter, typeFilter).Count(&total).Error; err != nil {
