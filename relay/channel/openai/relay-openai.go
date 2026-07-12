@@ -1,7 +1,6 @@
 package openai
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
-	"github.com/QuantumNous/new-api/setting"
+	"github.com/QuantumNous/new-api/service/relayconvert"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -26,9 +25,6 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 		return nil
 	}
 
-	// Rewrite model name to the user-facing name when model mapping is active
-	data = helper.RewriteResponseModelStr(info, data)
-
 	if !forceFormat && !thinkToContent {
 		return helper.StringData(c, data)
 	}
@@ -37,8 +33,6 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
-	// Ensure the struct also carries the user-facing model name
-	lastStreamResponse.Model = helper.ResponseModelName(info)
 
 	if !thinkToContent {
 		return helper.ObjectData(c, lastStreamResponse)
@@ -125,15 +119,11 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var usage = &dto.Usage{}
 	var lastStreamData string
 	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
-	completionSensitiveBlocked := false
 
 	// 检查是否为音频模型
 	isAudioModel := strings.Contains(strings.ToLower(model), "audio")
 
 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
-		if completionSensitiveBlocked {
-			return
-		}
 		if lastStreamData != "" {
 			if err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent); err != nil {
 				common.SysLog("error handling stream format: " + err.Error())
@@ -150,27 +140,9 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			if err := processTokenData(info.RelayMode, data, &responseTextBuilder, &toolCount); err != nil {
 				logger.LogError(c, "error processing stream token data: "+err.Error())
 				sr.Error(err)
-				return
-			}
-			if setting.ShouldCheckCompletionSensitive() {
-				if contains, words := service.CheckSensitiveText(responseTextBuilder.String()); contains {
-					logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
-					completionSensitiveBlocked = true
-					blockedResponse := service.BuildSensitiveBlockedStreamResponse(helper.GetResponseID(c), common.GetTimestamp(), helper.ResponseModelName(info), nil, words...)
-					if err := helper.ObjectData(c, blockedResponse); err != nil {
-						sr.Error(err)
-						return
-					}
-					helper.Done(c)
-					sr.Done()
-				}
 			}
 		}
 	})
-
-	if completionSensitiveBlocked {
-		return usage, nil
-	}
 
 	// 对音频模型，从倒数第二个stream data中提取usage信息
 	if isAudioModel && secondLastStreamData != "" {
@@ -196,9 +168,6 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		&containStreamUsage, info, &shouldSendLastResp); err != nil {
 		logger.LogError(c, fmt.Sprintf("error handling last response: %s, lastStreamData: [%s]", err.Error(), lastStreamData))
 	}
-
-	// Rewrite the model name to the user-facing name for the final usage response
-	model = helper.ResponseModelName(info)
 
 	if info.RelayFormat == types.RelayFormatOpenAI {
 		if shouldSendLastResp {
@@ -252,9 +221,6 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
 	}
 
-	// Rewrite model name to the user-facing name when model mapping is active
-	simpleResponse.Model = helper.ResponseModelName(info)
-
 	for _, choice := range simpleResponse.Choices {
 		if choice.FinishReason == constant.FinishReasonContentFilter {
 			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "openai_finish_reason=content_filter")
@@ -286,29 +252,6 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
 
-	if setting.ShouldCheckCompletionSensitive() {
-		var completionText strings.Builder
-		for _, choice := range simpleResponse.Choices {
-			completionText.WriteString(choice.Message.StringContent())
-			completionText.WriteString(choice.Message.GetReasoningContent())
-		}
-		if contains, words := service.CheckSensitiveText(completionText.String()); contains {
-			logger.LogWarn(c, fmt.Sprintf("completion sensitive words detected: %s", strings.Join(words, ", ")))
-			if !service.ShouldReturnSensitiveResponse(words...) {
-				return nil, types.NewErrorWithStatusCode(errors.New(service.GetSensitiveBlockResponse(words...)), types.ErrorCodeSensitiveWordsDetected, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
-			}
-			blockedResponse := service.BuildSensitiveBlockedOpenAIResponse(simpleResponse.Id, simpleResponse.Created, simpleResponse.Model, simpleResponse.Usage, words...)
-			simpleResponse = *blockedResponse
-			responseBody, err = common.Marshal(blockedResponse)
-			if err != nil {
-				return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
-			}
-		}
-	}
-
-	// Rewrite the model field in the raw response body for passthrough paths
-	responseBody = helper.RewriteResponseModel(info, responseBody)
-
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
 		if usageModified {
@@ -329,15 +272,21 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			break
 		}
 	case types.RelayFormatClaude:
-		claudeResp := service.ResponseOpenAI2Claude(&simpleResponse, info)
-		claudeRespStr, err := common.Marshal(claudeResp)
+		convertResult, err := relayconvert.ConvertResponse(c, info, types.RelayFormatClaude, &simpleResponse)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+		claudeRespStr, err := common.Marshal(convertResult.Value)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 		responseBody = claudeRespStr
 	case types.RelayFormatGemini:
-		geminiResp := service.ResponseOpenAI2Gemini(&simpleResponse, info)
-		geminiRespStr, err := common.Marshal(geminiResp)
+		convertResult, err := relayconvert.ConvertResponse(c, info, types.RelayFormatGemini, &simpleResponse)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+		geminiRespStr, err := common.Marshal(convertResult.Value)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}

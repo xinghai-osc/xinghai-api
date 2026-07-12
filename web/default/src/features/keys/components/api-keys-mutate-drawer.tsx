@@ -25,8 +25,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { DateTimePicker } from '@/components/datetime-picker'
-import { Button } from '@/components/design-system/button'
-import { Input } from '@/components/design-system/input'
 import {
   SideDrawerSection,
   SideDrawerSectionHeader,
@@ -37,6 +35,7 @@ import {
   sideDrawerSwitchItemClassName,
 } from '@/components/drawer-layout'
 import { MultiSelect } from '@/components/multi-select'
+import { Button } from '@/components/ui/button'
 import {
   Collapsible,
   CollapsibleContent,
@@ -51,6 +50,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import {
   Sheet,
   SheetClose,
@@ -126,11 +126,9 @@ export function ApiKeysMutateDrawer({
       label: key,
       desc: info.desc || key,
       ratio: info.ratio,
-      subscription: info.subscription || !!groupsData?.subscription_groups?.[key],
     })
   )
   const backendHasAuto = groups.some((g) => g.value === 'auto')
-  const subscriptionGroup = groups.find((g) => g.subscription)?.value
   const schema = getApiKeyFormSchema(t)
 
   const form = useForm<ApiKeyFormValues>({
@@ -141,34 +139,17 @@ export function ApiKeysMutateDrawer({
   // Load existing data when updating
   useEffect(() => {
     if (open && isUpdate && currentRow) {
-      void getApiKey(currentRow.id)
-        .then((result) => {
-          if (result.success && result.data) {
-            form.reset(transformApiKeyToFormDefaults(result.data))
-          }
-        })
-        .catch(() => {})
-    } else if (open && !isUpdate) {
-      const defaultValues = getApiKeyFormDefaultValues(
-        defaultUseAutoGroup && backendHasAuto && !subscriptionGroup
-      )
-      form.reset({
-        ...defaultValues,
-        group: subscriptionGroup || defaultValues.group,
-        cross_group_retry: subscriptionGroup
-          ? false
-          : defaultValues.cross_group_retry,
+      void getApiKey(currentRow.id).then((result) => {
+        if (result.success && result.data) {
+          form.reset(transformApiKeyToFormDefaults(result.data))
+        }
       })
+    } else if (open && !isUpdate) {
+      form.reset(
+        getApiKeyFormDefaultValues(defaultUseAutoGroup && backendHasAuto)
+      )
     }
-  }, [
-    open,
-    isUpdate,
-    currentRow,
-    form,
-    defaultUseAutoGroup,
-    backendHasAuto,
-    subscriptionGroup,
-  ])
+  }, [open, isUpdate, currentRow, form, defaultUseAutoGroup, backendHasAuto])
 
   // Correct group after groups load: if the form value is not in available groups, fall back
   useEffect(() => {
@@ -176,7 +157,6 @@ export function ApiKeysMutateDrawer({
     const currentGroup = form.getValues('group')
     if (currentGroup && !groups.some((g) => g.value === currentGroup)) {
       const fallback =
-        subscriptionGroup ??
         groups.find((g) => g.value === 'default')?.value ??
         groups[0]?.value ??
         ''
@@ -185,7 +165,7 @@ export function ApiKeysMutateDrawer({
         form.setValue('cross_group_retry', false)
       }
     }
-  }, [groups, form, subscriptionGroup])
+  }, [groups, form])
 
   const onSubmit = async (data: ApiKeyFormValues) => {
     setIsSubmitting(true)
@@ -205,6 +185,7 @@ export function ApiKeysMutateDrawer({
           toast.error(result.message || t(ERROR_MESSAGES.UPDATE_FAILED))
         }
       } else {
+        // Create mode - handle batch creation
         const count = data.tokenCount || 1
         let successCount = 0
 
@@ -279,7 +260,9 @@ export function ApiKeysMutateDrawer({
         }
       }}
     >
-      <SheetContent className={sideDrawerContentClassName('sm:max-w-[620px]')}>
+      <SheetContent
+        className={sideDrawerContentClassName('max-w-none sm:!max-w-[620px]')}
+      >
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
             {isUpdate ? t('Update API Key') : t('Create API Key')}
@@ -301,6 +284,7 @@ export function ApiKeysMutateDrawer({
                 title={t('Basic Information')}
                 description={t('Set API key basic information')}
                 icon={<KeyRound className='size-4' />}
+                iconTone='info'
               />
               <FormField
                 control={form.control}
@@ -381,6 +365,8 @@ export function ApiKeysMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
+                          size='sm'
+                          className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(0, 0, 0)}
                         >
                           {t('Never')}
@@ -388,6 +374,8 @@ export function ApiKeysMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
+                          size='sm'
+                          className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(1, 0, 0)}
                         >
                           {t('1 Month')}
@@ -395,6 +383,8 @@ export function ApiKeysMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
+                          size='sm'
+                          className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(0, 1, 0)}
                         >
                           {t('1 Day')}
@@ -402,6 +392,8 @@ export function ApiKeysMutateDrawer({
                         <Button
                           type='button'
                           variant='outline'
+                          size='sm'
+                          className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(0, 0, 1)}
                         >
                           {t('1 Hour')}
@@ -427,7 +419,9 @@ export function ApiKeysMutateDrawer({
                           min='1'
                           placeholder={t('Number of keys to create')}
                           onChange={(e) =>
-                            field.onChange(Number.parseInt(e.target.value, 10) || 1)
+                            field.onChange(
+                              Number.parseInt(e.target.value, 10) || 1
+                            )
                           }
                         />
                       </FormControl>
@@ -448,6 +442,7 @@ export function ApiKeysMutateDrawer({
                 title={t('Quota Settings')}
                 description={t('Set quota amount and limits')}
                 icon={<WalletCards className='size-4' />}
+                iconTone='success'
               />
               {!unlimitedQuota && (
                 <FormField
@@ -463,7 +458,9 @@ export function ApiKeysMutateDrawer({
                           step={tokensOnly ? 1 : 0.01}
                           placeholder={quotaPlaceholder}
                           onChange={(e) =>
-                            field.onChange(Number.parseFloat(e.target.value) || 0)
+                            field.onChange(
+                              Number.parseFloat(e.target.value) || 0
+                            )
                           }
                         />
                       </FormControl>

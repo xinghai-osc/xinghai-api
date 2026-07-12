@@ -15,7 +15,6 @@ import (
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/model"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
@@ -34,8 +33,6 @@ func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *model.Channel
 		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
-		allowedApiTypes := service.AllowedApiTypesForRequestPath(c.Request.URL.Path)
-		deniedApiTypes := service.DeniedApiTypesForRequestPath(c.Request.URL.Path)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, i18n.T(c, i18n.MsgDistributorInvalidRequest, map[string]any{"Error": err.Error()}))
@@ -54,10 +51,6 @@ func Distribute() func(c *gin.Context) {
 			}
 			if channel.Status != common.ChannelStatusEnabled {
 				abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorChannelDisabled))
-				return
-			}
-			if !service.IsChannelMatchedForApiTypes(channel, allowedApiTypes, deniedApiTypes) {
-				abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorInvalidChannelId))
 				return
 			}
 		} else {
@@ -90,17 +83,8 @@ func Distribute() func(c *gin.Context) {
 				}
 				var selectGroup string
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
-				isPlaygroundRelay := strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") ||
-					strings.HasPrefix(c.Request.URL.Path, "/pg/images/generations") ||
-					strings.HasPrefix(c.Request.URL.Path, "/pg/images/edits")
-				if isPlaygroundRelay {
-					userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
-					if freshUserGroup, err := model.GetUserGroup(c.GetInt("id"), false); err == nil && freshUserGroup != "" {
-						userGroup = freshUserGroup
-						common.SetContextKey(c, constant.ContextKeyUserGroup, userGroup)
-					}
-					usingGroup = userGroup
-					common.SetContextKey(c, constant.ContextKeyUsingGroup, usingGroup)
+				// check path is /pg/chat/completions
+				if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
 					playgroundRequest := &dto.PlayGroundRequest{}
 					err = common.UnmarshalBodyReusable(c, playgroundRequest)
 					if err != nil {
@@ -108,7 +92,7 @@ func Distribute() func(c *gin.Context) {
 						return
 					}
 					if playgroundRequest.Group != "" {
-						if playgroundRequest.Group != "auto" && !service.GroupInUserUsableGroups(userGroup, playgroundRequest.Group) {
+						if !service.GroupInUserUsableGroups(usingGroup, playgroundRequest.Group) && playgroundRequest.Group != usingGroup {
 							abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorGroupAccessDenied))
 							return
 						}
@@ -121,8 +105,7 @@ func Distribute() func(c *gin.Context) {
 					affinityUsable := false
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled &&
-						service.IsChannelMatchedForApiTypes(preferred, allowedApiTypes, deniedApiTypes) &&
-						channelSupportsRequestPath(preferred, relaycommon.NormalizePlaygroundPath(c.Request.URL.Path)) {
+						channelSupportsRequestPath(preferred, c.Request.URL.Path, modelRequest.Model) {
 						if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
 							autoGroups := service.GetUserAutoGroup(userGroup)
@@ -150,13 +133,11 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:             c,
-						ModelName:       modelRequest.Model,
-						TokenGroup:      usingGroup,
-						RequestPath:     relaycommon.NormalizePlaygroundPath(c.Request.URL.Path),
-						Retry:           common.GetPointer(0),
-						AllowedApiTypes: allowedApiTypes,
-						DeniedApiTypes:  deniedApiTypes,
+						Ctx:         c,
+						ModelName:   modelRequest.Model,
+						TokenGroup:  usingGroup,
+						RequestPath: c.Request.URL.Path,
+						Retry:       common.GetPointer(0),
 					})
 					if err != nil {
 						showGroup := usingGroup
@@ -191,7 +172,7 @@ func Distribute() func(c *gin.Context) {
 // channelSupportsRequestPath reports whether a channel can serve the request path.
 // Only Advanced Custom (type 58) channels are path-checked; all other channel types
 // always pass. A type-58 channel is usable only when one of its routes matches.
-func channelSupportsRequestPath(channel *model.Channel, requestPath string) bool {
+func channelSupportsRequestPath(channel *model.Channel, requestPath string, requestModel string) bool {
 	if channel == nil {
 		return false
 	}
@@ -199,7 +180,7 @@ func channelSupportsRequestPath(channel *model.Channel, requestPath string) bool
 		return true
 	}
 	config := channel.GetOtherSettings().AdvancedCustom
-	return config != nil && config.SupportsPath(requestPath)
+	return config != nil && config.SupportsPathForModel(requestPath, requestModel)
 }
 
 // getModelFromRequest 从请求中读取模型信息
@@ -383,7 +364,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 			modelRequest.Model = c.Param("model")
 		}
 	}
-	if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") || strings.HasPrefix(c.Request.URL.Path, "/pg/images/generations") {
+	if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
 		modelRequest.Model = common.GetStringIfEmpty(modelRequest.Model, "dall-e")
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/images/edits") {
 		//modelRequest.Model = common.GetStringIfEmpty(c.PostForm("model"), "gpt-image-1")
@@ -417,7 +398,8 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		}
 		c.Set("relay_mode", relayMode)
 	}
-	if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") || strings.HasPrefix(c.Request.URL.Path, "/pg/images/generations") || strings.HasPrefix(c.Request.URL.Path, "/pg/images/edits") {
+	if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
+		// playground chat completions
 		req, err := getModelFromRequest(c)
 		if err != nil {
 			return nil, false, err
@@ -483,22 +465,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	common.SetContextKey(c, constant.ContextKeyChannelModelMapping, channel.GetModelMapping())
 	common.SetContextKey(c, constant.ContextKeyChannelStatusCodeMapping, channel.GetStatusCodeMapping())
 
-	forcedKeyIndex, useForcedKeyIndex := -1, false
-	if value, ok := common.GetContextKey(c, constant.ContextKeyChannelMultiKeyIndex); ok {
-		if index, ok := value.(int); ok {
-			forcedKeyIndex = index
-			useForcedKeyIndex = true
-		}
-	}
-	var key string
-	var index int
-	var newAPIError *types.NewAPIError
-	if useForcedKeyIndex && channel.ChannelInfo.IsMultiKey {
-		key, newAPIError = channel.GetKeyByIndex(forcedKeyIndex)
-		index = forcedKeyIndex
-	} else {
-		key, index, newAPIError = channel.GetNextEnabledKey()
-	}
+	key, index, newAPIError := channel.GetNextEnabledKey()
 	if newAPIError != nil {
 		return newAPIError
 	}
