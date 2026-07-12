@@ -22,11 +22,13 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { PasswordInput } from '@/components/password-input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
 import { ROLE } from '@/lib/roles'
 
 import { updateUserSettings } from '../../api'
@@ -81,6 +83,8 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
     accept_unset_model_ratio_model: false,
     record_ip_log: false,
     upstream_model_update_notify_enabled: false,
+    show_in_personal_ranking: false,
+    avatar_url: '',
   })
 
   // Update form field helper
@@ -110,6 +114,8 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
         record_ip_log: parsed.record_ip_log || false,
         upstream_model_update_notify_enabled:
           parsed.upstream_model_update_notify_enabled || false,
+        show_in_personal_ranking: parsed.show_in_personal_ranking || false,
+        avatar_url: parsed.avatar_url ?? profile.avatar_url ?? '',
       })
     }
   }, [profile])
@@ -323,6 +329,55 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       {/* Divider */}
       <div className='border-t' />
 
+      <div className='space-y-3'>
+        <div>
+          <h4 className='text-sm font-medium'>{t('Profile')}</h4>
+          <p className='text-muted-foreground mt-1 text-xs'>
+            {t('Customize how your account appears')}
+          </p>
+        </div>
+
+        <div className='space-y-1.5'>
+          <Label htmlFor='avatarUrl'>{t('Avatar URL')}</Label>
+          <div className='flex items-center gap-3'>
+            <Avatar className='size-12 shrink-0 rounded-xl'>
+              {settings.avatar_url && (
+                <AvatarImage
+                  src={settings.avatar_url}
+                  alt={profile?.username || profile?.display_name || ''}
+                  className='rounded-xl object-cover'
+                />
+              )}
+              <AvatarFallback
+                className='rounded-xl font-semibold text-white'
+                style={getUserAvatarStyle(
+                  profile?.username || profile?.display_name || ''
+                )}
+              >
+                {getUserAvatarFallback(
+                  profile?.username || profile?.display_name || ''
+                )}
+              </AvatarFallback>
+            </Avatar>
+            <Input
+              id='avatarUrl'
+              type='url'
+              className='h-9 flex-1'
+              value={settings.avatar_url}
+              onChange={(event) =>
+                updateField('avatar_url', event.target.value)
+              }
+              placeholder='https://example.com/avatar.png'
+            />
+          </div>
+          <p className='text-muted-foreground text-xs'>
+            {t('Enter an HTTP or HTTPS image URL for your avatar')}
+          </p>
+        </div>
+      </div>
+
+      <div className='border-t' />
+
       {/* Preferences Section */}
       <div className='space-y-3'>
         <div>
@@ -372,6 +427,28 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             checked={settings.accept_unset_model_ratio_model}
             onCheckedChange={(checked) =>
               updateField('accept_unset_model_ratio_model', checked)
+            }
+          />
+        </div>
+
+        {/* Show In Personal Ranking */}
+        <div className='flex items-start justify-between gap-3 rounded-lg border p-3 sm:items-center sm:p-4'>
+          <div className='space-y-0.5'>
+            <Label htmlFor='showInPersonalRanking'>
+              {t('Join Personal Usage Ranking')}
+            </Label>
+            <p className='text-muted-foreground text-xs sm:text-sm'>
+              {t(
+                'Show your display name and usage on the public personal usage ranking'
+              )}
+            </p>
+          </div>
+          <Switch
+            id='showInPersonalRanking'
+            className='shrink-0'
+            checked={settings.show_in_personal_ranking}
+            onCheckedChange={(checked) =>
+              updateField('show_in_personal_ranking', checked)
             }
           />
         </div>
