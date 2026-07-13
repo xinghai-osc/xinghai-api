@@ -171,7 +171,7 @@ export function AdminTopupsTable(props: AdminTopupsTableProps) {
             placeholder={t('Search by order number, username, or user ID...')}
             aria-label={t('Search...')}
             value={globalFilter ?? ''}
-            onChange={(e) => onGlobalFilterChange(e.target.value)}
+            onChange={(e) => table.setGlobalFilter(e.target.value)}
             className='w-full sm:w-80'
           />
         ),
