@@ -173,6 +173,10 @@ func initConstantEnv() {
 		constant.TaskPricePatches = taskPricePatches
 	}
 
+	// 上游慢响应提示：流式请求等待上游响应超过指定秒数后，向客户端发送提示消息
+	constant.UpstreamTimeoutPromptSeconds = GetEnvOrDefault("UPSTREAM_TIMEOUT_PROMPT_SECONDS", 30)
+	constant.UpstreamTimeoutPrompt = GetEnvOrDefaultString("UPSTREAM_TIMEOUT_PROMPT", "上游响应较慢，请耐心等待...")
+
 	// Initialize trusted redirect domains for URL validation
 	trustedDomainsStr := GetEnvOrDefaultString("TRUSTED_REDIRECT_DOMAINS", "")
 	var trustedDomains []string

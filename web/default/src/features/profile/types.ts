@@ -124,6 +124,7 @@ export interface UserSettings {
   language?: string
   /** Avatar image URL */
   avatar_url?: string
+  upstream_timeout_prompt_enabled?: boolean
 }
 
 /**

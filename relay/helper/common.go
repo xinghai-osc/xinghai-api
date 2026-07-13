@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
@@ -224,4 +225,33 @@ func GenerateFinalUsageResponse(id string, createAt int64, model string, usage d
 		Choices:           make([]dto.ChatCompletionsStreamResponseChoice, 0),
 		Usage:             &usage,
 	}
+}
+
+func SendUpstreamTimeoutPrompt(c *gin.Context, promptText string) {
+	if c == nil || c.Writer == nil {
+		return
+	}
+	if requestContextDone(c) {
+		return
+	}
+	resp := &dto.ChatCompletionsStreamResponse{
+		Id:       fmt.Sprintf("slow-upstream-%d", time.Now().UnixMilli()),
+		Object:   "chat.completion.chunk",
+		Created:  time.Now().Unix(),
+		Model:    "slow-upstream",
+		Choices: []dto.ChatCompletionsStreamResponseChoice{
+			{
+				Index: 0,
+				Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
+					Content: common.GetPointer(promptText),
+				},
+			},
+		},
+	}
+	jsonData, err := common.Marshal(resp)
+	if err != nil {
+		logger.LogError(c, "failed to marshal slow upstream prompt: "+err.Error())
+		return
+	}
+	_ = StringData(c, string(jsonData))
 }

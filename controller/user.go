@@ -1464,6 +1464,7 @@ type UpdateUserSettingRequest struct {
 	RecordIpLog                      bool    `json:"record_ip_log"`
 	ShowInPersonalRanking            bool    `json:"show_in_personal_ranking"`
 	AvatarUrl                        string  `json:"avatar_url,omitempty"`
+	UpstreamTimeoutPromptEnabled     *bool   `json:"upstream_timeout_prompt_enabled,omitempty"`
 }
 
 func UpdateUserSetting(c *gin.Context) {
@@ -1568,8 +1569,12 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 	existingSettings := user.GetSetting()
 	upstreamModelUpdateNotifyEnabled := existingSettings.UpstreamModelUpdateNotifyEnabled
+	upstreamTimeoutPromptEnabled := existingSettings.UpstreamTimeoutPromptEnabled
 	if user.Role >= common.RoleAdminUser && req.UpstreamModelUpdateNotifyEnabled != nil {
 		upstreamModelUpdateNotifyEnabled = *req.UpstreamModelUpdateNotifyEnabled
+	}
+	if req.UpstreamTimeoutPromptEnabled != nil {
+		upstreamTimeoutPromptEnabled = req.UpstreamTimeoutPromptEnabled
 	}
 
 	// 构建设置
@@ -1584,6 +1589,7 @@ func UpdateUserSetting(c *gin.Context) {
 		BillingPreference:                existingSettings.BillingPreference,
 		Language:                         existingSettings.Language,
 		AvatarUrl:                        avatarUrl,
+		UpstreamTimeoutPromptEnabled:     upstreamTimeoutPromptEnabled,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置

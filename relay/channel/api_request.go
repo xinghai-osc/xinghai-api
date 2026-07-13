@@ -486,6 +486,37 @@ func sendPingData(c *gin.Context, mutex *sync.Mutex) error {
 	return nil
 }
 
+func startSlowUpstreamPrompt(c *gin.Context) (context.CancelFunc, <-chan struct{}) {
+	promptSeconds := channelconstant.UpstreamTimeoutPromptSeconds
+	promptText := channelconstant.UpstreamTimeoutPrompt
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+
+	gopool.Go(func() {
+		defer close(done)
+		defer func() {
+			if r := recover(); r != nil {
+				logger.LogDebug(c, "slow upstream prompt goroutine panic recovered: %v", r)
+			}
+		}()
+
+		timer := time.NewTimer(time.Duration(promptSeconds) * time.Second)
+		defer timer.Stop()
+
+		select {
+		case <-timer.C:
+			helper.ExtendWriteDeadline(c)
+			helper.SendUpstreamTimeoutPrompt(c, promptText)
+			logger.LogDebug(c, "slow upstream prompt sent")
+		case <-ctx.Done():
+		case <-c.Request.Context().Done():
+		}
+	})
+
+	return cancel, done
+}
+
 func DoRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http.Response, error) {
 	return doRequest(c, req, info)
 }
@@ -503,6 +534,8 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 
 	var stopPinger context.CancelFunc
 	var pingerDone <-chan struct{}
+	var stopSlowPrompt context.CancelFunc
+	var slowPromptDone <-chan struct{}
 	if info.IsStream {
 		helper.SetEventStreamHeaders(c)
 		// 处理流式请求的 ping 保活
@@ -516,6 +549,21 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 					stopPinger()
 					<-pingerDone
 					logger.LogDebug(c, "SSE ping goroutine stopped by defer")
+				}
+			}()
+		}
+		// 上游慢响应提示：等待指定时间后若上游仍未回复，向客户端发送提示消息
+		promptEnabled := channelconstant.UpstreamTimeoutPromptSeconds > 0
+		if info.UserSetting.UpstreamTimeoutPromptEnabled != nil {
+			promptEnabled = *info.UserSetting.UpstreamTimeoutPromptEnabled
+		}
+		if promptEnabled {
+			stopSlowPrompt, slowPromptDone = startSlowUpstreamPrompt(c)
+			defer func() {
+				if stopSlowPrompt != nil {
+					stopSlowPrompt()
+					<-slowPromptDone
+					logger.LogDebug(c, "slow upstream prompt goroutine stopped by defer")
 				}
 			}()
 		}

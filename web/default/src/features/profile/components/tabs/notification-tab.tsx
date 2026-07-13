@@ -85,6 +85,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
     upstream_model_update_notify_enabled: false,
     show_in_personal_ranking: false,
     avatar_url: '',
+    upstream_timeout_prompt_enabled: true,
   })
 
   // Update form field helper
@@ -116,6 +117,8 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
           parsed.upstream_model_update_notify_enabled || false,
         show_in_personal_ranking: parsed.show_in_personal_ranking || false,
         avatar_url: parsed.avatar_url ?? profile.avatar_url ?? '',
+        upstream_timeout_prompt_enabled:
+          parsed.upstream_timeout_prompt_enabled ?? true,
       })
     }
   }, [profile])
@@ -427,6 +430,28 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             checked={settings.accept_unset_model_ratio_model}
             onCheckedChange={(checked) =>
               updateField('accept_unset_model_ratio_model', checked)
+            }
+          />
+        </div>
+
+        {/* Show Slow Upstream Prompt */}
+        <div className='flex items-start justify-between gap-3 rounded-lg border p-3 sm:items-center sm:p-4'>
+          <div className='space-y-0.5'>
+            <Label htmlFor='upstreamTimeoutPrompt'>
+              {t('Show Slow Upstream Prompt')}
+            </Label>
+            <p className='text-muted-foreground text-xs sm:text-sm'>
+              {t(
+                'Show a waiting message when the upstream takes longer than 30 seconds to respond'
+              )}
+            </p>
+          </div>
+          <Switch
+            id='upstreamTimeoutPrompt'
+            className='shrink-0'
+            checked={settings.upstream_timeout_prompt_enabled}
+            onCheckedChange={(checked) =>
+              updateField('upstream_timeout_prompt_enabled', checked)
             }
           />
         </div>

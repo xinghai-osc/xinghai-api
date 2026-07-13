@@ -22,6 +22,15 @@ var TaskTimeoutMinutes int
 // temporary variable for sora patch, will be removed in future
 var TaskPricePatches []string
 
+// UpstreamTimeoutPromptSeconds is the number of seconds to wait for an upstream
+// response before sending a slow-upstream prompt to the client during streaming.
+// 0 disables the prompt.
+var UpstreamTimeoutPromptSeconds int
+
+// UpstreamTimeoutPrompt is the message shown to the client when the upstream
+// is slow to respond.
+var UpstreamTimeoutPrompt string
+
 // TrustedRedirectDomains is a list of trusted domains for redirect URL validation.
 // Domains support subdomain matching (e.g., "example.com" matches "sub.example.com").
 var TrustedRedirectDomains []string

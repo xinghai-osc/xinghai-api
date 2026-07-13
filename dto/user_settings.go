@@ -18,8 +18,9 @@ type UserSetting struct {
 	SidebarModules                   string  `json:"sidebar_modules,omitempty"`                      // SidebarModules 左侧边栏模块配置
 	BillingPreference                string  `json:"billing_preference,omitempty"`                   // BillingPreference 扣费策略（订阅/钱包）
 	Language                         string  `json:"language,omitempty"`                             // Language 用户语言偏好 (zh, en)
-	AvatarUrl                        string  `json:"avatar_url,omitempty"`                          // AvatarUrl 用户头像地址
+	AvatarUrl                        string  `json:"avatar_url,omitempty"`                           // AvatarUrl 用户头像地址
 	ShowInPersonalRanking            bool    `json:"show_in_personal_ranking,omitempty"`             // ShowInPersonalRanking 是否展示在个人调用量排行榜
+	UpstreamTimeoutPromptEnabled     *bool   `json:"upstream_timeout_prompt_enabled,omitempty"`      // 是否接收上游慢响应提示
 }
 
 var (
