@@ -206,7 +206,7 @@ export function ContentCheckSection(props: ContentCheckSectionProps) {
                 <FormItem>
                   <FormLabel>{t('Detection model')}</FormLabel>
                   <FormControl>
-                    <Input placeholder='gpt-4o-mini' {...field} />
+                    <Input placeholder={t('gpt-4o-mini')} {...field} />
                   </FormControl>
                   <FormDescription>
                     {t('Model name for the external content check API.')}

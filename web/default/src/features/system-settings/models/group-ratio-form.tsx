@@ -486,15 +486,15 @@ function GroupPricingGuide({ open, onOpenChange }: GroupPricingGuideProps) {
                 </thead>
                 <tbody>
                   <tr className='border-b'>
-                    <td className='px-3 py-1.5'>default</td>
+                    <td className='px-3 py-1.5'>{t('default')}</td>
                     <td className='px-3 py-1.5 text-right'>1.0</td>
                   </tr>
                   <tr className='border-b'>
-                    <td className='px-3 py-1.5'>premium</td>
+                    <td className='px-3 py-1.5'>{t('premium')}</td>
                     <td className='px-3 py-1.5 text-right'>0.5</td>
                   </tr>
                   <tr>
-                    <td className='px-3 py-1.5'>vip</td>
+                    <td className='px-3 py-1.5'>{t('vip')}</td>
                     <td className='px-3 py-1.5 text-right'>0.8</td>
                   </tr>
                 </tbody>

@@ -806,7 +806,7 @@ function ResetCreditsPanel(props: {
           copyable={false}
         />
         <InfoField
-          label='HTTP'
+          label={t('HTTP')}
           value={String(props.response?.upstream_status ?? '-')}
           mono
           copyable={false}

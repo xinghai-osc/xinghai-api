@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Ban, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { Ban, Plus, RotateCcw, Trash2, Pencil } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -51,6 +51,15 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { formatQuota } from '@/lib/format'
 
@@ -61,6 +70,7 @@ import {
   invalidateUserSubscription,
   deleteUserSubscription,
   resetUserSubscriptionsByPlan,
+  updateUserSubscriptionPeriod,
 } from '../../api'
 import { formatTimestamp } from '../../lib'
 import type { PlanRecord, UserSubscriptionRecord } from '../../types'
@@ -124,6 +134,12 @@ export function UserSubscriptionsDialog(props: Props) {
     type: 'invalidate' | 'delete'
     subId: number
   } | null>(null)
+  const [periodAction, setPeriodAction] = useState<{
+    subId: number
+    startTime: string
+    endTime: string
+  } | null>(null)
+  const [updatingPeriod, setUpdatingPeriod] = useState(false)
 
   const planTitleMap = useMemo(() => {
     const map = new Map<number, string>()
@@ -227,6 +243,33 @@ export function UserSubscriptionsDialog(props: Props) {
     } finally {
       setResetting(false)
       setResetAction(null)
+    }
+  }
+
+  const handlePeriodUpdate = async () => {
+    if (!periodAction) return
+    const startTime = new Date(periodAction.startTime).getTime() / 1000
+    const endTime = new Date(periodAction.endTime).getTime() / 1000
+    if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+      toast.error(t('Subscription time range is invalid'))
+      return
+    }
+    setUpdatingPeriod(true)
+    try {
+      const res = await updateUserSubscriptionPeriod(periodAction.subId, {
+        start_time: startTime,
+        end_time: endTime,
+      })
+      if (res.success) {
+        toast.success(t('Subscription validity updated'))
+        setPeriodAction(null)
+        await loadData()
+        props.onSuccess?.()
+      }
+    } catch {
+      toast.error(t('Operation failed'))
+    } finally {
+      setUpdatingPeriod(false)
     }
   }
 
@@ -362,6 +405,27 @@ export function UserSubscriptionsDialog(props: Props) {
                     return (
                       <DataTableRowActionMenu ariaLabel={t('Actions')}>
                         <DropdownMenuItem
+                          onClick={() => {
+                            const toInputValue = (timestamp: number) => {
+                              const date = new Date(timestamp * 1000)
+                              const offset = date.getTimezoneOffset() * 60000
+                              return new Date(date.getTime() - offset)
+                                .toISOString()
+                                .slice(0, 16)
+                            }
+                            setPeriodAction({
+                              subId: sub.id,
+                              startTime: toInputValue(sub.start_time),
+                              endTime: toInputValue(sub.end_time),
+                            })
+                          }}
+                        >
+                          {t('Modify validity period')}
+                          <DropdownMenuShortcut>
+                            <Pencil size={16} />
+                          </DropdownMenuShortcut>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           disabled={!isActive}
                           onClick={() => {
                             setAdvanceResetTime(true)
@@ -461,6 +525,62 @@ export function UserSubscriptionsDialog(props: Props) {
             />
           </label>
         </ConfirmDialog>
+      )}
+
+      {periodAction && (
+        <Dialog
+          open
+          onOpenChange={(open) => !open && setPeriodAction(null)}
+        >
+          <DialogContent className='sm:max-w-md'>
+            <DialogHeader>
+              <DialogTitle>{t('Modify validity period')}</DialogTitle>
+              <DialogDescription>
+                {t('Set the subscription start and end time.')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className='grid gap-4 py-2'>
+              <label className='grid gap-2 text-sm'>
+                <span>{t('Start Time')}</span>
+                <Input
+                  type='datetime-local'
+                  value={periodAction.startTime}
+                  onChange={(event) =>
+                    setPeriodAction({
+                      ...periodAction,
+                      startTime: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className='grid gap-2 text-sm'>
+                <span>{t('End Time')}</span>
+                <Input
+                  type='datetime-local'
+                  value={periodAction.endTime}
+                  onChange={(event) =>
+                    setPeriodAction({
+                      ...periodAction,
+                      endTime: event.target.value,
+                    })
+                  }
+                />
+              </label>
+            </div>
+            <DialogFooter>
+              <Button
+                variant='outline'
+                onClick={() => setPeriodAction(null)}
+                disabled={updatingPeriod}
+              >
+                {t('Cancel')}
+              </Button>
+              <Button onClick={handlePeriodUpdate} disabled={updatingPeriod}>
+                {t('Save')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   )

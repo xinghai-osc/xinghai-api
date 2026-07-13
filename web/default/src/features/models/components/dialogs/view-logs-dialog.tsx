@@ -312,9 +312,9 @@ export function ViewLogsDialog({
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
               <SelectGroup>
-                <SelectItem value='stdout'>stdout</SelectItem>
-                <SelectItem value='stderr'>stderr</SelectItem>
-                <SelectItem value='all'>all</SelectItem>
+                <SelectItem value='stdout'>{t('stdout')}</SelectItem>
+                <SelectItem value='stderr'>{t('stderr')}</SelectItem>
+                <SelectItem value='all'>{t('all')}</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

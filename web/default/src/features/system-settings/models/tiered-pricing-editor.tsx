@@ -496,7 +496,7 @@ function ConditionRow({ condition, onChange, onRemove }: ConditionRowProps) {
         variant='ghost'
         size='icon'
         onClick={onRemove}
-        aria-label='remove'
+        aria-label={t('remove')}
         className='ml-auto'
       >
         <Trash2 className='text-destructive h-4 w-4' />
@@ -898,7 +898,7 @@ function RawExprEditor({ exprString, onChange }: RawExprEditorProps) {
             {t('Functions')}: <code>tier(name, value)</code>, <code>max</code>,{' '}
             <code>min</code>, <code>ceil</code>, <code>floor</code>,{' '}
             <code>abs</code>, <code>header(name)</code>,{' '}
-            <code>param(path)</code>, <code>has(source, text)</code>
+            <code>{t('param(path)')}</code>, <code>has(source, text)</code>
           </div>
         </AlertDescription>
       </Alert>

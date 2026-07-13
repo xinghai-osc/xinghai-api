@@ -476,7 +476,7 @@ export function WaffoSettingsSection({
                   payMethodType: e.target.value,
                 }))
               }
-              placeholder='CREDITCARD,DEBITCARD'
+              placeholder={t('CREDITCARD,DEBITCARD')}
             />
           </div>
           <div className='grid gap-1.5'>

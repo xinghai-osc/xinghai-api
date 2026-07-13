@@ -1110,7 +1110,7 @@ func AdminUpdateUserSubscriptionPeriod(userSubscriptionId int, startTime int64, 
 	now := common.GetTimestamp()
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var sub UserSubscription
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+		if err := lockForUpdate(tx).
 			Where("id = ?", userSubscriptionId).First(&sub).Error; err != nil {
 			return err
 		}

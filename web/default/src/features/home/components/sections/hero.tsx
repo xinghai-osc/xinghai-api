@@ -193,7 +193,7 @@ export function Hero(props: HeroProps) {
                 className='group border-border/40 bg-card/60 text-foreground/80 hover:border-primary/30 hover:bg-card/80 hover:text-foreground flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-xs backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:shadow-primary/5'
               >
                 <CherryStudio.Color size={24} className='shrink-0' />
-                <span>Cherry Studio</span>
+                <span>{t('Cherry Studio')}</span>
               </a>
 
               {/* CC Switch */}
@@ -205,7 +205,7 @@ export function Hero(props: HeroProps) {
               >
                 <img
                   src='https://ccswitch.io/favicon.png'
-                  alt='CC Switch'
+                  alt={t('CC Switch')}
                   className='size-6 shrink-0 rounded-md object-contain'
                   onError={(e) => {
                     e.currentTarget.style.display = 'none'
@@ -219,7 +219,7 @@ export function Hero(props: HeroProps) {
                 >
                   CC
                 </span>
-                <span>CC Switch</span>
+                <span>{t('CC Switch')}</span>
               </a>
 
               {/* "更多" */}

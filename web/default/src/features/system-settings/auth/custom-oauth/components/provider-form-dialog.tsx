@@ -554,7 +554,7 @@ export function ProviderFormDialog(props: ProviderFormDialogProps) {
                   <FormItem>
                     <FormLabel>{t('Username Field')}</FormLabel>
                     <FormControl>
-                      <Input placeholder='login' {...field} />
+                      <Input placeholder={t('login')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -568,7 +568,7 @@ export function ProviderFormDialog(props: ProviderFormDialogProps) {
                   <FormItem>
                     <FormLabel>{t('Display Name Field')}</FormLabel>
                     <FormControl>
-                      <Input placeholder='name' {...field} />
+                      <Input placeholder={t('name')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -582,7 +582,7 @@ export function ProviderFormDialog(props: ProviderFormDialogProps) {
                   <FormItem>
                     <FormLabel>{t('Email Field')}</FormLabel>
                     <FormControl>
-                      <Input placeholder='email' {...field} />
+                      <Input placeholder={t('email')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

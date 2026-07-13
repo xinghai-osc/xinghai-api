@@ -140,17 +140,17 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
             <BadgeCell>
               {plan.stripe_price_id && (
                 <StatusBadge
-                  label='Stripe'
+                  label={t('Stripe')}
                   variant='neutral'
                   copyable={false}
                 />
               )}
               {plan.creem_product_id && (
-                <StatusBadge label='Creem' variant='neutral' copyable={false} />
+                <StatusBadge label={t('Creem')} variant='neutral' copyable={false} />
               )}
               {plan.waffo_pancake_product_id && (
                 <StatusBadge
-                  label='Waffo Pancake'
+                  label={t('Waffo Pancake')}
                   variant='neutral'
                   copyable={false}
                 />
