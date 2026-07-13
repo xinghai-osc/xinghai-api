@@ -177,14 +177,40 @@ func testChannel(ctx context.Context, channel *model.Channel, testUserID int, te
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
-	if len(keyIndex) > 0 {
-		common.SetContextKey(c, constant.ContextKeyChannelMultiKeyIndex, keyIndex[0])
-	}
 	group, _ := model.GetUserGroup(testUserID, false)
 	c.Set("group", group)
 
 	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, testModel)
-	if newAPIError != nil {
+	// When an explicit key index is provided for multi-key channels, override the
+	// key/index set by SetupContextForSelectedChannel (which picks the next enabled
+	// key via GetNextEnabledKey and skips disabled keys). This ensures that already
+	// disabled keys are also tested, so they can be re-enabled if they recover.
+	// SetupContextForSelectedChannel may return a "no available key" error when all
+	// keys are disabled; in that case we still want to test the requested key, so we
+	// tolerate that specific error and proceed with the override.
+	if len(keyIndex) > 0 && channel.ChannelInfo.IsMultiKey {
+		if newAPIError != nil && newAPIError.GetErrorCode() == types.ErrorCodeChannelNoAvailableKey {
+			newAPIError = nil
+		}
+		if newAPIError != nil {
+			return testResult{
+				context:     c,
+				localErr:    newAPIError,
+				newAPIError: newAPIError,
+			}
+		}
+		key, keyErr := channel.GetKeyByIndex(keyIndex[0])
+		if keyErr != nil {
+			return testResult{
+				context:     c,
+				localErr:    keyErr,
+				newAPIError: keyErr,
+			}
+		}
+		common.SetContextKey(c, constant.ContextKeyChannelIsMultiKey, true)
+		common.SetContextKey(c, constant.ContextKeyChannelMultiKeyIndex, keyIndex[0])
+		common.SetContextKey(c, constant.ContextKeyChannelKey, key)
+	} else if newAPIError != nil {
 		return testResult{
 			context:     c,
 			localErr:    newAPIError,
