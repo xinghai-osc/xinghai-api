@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useQueryClient } from '@tanstack/react-query'
+import { useIsFetching, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   MoreHorizontal,
@@ -59,6 +59,7 @@ import {
 import { useAuthStore } from '@/stores/auth-store'
 
 import {
+  channelsQueryKeys,
   handleDeleteAllDisabled,
   handleFixAbilities,
   handleTestAllChannels,
@@ -80,6 +81,8 @@ export function ChannelsPrimaryButtons() {
     upstream,
   } = useChannels()
   const queryClient = useQueryClient()
+  const isRefreshingChannels =
+    useIsFetching({ queryKey: channelsQueryKeys.lists() }) > 0
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showConsistencyDialog, setShowConsistencyDialog] = useState(false)
   const [isRepairingConsistency, setIsRepairingConsistency] = useState(false)
@@ -146,6 +149,26 @@ export function ChannelsPrimaryButtons() {
             onCheckedChange={handleIdSortToggle}
           />
         </div>
+
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          onClick={() =>
+            void queryClient.invalidateQueries({
+              queryKey: channelsQueryKeys.lists(),
+            })
+          }
+          disabled={isRefreshingChannels}
+          aria-label={t('Refresh')}
+        >
+          <RefreshCw
+            data-icon='inline-start'
+            className={isRefreshingChannels ? 'animate-spin' : undefined}
+            aria-hidden='true'
+          />
+          <span className='max-sm:hidden'>{t('Refresh')}</span>
+        </Button>
 
         {/* Create Channel */}
         <Tooltip>
