@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { DataTableRowActionMenu, StaticDataTable } from '@/components/data-table'
+import { StaticDataTable } from '@/components/data-table'
 import {
   sideDrawerContentClassName,
   sideDrawerFormClassName,
@@ -31,11 +31,6 @@ import {
 import { StatusBadge } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -276,7 +271,7 @@ export function UserSubscriptionsDialog(props: Props) {
   return (
     <>
       <Sheet open={props.open} onOpenChange={props.onOpenChange}>
-        <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
+        <SheetContent className={sideDrawerContentClassName('sm:max-w-4xl')}>
           <SheetHeader className={sideDrawerHeaderClassName()}>
             <SheetTitle>{t('User Subscription Management')}</SheetTitle>
             <SheetDescription>
@@ -403,8 +398,10 @@ export function UserSubscriptionsDialog(props: Props) {
                     const isActive = sub.status === 'active' && !isExpired
 
                     return (
-                      <DataTableRowActionMenu ariaLabel={t('Actions')}>
-                        <DropdownMenuItem
+                      <div className='flex flex-wrap justify-end gap-1'>
+                        <Button
+                          variant='outline'
+                          size='xs'
                           onClick={() => {
                             const toInputValue = (timestamp: number) => {
                               const date = new Date(timestamp * 1000)
@@ -420,12 +417,14 @@ export function UserSubscriptionsDialog(props: Props) {
                             })
                           }}
                         >
-                          {t('Modify validity period')}
-                          <DropdownMenuShortcut>
-                            <Pencil size={16} />
-                          </DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
+                          <Pencil />
+                          <span className='sr-only sm:not-sr-only'>
+                            {t('Modify validity period')}
+                          </span>
+                        </Button>
+                        <Button
+                          variant='outline'
+                          size='xs'
                           disabled={!isActive}
                           onClick={() => {
                             setAdvanceResetTime(true)
@@ -437,12 +436,14 @@ export function UserSubscriptionsDialog(props: Props) {
                             })
                           }}
                         >
-                          {t('Reset quota')}
-                          <DropdownMenuShortcut>
-                            <RotateCcw size={16} />
-                          </DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
+                          <RotateCcw />
+                          <span className='sr-only sm:not-sr-only'>
+                            {t('Reset quota')}
+                          </span>
+                        </Button>
+                        <Button
+                          variant='outline'
+                          size='xs'
                           disabled={!isActive}
                           onClick={() =>
                             setConfirmAction({
@@ -451,14 +452,14 @@ export function UserSubscriptionsDialog(props: Props) {
                             })
                           }
                         >
-                          {t('Invalidate')}
-                          <DropdownMenuShortcut>
-                            <Ban size={16} />
-                          </DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                          <Ban />
+                          <span className='sr-only sm:not-sr-only'>
+                            {t('Invalidate')}
+                          </span>
+                        </Button>
+                        <Button
                           variant='destructive'
+                          size='xs'
                           onClick={() =>
                             setConfirmAction({
                               type: 'delete',
@@ -466,12 +467,12 @@ export function UserSubscriptionsDialog(props: Props) {
                             })
                           }
                         >
-                          {t('Delete')}
-                          <DropdownMenuShortcut>
-                            <Trash2 size={16} />
-                          </DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                      </DataTableRowActionMenu>
+                          <Trash2 />
+                          <span className='sr-only sm:not-sr-only'>
+                            {t('Delete')}
+                          </span>
+                        </Button>
+                      </div>
                     )
                   },
                 },

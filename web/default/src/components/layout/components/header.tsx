@@ -25,12 +25,12 @@ export function Header({ className, children, ...props }: HeaderProps) {
   return (
     <header
       className={cn(
-        'border-border/60 bg-background/78 supports-[backdrop-filter]:bg-background/68 sticky top-2.5 z-40 mx-auto mt-2.5 h-[calc(var(--app-header-height,4rem)-0.625rem)] w-[calc(100%-1.25rem)] shrink-0 overflow-hidden rounded-2xl border shadow-[0_10px_30px_color-mix(in_oklch,var(--foreground)_8%,transparent)] backdrop-blur-xl sm:top-3 sm:mt-3 sm:h-[calc(var(--app-header-height,4rem)-0.75rem)] sm:w-[calc(100%-2rem)]',
+        'border-border/60 bg-background/78 supports-[backdrop-filter]:bg-background/68 sticky top-2.5 z-40 mx-auto mt-2.5 h-[calc(var(--app-header-height,4rem)-0.625rem)] w-fit max-w-[calc(100%-1.25rem)] shrink-0 overflow-hidden rounded-2xl border shadow-[0_10px_30px_color-mix(in_oklch,var(--foreground)_8%,transparent)] backdrop-blur-xl sm:top-3 sm:mt-3 sm:h-[calc(var(--app-header-height,4rem)-0.75rem)] sm:max-w-[calc(100%-2rem)]',
         className
       )}
       {...props}
     >
-      <div className='mx-auto flex h-full w-full max-w-[1920px] items-center gap-1.5 px-2.5 sm:gap-2 sm:px-4'>
+      <div className='mx-auto flex h-full w-fit max-w-full items-center gap-1.5 px-2.5 sm:gap-2 sm:px-4'>
         <SidebarTrigger variant='ghost' className='size-8' />
         {children}
       </div>

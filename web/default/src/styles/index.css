@@ -81,6 +81,25 @@ For commercial licensing, please contact support@quantumnous.com
     font-family: var(--font-body);
   }
 
+  body[data-theme-preset='default'] {
+    background-image:
+      radial-gradient(
+        circle at 10% -12%,
+        color-mix(in oklch, var(--primary) 8%, transparent) 0,
+        transparent 32rem
+      ),
+      radial-gradient(
+        circle at 94% 2%,
+        color-mix(in oklch, var(--overview-accent-2) 7%, transparent) 0,
+        transparent 28rem
+      ),
+      radial-gradient(
+        circle at 54% 108%,
+        color-mix(in oklch, var(--overview-accent-3) 4%, transparent) 0,
+        transparent 34rem
+      );
+  }
+
   ::selection {
     background: color-mix(in oklch, var(--primary) 24%, transparent);
   }
