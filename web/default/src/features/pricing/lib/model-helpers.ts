@@ -53,14 +53,27 @@ export function getConfiguredGroupRatio(
 /**
  * Resolve the group ratio used by model square summary prices.
  *
- * When no specific group is selected, the model square shows the best price
- * available to the viewer. When a group filter is active, it mirrors classic
- * and shows that group's price.
+ * When no specific group is selected, the model square shows the price for
+ * the model's primary enabled group. When a group filter is active, it shows
+ * that group's price.
  */
 export function getDisplayGroupRatio(
   model: PricingModel,
   selectedGroup?: string
 ): number {
+  const displayGroup = getDisplayGroup(model, selectedGroup)
+  return displayGroup
+    ? getConfiguredGroupRatio(model.group_ratio || {}, displayGroup)
+    : 1
+}
+
+/**
+ * Resolve the group represented by the summary price.
+ */
+export function getDisplayGroup(
+  model: PricingModel,
+  selectedGroup?: string
+): string | undefined {
   const modelEnableGroups = Array.isArray(model.enable_groups)
     ? model.enable_groups
     : []
@@ -71,27 +84,25 @@ export function getDisplayGroupRatio(
     selectedGroup !== FILTER_ALL &&
     modelEnableGroups.includes(selectedGroup)
   ) {
-    return getConfiguredGroupRatio(groupRatio, selectedGroup)
+    return selectedGroup
   }
 
   if (modelEnableGroups.length === 0) {
-    return 1
+    return undefined
   }
 
-  let minRatio = Number.POSITIVE_INFINITY
+  let displayGroup = modelEnableGroups[0]
+  let minRatio = getConfiguredGroupRatio(groupRatio, displayGroup)
 
-  for (const group of modelEnableGroups) {
-    const ratio = groupRatio[group]
-    if (
-      typeof ratio === 'number' &&
-      Number.isFinite(ratio) &&
-      ratio < minRatio
-    ) {
+  for (const group of modelEnableGroups.slice(1)) {
+    const ratio = getConfiguredGroupRatio(groupRatio, group)
+    if (ratio < minRatio) {
+      displayGroup = group
       minRatio = ratio
     }
   }
 
-  return minRatio === Number.POSITIVE_INFINITY ? 1 : minRatio
+  return displayGroup
 }
 
 /**

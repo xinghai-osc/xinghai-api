@@ -31,7 +31,7 @@ import {
   getDynamicPricingSummary,
 } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
-import { isTokenBasedModel } from '../lib/model-helpers'
+import { getDisplayGroup, isTokenBasedModel } from '../lib/model-helpers'
 import { formatPrice, formatRequestPrice } from '../lib/price'
 import type { PricingModel, TokenUnit } from '../types'
 import { ModelBillingModeBadge } from './model-billing-mode-badge'
@@ -81,9 +81,9 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       })
     : null
 
-  const primaryGroup = props.selectedGroup ?? groups[0]
+  const primaryGroup = getDisplayGroup(props.model, props.selectedGroup)
   const isSubscriptionResistantGroup =
-    Boolean(primaryGroup) &&
+    primaryGroup !== undefined &&
     props.subscriptionUpgradeGroups?.has(primaryGroup)
   const bottomTags = [...endpoints.slice(0, 2), ...tags.slice(0, 2)]
   const hiddenCount =
