@@ -60,14 +60,19 @@ For commercial licensing, please contact support@quantumnous.com
     @apply bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar min-h-svh w-full;
     background-image:
       radial-gradient(
-        circle at 12% -8%,
-        color-mix(in oklch, var(--primary) 8%, transparent) 0,
+        circle at 10% -12%,
+        color-mix(in oklch, var(--primary) 13%, transparent) 0,
+        transparent 32rem
+      ),
+      radial-gradient(
+        circle at 94% 2%,
+        color-mix(in oklch, var(--overview-accent-2) 11%, transparent) 0,
         transparent 28rem
       ),
       radial-gradient(
-        circle at 92% 4%,
-        color-mix(in oklch, var(--overview-accent-2) 7%, transparent) 0,
-        transparent 24rem
+        circle at 54% 108%,
+        color-mix(in oklch, var(--overview-accent-3) 6%, transparent) 0,
+        transparent 34rem
       );
     background-attachment: fixed;
     /* Font is driven by the theme's font axis via `--font-body`
@@ -509,11 +514,15 @@ For commercial licensing, please contact support@quantumnous.com
   @media (min-width: 641px) {
     [data-slot='card']:not([data-card-hover='false']):hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+      box-shadow:
+        0 4px 12px rgb(0 0 0 / 0.06),
+        0 0 20px color-mix(in oklch, var(--primary) 7%, transparent);
     }
 
     .dark [data-slot='card']:not([data-card-hover='false']):hover {
-      box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+      box-shadow:
+        0 4px 12px rgb(0 0 0 / 0.3),
+        0 0 24px color-mix(in oklch, var(--primary) 12%, transparent);
     }
   }
 
