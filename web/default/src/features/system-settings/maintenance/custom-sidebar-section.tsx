@@ -83,16 +83,14 @@ const subItemSchema = z.object({
   url: z.string().min(1).max(500),
 })
 
-const itemSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
-  icon: z.string().min(1, 'Icon is required'),
-  url: z.string().max(500).optional(),
-  group: z.string().min(1, 'Group is required'),
-  adminOnly: z.boolean().optional(),
-  items: z.array(subItemSchema).optional(),
-})
-
-type ItemFormValues = z.infer<typeof itemSchema>
+type ItemFormValues = {
+  title: string
+  icon: string
+  url?: string
+  group: string
+  adminOnly?: boolean
+  items?: CustomSidebarSubItem[]
+}
 
 function generateId(): string {
   return `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -103,6 +101,17 @@ export function CustomSidebarSection({
   initialSerialized,
 }: CustomSidebarSectionProps) {
   const { t } = useTranslation()
+  const itemSchema = z.object({
+    title: z
+      .string()
+      .min(1, t('Title is required'))
+      .max(100, t('Title must be less than 100 characters')),
+    icon: z.string().min(1, t('Icon is required')),
+    url: z.string().max(500).optional(),
+    group: z.string().min(1, t('Group is required')),
+    adminOnly: z.boolean().optional(),
+    items: z.array(subItemSchema).optional(),
+  })
   const updateOption = useUpdateOption()
   const [list, setList] = useState<CustomSidebarItem[]>(config)
   const [hasChanges, setHasChanges] = useState(false)
@@ -299,8 +308,7 @@ export function CustomSidebarSection({
               disabled={selectedIds.length === 0}
             >
               <Trash2 className='mr-2 h-4 w-4' />
-              {t('Delete (')}
-              {selectedIds.length})
+              {t('Delete ({{count}})', { count: selectedIds.length })}
             </Button>
             <Button
               onClick={handleSaveAll}
