@@ -58,10 +58,26 @@ For commercial licensing, please contact support@quantumnous.com
   }
   body {
     @apply bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar min-h-svh w-full;
+    background-image:
+      radial-gradient(
+        circle at 12% -8%,
+        color-mix(in oklch, var(--primary) 8%, transparent) 0,
+        transparent 28rem
+      ),
+      radial-gradient(
+        circle at 92% 4%,
+        color-mix(in oklch, var(--overview-accent-2) 7%, transparent) 0,
+        transparent 24rem
+      );
+    background-attachment: fixed;
     /* Font is driven by the theme's font axis via `--font-body`
      * (defined in theme.css, swapped by `[data-theme-font='...']` blocks
      * in theme-presets.css). Defaults to the project's humanist sans. */
     font-family: var(--font-body);
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 24%, transparent);
   }
 
   /* Keep sticky headers stable while primitives lock body scrolling. */

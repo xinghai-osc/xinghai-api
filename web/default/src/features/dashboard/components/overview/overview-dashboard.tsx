@@ -618,10 +618,14 @@ export function OverviewDashboard() {
   }
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='relative flex flex-col gap-4 sm:gap-5'>
+      <div
+        className='pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-[85%] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,color-mix(in_oklch,var(--primary)_9%,transparent),transparent_70%)] blur-3xl'
+        aria-hidden='true'
+      />
       {setupGuideExpanded ? (
         <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
-          <CardStaggerItem className='bg-card h-full overflow-hidden rounded-2xl border shadow-xs'>
+          <CardStaggerItem className='bg-card/88 ring-foreground/[0.035] h-full overflow-hidden rounded-2xl border shadow-[0_18px_50px_-32px_color-mix(in_oklch,var(--foreground)_40%,transparent)] ring-1 backdrop-blur-sm'>
             <div className='relative h-full overflow-hidden p-4 sm:p-5'>
               <SetupGuideBackdrop />
               <div className='relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]'>
@@ -677,7 +681,7 @@ export function OverviewDashboard() {
             </div>
           </CardStaggerItem>
 
-          <CardStaggerItem className='bg-card h-full rounded-2xl border p-4 shadow-xs sm:p-5'>
+          <CardStaggerItem className='bg-card/88 ring-foreground/[0.035] h-full rounded-2xl border p-4 shadow-[0_18px_50px_-32px_color-mix(in_oklch,var(--foreground)_40%,transparent)] ring-1 backdrop-blur-sm sm:p-5'>
             <div className='flex h-full flex-col gap-4'>
               <div className='flex flex-col gap-1'>
                 <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
@@ -697,7 +701,7 @@ export function OverviewDashboard() {
         </CardStaggerContainer>
       ) : (
         <CardStaggerContainer>
-          <CardStaggerItem className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
+          <CardStaggerItem className='bg-card/88 ring-foreground/[0.035] overflow-hidden rounded-2xl border shadow-[0_18px_50px_-32px_color-mix(in_oklch,var(--foreground)_40%,transparent)] ring-1 backdrop-blur-sm'>
             <div className='relative overflow-hidden px-4 py-3 sm:px-5'>
               <SetupGuideBackdrop compact />
               <div className='relative flex flex-wrap items-center justify-between gap-3'>
