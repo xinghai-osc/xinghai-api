@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -216,6 +217,8 @@ type SubscriptionOrder struct {
 	UserId int     `json:"user_id" gorm:"index"`
 	PlanId int     `json:"plan_id" gorm:"index"`
 	Money  float64 `json:"money"`
+	// UpgradeSubscriptionId identifies the active subscription replaced by this order.
+	UpgradeSubscriptionId int `json:"upgrade_subscription_id" gorm:"index;default:0"`
 
 	TradeNo         string `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod   string `json:"payment_method" gorm:"type:varchar(50)"`
@@ -255,6 +258,8 @@ type UserSubscription struct {
 	Id     int `json:"id"`
 	UserId int `json:"user_id" gorm:"index;index:idx_user_sub_active,priority:1"`
 	PlanId int `json:"plan_id" gorm:"index"`
+	// PriceAmount is a purchase-time price snapshot used for prorated upgrades.
+	PriceAmount float64 `json:"price_amount" gorm:"type:decimal(10,6);not null;default:0"`
 
 	AmountTotal int64 `json:"amount_total" gorm:"type:bigint;not null;default:0"`
 	AmountUsed  int64 `json:"amount_used" gorm:"type:bigint;not null;default:0"`
@@ -530,7 +535,7 @@ func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *Subscriptio
 			return nil, errors.New("已达到该套餐购买上限")
 		}
 	}
-	nowUnix := GetDBTimestamp()
+	nowUnix := common.GetTimestamp()
 	now := time.Unix(nowUnix, 0)
 	endUnix, err := calcPlanEndTime(now, plan)
 	if err != nil {
@@ -578,6 +583,7 @@ func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *Subscriptio
 	sub := &UserSubscription{
 		UserId:              userId,
 		PlanId:              plan.Id,
+		PriceAmount:         plan.PriceAmount,
 		AmountTotal:         plan.TotalAmount,
 		AmountUsed:          0,
 		StartTime:           now.Unix(),
@@ -638,7 +644,12 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 			// still allow completion for already purchased orders
 		}
 		upgradeGroup = strings.TrimSpace(plan.UpgradeGroup)
-		_, err = CreateUserSubscriptionFromPlanTx(tx, order.UserId, plan, "order")
+		now := common.GetTimestamp()
+		if order.UpgradeSubscriptionId > 0 {
+			err = upgradeUserSubscriptionTx(tx, order.UserId, order.UpgradeSubscriptionId, plan, now)
+		} else {
+			_, err = CreateUserSubscriptionFromPlanTx(tx, order.UserId, plan, "order")
+		}
 		if err != nil {
 			return err
 		}
@@ -773,11 +784,88 @@ func calcSubscriptionBalanceQuota(priceAmount float64) (int, error) {
 	if common.QuotaPerUnit <= 0 {
 		return 0, errors.New("额度单位配置错误")
 	}
-	quota := decimal.NewFromFloat(priceAmount).
-		Mul(decimal.NewFromFloat(common.QuotaPerUnit)).
-		Ceil().
-		IntPart()
-	return int(quota), nil
+	quota, clamp := common.QuotaFromDecimalChecked(decimal.NewFromFloat(priceAmount).
+		Mul(decimal.NewFromFloat(common.QuotaPerUnit)).Ceil())
+	if clamp != nil {
+		return 0, clamp
+	}
+	return quota, nil
+}
+
+// GetSubscriptionUpgradeQuote calculates the remaining-value credit for an
+// active subscription and the amount due for the target plan.
+func GetSubscriptionUpgradeQuote(userId int, fromSubscriptionId int, targetPlanId int) (float64, error) {
+	if userId <= 0 || fromSubscriptionId <= 0 || targetPlanId <= 0 {
+		return 0, errors.New("invalid subscription upgrade args")
+	}
+	return getSubscriptionUpgradeQuoteTx(nil, userId, fromSubscriptionId, targetPlanId)
+}
+
+// getSubscriptionUpgradeQuoteTx is the transaction-aware core of
+// GetSubscriptionUpgradeQuote. It uses `tx` when non-nil so it can run inside
+// the same DB.Transaction that holds the write lock; with SQLite's single
+// connection this is mandatory to avoid a deadlock waiting for the pooled conn.
+func getSubscriptionUpgradeQuoteTx(tx *gorm.DB, userId int, fromSubscriptionId int, targetPlanId int) (float64, error) {
+	if userId <= 0 || fromSubscriptionId <= 0 || targetPlanId <= 0 {
+		return 0, errors.New("invalid subscription upgrade args")
+	}
+	var source UserSubscription
+	now := common.GetTimestamp()
+	query := DB
+	if tx != nil {
+		query = tx
+	}
+	if err := query.Where("id = ? AND user_id = ? AND status = ? AND end_time > ?",
+		fromSubscriptionId, userId, "active", now).First(&source).Error; err != nil {
+		return 0, err
+	}
+	target, err := getSubscriptionPlanByIdTx(tx, targetPlanId)
+	if err != nil {
+		return 0, err
+	}
+	if !target.Enabled {
+		return 0, errors.New("套餐未启用")
+	}
+	oldPrice := source.PriceAmount
+	if oldPrice <= 0 {
+		if oldPlan, planErr := getSubscriptionPlanByIdTx(tx, source.PlanId); planErr == nil {
+			oldPrice = oldPlan.PriceAmount
+		}
+	}
+	if target.PriceAmount <= oldPrice {
+		return 0, errors.New("只能更换为价格更高的套餐")
+	}
+	remaining := float64(source.EndTime - now)
+	duration := float64(source.EndTime - source.StartTime)
+	if duration <= 0 || remaining <= 0 {
+		return 0, errors.New("订阅有效期无效")
+	}
+	credit := oldPrice * remaining / duration
+	due := math.Max(0, target.PriceAmount-credit)
+	return math.Round(due*100) / 100, nil
+}
+
+func upgradeUserSubscriptionTx(tx *gorm.DB, userId int, sourceId int, target *SubscriptionPlan, now int64) error {
+	if tx == nil || target == nil {
+		return errors.New("invalid subscription upgrade args")
+	}
+	var source UserSubscription
+	if err := lockForUpdate(tx).Where("id = ? AND user_id = ?", sourceId, userId).First(&source).Error; err != nil {
+		return err
+	}
+	if source.Status != "active" || source.EndTime <= now {
+		return errors.New("原订阅已失效")
+	}
+	if _, err := downgradeUserGroupForSubscriptionTx(tx, &source, now); err != nil {
+		return err
+	}
+	if err := tx.Model(&source).Updates(map[string]interface{}{
+		"status": "cancelled", "end_time": now, "updated_at": common.GetTimestamp(),
+	}).Error; err != nil {
+		return err
+	}
+	_, err := CreateUserSubscriptionFromPlanTx(tx, userId, target, "upgrade")
+	return err
 }
 
 // PurchaseSubscriptionWithBalance creates a subscription by deducting the user's wallet quota.
@@ -869,6 +957,78 @@ func PurchaseSubscriptionWithBalance(userId int, planId int) error {
 	}
 	msg := fmt.Sprintf("使用余额购买订阅成功，套餐: %s，支付金额: %.2f，扣除额度: %d", logPlanTitle, logMoney, chargedQuota)
 	RecordTopupLog(userId, msg, "", PaymentMethodBalance, PaymentProviderBalance)
+	return nil
+}
+
+// UpgradeSubscriptionWithBalance replaces an active subscription after
+// deducting only the prorated price difference from the user's quota.
+func UpgradeSubscriptionWithBalance(userId int, sourceSubscriptionId int, targetPlanId int) error {
+	if userId <= 0 || sourceSubscriptionId <= 0 || targetPlanId <= 0 {
+		return errors.New("invalid subscription upgrade args")
+	}
+	var chargedQuota int
+	var targetTitle string
+	var due float64
+	now := common.GetTimestamp()
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var source UserSubscription
+		if err := lockForUpdate(tx).Where("id = ? AND user_id = ?", sourceSubscriptionId, userId).First(&source).Error; err != nil {
+			return err
+		}
+		target, err := getSubscriptionPlanByIdTx(tx, targetPlanId)
+		if err != nil {
+			return err
+		}
+		if !target.Enabled {
+			return errors.New("套餐未启用")
+		}
+		due, err = getSubscriptionUpgradeQuoteTx(tx, userId, sourceSubscriptionId, targetPlanId)
+		if err != nil {
+			return err
+		}
+		if target.AllowBalancePay != nil && !*target.AllowBalancePay {
+			return errors.New("该套餐不允许使用余额兑换")
+		}
+		chargedQuota, err = calcSubscriptionBalanceQuota(due)
+		if err != nil {
+			return err
+		}
+		var user User
+		if err := lockForUpdate(tx).Where("id = ?", userId).First(&user).Error; err != nil {
+			return err
+		}
+		if user.Quota < chargedQuota {
+			return errors.New("余额不足")
+		}
+		if chargedQuota > 0 {
+			if err := tx.Model(&User{}).Where("id = ?", userId).
+				Update("quota", gorm.Expr("quota - ?", chargedQuota)).Error; err != nil {
+				return err
+			}
+		}
+		if err := upgradeUserSubscriptionTx(tx, userId, sourceSubscriptionId, target, now); err != nil {
+			return err
+		}
+		tradeNo := fmt.Sprintf("SUBUPGUSR%dNO%s%d", userId, common.GetRandomString(6), time.Now().UnixNano())
+		order := &SubscriptionOrder{UserId: userId, PlanId: target.Id, Money: due, TradeNo: tradeNo,
+			PaymentMethod: PaymentMethodBalance, PaymentProvider: PaymentProviderBalance,
+			UpgradeSubscriptionId: sourceSubscriptionId, Status: common.TopUpStatusSuccess,
+			CreateTime: common.GetTimestamp(), CompleteTime: common.GetTimestamp(),
+			ProviderPayload: fmt.Sprintf("charged_quota=%d", chargedQuota)}
+		targetTitle = target.Title
+		return tx.Create(order).Error
+	})
+	if err != nil {
+		return err
+	}
+	if chargedQuota > 0 {
+		_ = cacheDecrUserQuota(userId, int64(chargedQuota))
+	}
+	newGroup, _ := GetUserGroup(userId, true)
+	if newGroup != "" {
+		_ = UpdateUserGroupCache(userId, newGroup)
+	}
+	RecordTopupLog(userId, fmt.Sprintf("使用余额补差价升级订阅成功，套餐: %s，支付金额: %.2f，扣除额度: %d", targetTitle, due, chargedQuota), "", PaymentMethodBalance, PaymentProviderBalance)
 	return nil
 }
 

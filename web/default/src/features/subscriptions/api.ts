@@ -187,6 +187,28 @@ export async function paySubscriptionBalance(
   return res.data
 }
 
+export interface SubscriptionUpgradeQuoteData {
+  source_subscription_id: number
+  target_plan_id: number
+  due_amount: number
+}
+
+export async function getSubscriptionUpgradeQuote(params: {
+  source_subscription_id: number
+  target_plan_id: number
+}): Promise<ApiResponse<SubscriptionUpgradeQuoteData>> {
+  const res = await api.get('/api/subscription/upgrade/quote', { params })
+  return res.data
+}
+
+export async function upgradeSubscriptionBalance(data: {
+  source_subscription_id: number
+  target_plan_id: number
+}): Promise<ApiResponse> {
+  const res = await api.post('/api/subscription/upgrade', data)
+  return res.data
+}
+
 // Mints a Pancake OnetimeProduct (see controller for the OnetimeProduct vs
 // SubscriptionProduct rationale) using persisted creds + StoreID.
 export async function createWaffoPancakeSubscriptionProduct(data: {

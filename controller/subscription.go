@@ -28,6 +28,11 @@ type SubscriptionBalancePayRequest struct {
 	PlanId int `json:"plan_id"`
 }
 
+type SubscriptionUpgradeRequest struct {
+	SourceSubscriptionId int `json:"source_subscription_id"`
+	TargetPlanId         int `json:"target_plan_id"`
+}
+
 // ---- User APIs ----
 
 func GetSubscriptionPlans(c *gin.Context) {
@@ -121,6 +126,44 @@ func SubscriptionRequestBalancePay(c *gin.Context) {
 		}
 	}
 	common.ApiSuccess(c, nil)
+}
+
+func SubscriptionRequestUpgrade(c *gin.Context) {
+	if !requirePaymentCompliance(c) {
+		return
+	}
+	var req SubscriptionUpgradeRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.SourceSubscriptionId <= 0 || req.TargetPlanId <= 0 {
+		common.ApiErrorMsg(c, "参数错误")
+		return
+	}
+	if err := model.UpgradeSubscriptionWithBalance(c.GetInt("id"), req.SourceSubscriptionId, req.TargetPlanId); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, nil)
+}
+
+func SubscriptionRequestUpgradeQuote(c *gin.Context) {
+	if !requirePaymentCompliance(c) {
+		return
+	}
+	sourceId, _ := strconv.Atoi(c.Query("source_subscription_id"))
+	targetPlanId, _ := strconv.Atoi(c.Query("target_plan_id"))
+	if sourceId <= 0 || targetPlanId <= 0 {
+		common.ApiErrorMsg(c, "参数错误")
+		return
+	}
+	due, err := model.GetSubscriptionUpgradeQuote(c.GetInt("id"), sourceId, targetPlanId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"source_subscription_id": sourceId,
+		"target_plan_id":         targetPlanId,
+		"due_amount":             due,
+	})
 }
 
 // ---- Admin APIs ----

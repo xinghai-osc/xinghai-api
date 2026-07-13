@@ -51,6 +51,7 @@ import {
   updateBillingPreference,
 } from '@/features/subscriptions/api'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
+import { SubscriptionUpgradeDialog } from '@/features/subscriptions/components/dialogs/subscription-upgrade-dialog'
 import { formatDuration, formatResetPeriod } from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
@@ -114,6 +115,13 @@ export function SubscriptionPlansCard({
 
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [upgradeSource, setUpgradeSource] = useState<{
+    id: number
+    planId: number
+    title: string
+    priceAmount: number
+  } | null>(null)
 
   const enableStripe = !!topupInfo?.enable_stripe_topup
   const enableCreem = !!topupInfo?.enable_creem_topup
@@ -460,11 +468,54 @@ export function SubscriptionPlansCard({
                           {statusBadge}
                         </div>
                         {isActive && (
-                          <span className='text-muted-foreground'>
-                            {t('{{count}} days remaining', {
-                              count: remainDays,
-                            })}
-                          </span>
+                          <div className='flex items-center gap-2'>
+                            <span className='text-muted-foreground'>
+                              {t('{{count}} days remaining', {
+                                count: remainDays,
+                              })}
+                            </span>
+                            {(() => {
+                              const currentPlanRecord =
+                                plans.find(
+                                  (p) => p?.plan?.id === subscription?.plan_id
+                                ) || null
+                              const hasUpgrade =
+                                plans.some(
+                                  (p) =>
+                                    p?.plan?.enabled &&
+                                    p.plan.price_amount >
+                                      Number(
+                                        currentPlanRecord?.plan
+                                          ?.price_amount || 0
+                                      )
+                                )
+                              if (!hasUpgrade) return null
+                              return (
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-6 px-2 text-xs'
+                                  onClick={() => {
+                                    setUpgradeSource({
+                                      id: subscription?.id || 0,
+                                      planId: subscription?.plan_id || 0,
+                                      title:
+                                        planTitleMap.get(
+                                          subscription?.plan_id
+                                        ) || '',
+                                      priceAmount: Number(
+                                        currentPlanRecord?.plan
+                                          ?.price_amount || 0
+                                      ),
+                                    })
+                                    setUpgradeOpen(true)
+                                  }}
+                                >
+                                  {t('Upgrade')}
+                                </Button>
+                              )
+                            })()}
+                          </div>
                         )}
                       </div>
                       <div className='text-muted-foreground mt-1.5'>
@@ -659,6 +710,26 @@ export function SubscriptionPlansCard({
             ? planPurchaseCountMap.get(selectedPlan.plan.id)
             : undefined
         }
+      />
+
+      <SubscriptionUpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={(open) => {
+          setUpgradeOpen(open)
+          if (!open) {
+            setUpgradeSource(null)
+            fetchSelfSubscription()
+          }
+        }}
+        sourceSubscriptionId={upgradeSource?.id || 0}
+        sourcePlanTitle={upgradeSource?.title || ''}
+        sourcePriceAmount={upgradeSource?.priceAmount || 0}
+        plans={plans}
+        userQuota={userQuota}
+        onUpgradeSuccess={async () => {
+          await fetchSelfSubscription()
+          await onPurchaseSuccess?.()
+        }}
       />
     </>
   )
