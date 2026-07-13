@@ -351,6 +351,9 @@ function ChannelTestDialogContent({
   const [isDeletingFailed, setIsDeletingFailed] = useState(false)
   const [failureDetails, setFailureDetails] =
     useState<FailureDetailsState | null>(null)
+  const [selectedKeyIndex, setSelectedKeyIndex] = useState<
+    number | undefined
+  >()
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 30,
@@ -401,6 +404,7 @@ function ChannelTestDialogContent({
     batchStopRequestedRef.current = true
     setEndpointType('auto')
     setIsStreamTest(false)
+    setSelectedKeyIndex(undefined)
     setSearchTerm('')
     setTestResults({})
     setRowSelection({})
@@ -562,6 +566,7 @@ function ChannelTestDialogContent({
             testModel: model,
             endpointType: endpointType === 'auto' ? undefined : endpointType,
             stream: effectiveStreamTest || undefined,
+            keyIndex: selectedKeyIndex,
             silent,
           },
           (success, responseTime, error, errorCode) => {
@@ -602,6 +607,7 @@ function ChannelTestDialogContent({
       effectiveStreamTest,
       markModelTesting,
       refreshChannelLists,
+      selectedKeyIndex,
       t,
       updateTestResult,
     ]
@@ -993,7 +999,7 @@ function ChannelTestDialogContent({
         }
       >
         <div className='max-h-[78vh] space-y-4 overflow-y-auto py-4 pr-1'>
-          <div className='grid gap-4 md:grid-cols-2'>
+          <div className='grid gap-4 md:grid-cols-3'>
             <div className='grid gap-2'>
               <Label htmlFor='endpoint-type'>{t('Endpoint Type')}</Label>
               <Select
@@ -1049,6 +1055,54 @@ function ChannelTestDialogContent({
                 {t('Enable streaming mode for the test request.')}
               </p>
             </div>
+            {currentRow.channel_info.is_multi_key && (
+              <div className='grid gap-2'>
+                <Label htmlFor='key-index'>{t('Key Index')}</Label>
+                <Select
+                  value={selectedKeyIndex !== undefined ? String(selectedKeyIndex) : 'all'}
+                  onValueChange={(value) => {
+                    setSelectedKeyIndex(value === 'all' ? undefined : Number(value))
+                    setTestResults({})
+                  }}
+                >
+                  <SelectTrigger id='key-index' className='w-full'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value='all'>
+                        {t('All keys ({{count}})', {
+                          count: currentRow.channel_info.multi_key_size,
+                        })}
+                      </SelectItem>
+                      {Array.from(
+                        { length: currentRow.channel_info.multi_key_size },
+                        (_, i) => i
+                      ).map((index) => {
+                        const status =
+                          currentRow.channel_info.multi_key_status_list?.[
+                            String(index)
+                          ]
+                        const isDisabled = status === 3
+                        return (
+                          <SelectItem
+                            key={index}
+                            value={String(index)}
+                            disabled={isDisabled}
+                          >
+                            {t('Key {{index}}', { index })}
+                            {isDisabled && ` (${t('Disabled')})`}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <p className='text-muted-foreground text-xs'>
+                  {t('Select a specific key to test, or test all keys.')}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className='space-y-3 max-sm:has-[div[role="toolbar"]]:pb-16'>
