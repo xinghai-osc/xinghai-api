@@ -871,8 +871,24 @@ func applyOperations(jsonData []byte, operations []ParamOperation, conditionCont
 				auditRecorder.recordOperation("replace", path, op.From, op.To, nil)
 			}
 		case "regex_replace":
+			var re *regexp.Regexp
 			for _, path := range opPaths {
-				result, err = regexReplaceStringValue(result, path, op.From, op.To)
+				current := gjson.GetBytes(result, path)
+				if current.Type != gjson.String {
+					err = fmt.Errorf("operation not supported for type: %v", current.Type)
+					break
+				}
+				if re == nil {
+					if op.From == "" {
+						err = fmt.Errorf("regex pattern is required")
+						break
+					}
+					re, err = regexp.Compile(op.From)
+					if err != nil {
+						break
+					}
+				}
+				result, err = sjson.SetBytes(result, path, re.ReplaceAllString(current.String(), op.To))
 				if err != nil {
 					break
 				}
@@ -1766,21 +1782,6 @@ func replaceStringValue(data []byte, path, from, to string) ([]byte, error) {
 		return data, fmt.Errorf("replace from is required")
 	}
 	return sjson.SetBytes(data, path, strings.ReplaceAll(current.String(), from, to))
-}
-
-func regexReplaceStringValue(data []byte, path, pattern, replacement string) ([]byte, error) {
-	current := gjson.GetBytes(data, path)
-	if current.Type != gjson.String {
-		return data, fmt.Errorf("operation not supported for type: %v", current.Type)
-	}
-	if pattern == "" {
-		return data, fmt.Errorf("regex pattern is required")
-	}
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return data, err
-	}
-	return sjson.SetBytes(data, path, re.ReplaceAllString(current.String(), replacement))
 }
 
 type pruneObjectsOptions struct {
