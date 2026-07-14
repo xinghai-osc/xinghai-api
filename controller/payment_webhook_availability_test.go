@@ -166,3 +166,29 @@ func TestEpayWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 	operation_setting.PayMethods = nil
 	require.False(t, isEpayWebhookEnabled())
 }
+
+func TestMigrateEpayGatewaysFromLegacy(t *testing.T) {
+	originalGateways := operation_setting.EpayGateways
+	originalAddress := operation_setting.PayAddress
+	originalID := operation_setting.EpayId
+	originalKey := operation_setting.EpayKey
+	t.Cleanup(func() {
+		operation_setting.EpayGateways = originalGateways
+		operation_setting.PayAddress = originalAddress
+		operation_setting.EpayId = originalID
+		operation_setting.EpayKey = originalKey
+	})
+
+	operation_setting.EpayGateways = nil
+	operation_setting.PayAddress = "https://pay.example.com"
+	operation_setting.EpayId = "legacy_id"
+	operation_setting.EpayKey = "legacy_key"
+
+	require.True(t, operation_setting.MigrateEpayGatewaysFromLegacy())
+	require.Len(t, operation_setting.EpayGateways, 1)
+	require.Equal(t, "default", operation_setting.EpayGateways[0].Id)
+	require.Equal(t, operation_setting.PayAddress, operation_setting.EpayGateways[0].PayAddress)
+	require.Equal(t, operation_setting.EpayId, operation_setting.EpayGateways[0].EpayId)
+	require.Equal(t, operation_setting.EpayKey, operation_setting.EpayGateways[0].EpayKey)
+	require.False(t, operation_setting.MigrateEpayGatewaysFromLegacy())
+}

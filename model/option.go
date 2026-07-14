@@ -220,8 +220,13 @@ func loadOptionsFromDatabase() {
 			common.SysLog("failed to update option map: " + err.Error())
 		}
 	}
-	// Migrate legacy single-gateway EPay config to the new gateway array.
-	operation_setting.MigrateEpayGatewaysFromLegacy()
+	// Migrate legacy single-gateway EPay config to the new gateway array and
+	// persist it so subsequent startups use only the new configuration.
+	if operation_setting.MigrateEpayGatewaysFromLegacy() {
+		if err := UpdateOption("EpayGateways", operation_setting.EpayGateways2JsonString()); err != nil {
+			common.SysLog("failed to persist migrated EPay gateways: " + err.Error())
+		}
+	}
 }
 
 func SyncOptions(frequency int) {

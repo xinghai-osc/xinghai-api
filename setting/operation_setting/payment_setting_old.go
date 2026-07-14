@@ -139,14 +139,14 @@ func EpayGateways2JsonString() string {
 }
 
 // MigrateEpayGatewaysFromLegacy populates EpayGateways from the legacy
-// single-gateway variables when EpayGateways is empty. This runs on startup
-// so existing deployments work without manual migration.
-func MigrateEpayGatewaysFromLegacy() {
+// single-gateway variables when EpayGateways is empty. The caller is
+// responsible for persisting the returned in-memory configuration.
+func MigrateEpayGatewaysFromLegacy() bool {
 	if len(EpayGateways) > 0 {
-		return
+		return false
 	}
 	if strings.TrimSpace(PayAddress) == "" || strings.TrimSpace(EpayId) == "" || strings.TrimSpace(EpayKey) == "" {
-		return
+		return false
 	}
 	EpayGateways = []EpayGateway{{
 		Id:         "default",
@@ -155,4 +155,5 @@ func MigrateEpayGatewaysFromLegacy() {
 		EpayId:     EpayId,
 		EpayKey:    EpayKey,
 	}}
+	return true
 }
