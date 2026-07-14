@@ -51,6 +51,7 @@ import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedImageGenerationIndexRouteImport } from './routes/_authenticated/image-generation/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedChannelsIndexRouteImport } from './routes/_authenticated/channels/index'
+import { Route as AuthenticatedBillingHistoryIndexRouteImport } from './routes/_authenticated/billing-history/index'
 import { Route as AuthenticatedUsageLogsSectionRouteImport } from './routes/_authenticated/usage-logs/$section'
 import { Route as AuthenticatedSubscriptionsPurchaseRouteImport } from './routes/_authenticated/subscriptions/purchase'
 import { Route as AuthenticatedModelsSectionRouteImport } from './routes/_authenticated/models/$section'
@@ -298,6 +299,12 @@ const AuthenticatedChannelsIndexRoute =
     path: '/channels/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBillingHistoryIndexRoute =
+  AuthenticatedBillingHistoryIndexRouteImport.update({
+    id: '/billing-history/',
+    path: '/billing-history/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUsageLogsSectionRoute =
   AuthenticatedUsageLogsSectionRouteImport.update({
     id: '/usage-logs/$section',
@@ -473,6 +480,7 @@ export interface FileRoutesByFullPath {
   '/models/$section': typeof AuthenticatedModelsSectionRoute
   '/subscriptions/purchase': typeof AuthenticatedSubscriptionsPurchaseRoute
   '/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
+  '/billing-history/': typeof AuthenticatedBillingHistoryIndexRoute
   '/channels/': typeof AuthenticatedChannelsIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/image-generation/': typeof AuthenticatedImageGenerationIndexRoute
@@ -538,6 +546,7 @@ export interface FileRoutesByTo {
   '/models/$section': typeof AuthenticatedModelsSectionRoute
   '/subscriptions/purchase': typeof AuthenticatedSubscriptionsPurchaseRoute
   '/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
+  '/billing-history': typeof AuthenticatedBillingHistoryIndexRoute
   '/channels': typeof AuthenticatedChannelsIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/image-generation': typeof AuthenticatedImageGenerationIndexRoute
@@ -607,6 +616,7 @@ export interface FileRoutesById {
   '/_authenticated/models/$section': typeof AuthenticatedModelsSectionRoute
   '/_authenticated/subscriptions/purchase': typeof AuthenticatedSubscriptionsPurchaseRoute
   '/_authenticated/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
+  '/_authenticated/billing-history/': typeof AuthenticatedBillingHistoryIndexRoute
   '/_authenticated/channels/': typeof AuthenticatedChannelsIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/image-generation/': typeof AuthenticatedImageGenerationIndexRoute
@@ -675,6 +685,7 @@ export interface FileRouteTypes {
     | '/models/$section'
     | '/subscriptions/purchase'
     | '/usage-logs/$section'
+    | '/billing-history/'
     | '/channels/'
     | '/dashboard/'
     | '/image-generation/'
@@ -740,6 +751,7 @@ export interface FileRouteTypes {
     | '/models/$section'
     | '/subscriptions/purchase'
     | '/usage-logs/$section'
+    | '/billing-history'
     | '/channels'
     | '/dashboard'
     | '/image-generation'
@@ -808,6 +820,7 @@ export interface FileRouteTypes {
     | '/_authenticated/models/$section'
     | '/_authenticated/subscriptions/purchase'
     | '/_authenticated/usage-logs/$section'
+    | '/_authenticated/billing-history/'
     | '/_authenticated/channels/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/image-generation/'
@@ -1160,6 +1173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChannelsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/billing-history/': {
+      id: '/_authenticated/billing-history/'
+      path: '/billing-history'
+      fullPath: '/billing-history/'
+      preLoaderRoute: typeof AuthenticatedBillingHistoryIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usage-logs/$section': {
       id: '/_authenticated/usage-logs/$section'
       path: '/usage-logs/$section'
@@ -1423,6 +1443,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedModelsSectionRoute: typeof AuthenticatedModelsSectionRoute
   AuthenticatedSubscriptionsPurchaseRoute: typeof AuthenticatedSubscriptionsPurchaseRoute
   AuthenticatedUsageLogsSectionRoute: typeof AuthenticatedUsageLogsSectionRoute
+  AuthenticatedBillingHistoryIndexRoute: typeof AuthenticatedBillingHistoryIndexRoute
   AuthenticatedChannelsIndexRoute: typeof AuthenticatedChannelsIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
   AuthenticatedImageGenerationIndexRoute: typeof AuthenticatedImageGenerationIndexRoute
@@ -1453,6 +1474,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSubscriptionsPurchaseRoute:
     AuthenticatedSubscriptionsPurchaseRoute,
   AuthenticatedUsageLogsSectionRoute: AuthenticatedUsageLogsSectionRoute,
+  AuthenticatedBillingHistoryIndexRoute: AuthenticatedBillingHistoryIndexRoute,
   AuthenticatedChannelsIndexRoute: AuthenticatedChannelsIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   AuthenticatedImageGenerationIndexRoute:

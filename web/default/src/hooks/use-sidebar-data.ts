@@ -112,6 +112,11 @@ function buildBuiltinNavGroups(t: (key: string) => string): NavGroup[] {
           icon: Wallet,
         },
         {
+          title: t('Billing History'),
+          url: '/billing-history',
+          icon: ReceiptText,
+        },
+        {
           title: t('Subscription'),
           url: '/subscriptions/purchase',
           icon: Crown,
