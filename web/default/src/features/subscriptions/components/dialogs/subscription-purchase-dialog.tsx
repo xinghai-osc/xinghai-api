@@ -341,14 +341,14 @@ export function SubscriptionPurchaseDialog(props: Props) {
             <span>{formatQuota(userQuota)}</span>
           </div>
           {!allowBalancePay ? (
-            <Alert variant='destructive'>
+            <Alert variant='default'>
               <AlertDescription>
                 {t('This plan does not allow balance redemption')}
               </AlertDescription>
             </Alert>
           ) : (
             insufficientBalance && (
-              <Alert variant='destructive'>
+              <Alert variant='default'>
                 <AlertDescription>{t('Insufficient balance')}</AlertDescription>
               </Alert>
             )
@@ -356,9 +356,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           <Button
             variant='outline'
             onClick={handlePayBalance}
-            disabled={
-              paying || limitReached || !allowBalancePay || insufficientBalance
-            }
+            disabled={paying || limitReached}
           >
             {t('Pay with Balance')}
           </Button>

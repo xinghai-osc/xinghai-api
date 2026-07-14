@@ -17,8 +17,9 @@ import (
 )
 
 type SubscriptionEpayPayRequest struct {
-	PlanId        int    `json:"plan_id"`
-	PaymentMethod string `json:"payment_method"`
+	PlanId               int    `json:"plan_id"`
+	PaymentMethod        string `json:"payment_method"`
+	SourceSubscriptionId int    `json:"source_subscription_id"`
 }
 
 func SubscriptionRequestEpay(c *gin.Context) {
@@ -86,15 +87,16 @@ func SubscriptionRequestEpay(c *gin.Context) {
 	}
 
 	order := &model.SubscriptionOrder{
-		UserId:          userId,
-		PlanId:          plan.Id,
-		Money:           plan.PriceAmount,
-		TradeNo:         tradeNo,
-		PaymentMethod:   req.PaymentMethod,
-		PaymentProvider: model.PaymentProviderEpay,
-		GatewayId:       gatewayId,
-		CreateTime:      time.Now().Unix(),
-		Status:          common.TopUpStatusPending,
+		UserId:                 userId,
+		PlanId:                 plan.Id,
+		Money:                  plan.PriceAmount,
+		TradeNo:                tradeNo,
+		PaymentMethod:          req.PaymentMethod,
+		PaymentProvider:        model.PaymentProviderEpay,
+		GatewayId:              gatewayId,
+		CreateTime:             time.Now().Unix(),
+		Status:                 common.TopUpStatusPending,
+		UpgradeSubscriptionId:  req.SourceSubscriptionId,
 	}
 	if err := order.Insert(); err != nil {
 		common.ApiErrorMsg(c, "创建订单失败")

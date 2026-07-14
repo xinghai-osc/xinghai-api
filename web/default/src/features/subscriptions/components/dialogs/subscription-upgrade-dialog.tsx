@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { ArrowUpRight, Crown } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -25,6 +25,14 @@ import { Dialog } from '@/components/dialog'
 import { GroupBadge } from '@/components/group-badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { formatLocalCurrencyAmount } from '@/lib/currency'
@@ -33,10 +41,19 @@ import { DEFAULT_CURRENCY_CONFIG } from '@/stores/system-config-store'
 
 import {
   getSubscriptionUpgradeQuote,
+  paySubscriptionStripe,
+  paySubscriptionCreem,
+  paySubscriptionEpay,
+  paySubscriptionWaffoPancake,
   upgradeSubscriptionBalance,
 } from '../../api'
 import { formatDuration } from '../../lib'
 import type { PlanRecord } from '../../types'
+
+interface PaymentMethod {
+  type: string
+  name?: string
+}
 
 interface Props {
   open: boolean
@@ -45,6 +62,11 @@ interface Props {
   sourcePlanTitle: string
   sourcePriceAmount: number
   plans: PlanRecord[]
+  enableStripe?: boolean
+  enableCreem?: boolean
+  enableWaffoPancake?: boolean
+  enableOnlineTopUp?: boolean
+  epayMethods?: PaymentMethod[]
   userQuota?: number
   onUpgradeSuccess?: () => void | Promise<void>
 }
@@ -56,6 +78,15 @@ export function SubscriptionUpgradeDialog(props: Props) {
   const [quoteDue, setQuoteDue] = useState<number | null>(null)
   const [loadingQuote, setLoadingQuote] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
+  const [selectedEpayMethod, setSelectedEpayMethod] = useState('')
+
+  useEffect(() => {
+    if (props.open && props.epayMethods && props.epayMethods.length > 0) {
+      setSelectedEpayMethod(props.epayMethods[0].type)
+    } else if (!props.open) {
+      setSelectedEpayMethod('')
+    }
+  }, [props.open, props.epayMethods])
 
   const quotaPerUnit =
     currency?.quotaPerUnit && currency.quotaPerUnit > 0
@@ -118,6 +149,133 @@ export function SubscriptionUpgradeDialog(props: Props) {
       }
     } catch {
       toast.error(t('Upgrade failed'))
+    } finally {
+      setUpgrading(false)
+    }
+  }
+
+  const handlePayStripeUpgrade = async () => {
+    if (!selectedPlanId) return
+    setUpgrading(true)
+    try {
+      const res = await paySubscriptionStripe({
+        plan_id: selectedPlanId,
+        source_subscription_id: props.sourceSubscriptionId,
+      })
+      if (res.message === 'success' && res.data?.pay_link) {
+        window.open(res.data.pay_link, '_blank')
+        toast.success(t('Payment page opened'))
+        props.onOpenChange(false)
+      } else {
+        toast.error(
+          res.message && res.message !== 'success'
+            ? res.message
+            : t('Payment request failed')
+        )
+      }
+    } catch {
+      toast.error(t('Payment request failed'))
+    } finally {
+      setUpgrading(false)
+    }
+  }
+
+  const handlePayCreemUpgrade = async () => {
+    if (!selectedPlanId) return
+    setUpgrading(true)
+    try {
+      const res = await paySubscriptionCreem({
+        plan_id: selectedPlanId,
+        source_subscription_id: props.sourceSubscriptionId,
+      })
+      if (res.message === 'success' && res.data?.checkout_url) {
+        window.open(res.data.checkout_url, '_blank')
+        toast.success(t('Payment page opened'))
+        props.onOpenChange(false)
+      } else {
+        toast.error(
+          res.message && res.message !== 'success'
+            ? res.message
+            : t('Payment request failed')
+        )
+      }
+    } catch {
+      toast.error(t('Payment request failed'))
+    } finally {
+      setUpgrading(false)
+    }
+  }
+
+  const isSafari =
+    typeof navigator !== 'undefined' &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+
+  const handlePayWaffoPancakeUpgrade = async () => {
+    if (!selectedPlanId) return
+    setUpgrading(true)
+    try {
+      const res = await paySubscriptionWaffoPancake({
+        plan_id: selectedPlanId,
+        source_subscription_id: props.sourceSubscriptionId,
+      })
+      if (res.message === 'success' && res.data?.checkout_url) {
+        toast.success(t('Redirecting to payment page...'))
+        window.location.href = res.data.checkout_url
+      } else {
+        toast.error(
+          res.message && res.message !== 'success'
+            ? res.message
+            : t('Payment request failed')
+        )
+      }
+    } catch {
+      toast.error(t('Payment request failed'))
+    } finally {
+      setUpgrading(false)
+    }
+  }
+
+  const handlePayEpayUpgrade = async () => {
+    if (!selectedPlanId) return
+    if (!selectedEpayMethod) {
+      toast.error(t('Please select a payment method'))
+      return
+    }
+    setUpgrading(true)
+    try {
+      const res = await paySubscriptionEpay({
+        plan_id: selectedPlanId,
+        payment_method: selectedEpayMethod,
+        source_subscription_id: props.sourceSubscriptionId,
+      })
+      if (res.message === 'success' && res.url) {
+        const form = document.createElement('form')
+        form.action = res.url
+        form.method = 'POST'
+        if (!isSafari) {
+          form.target = '_blank'
+        }
+        Object.entries(res.data || {}).forEach(([key, value]) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = key
+          input.value = String(value)
+          form.appendChild(input)
+        })
+        document.body.appendChild(form)
+        form.submit()
+        document.body.removeChild(form)
+        toast.success(t('Payment initiated'))
+        props.onOpenChange(false)
+      } else {
+        toast.error(
+          res.message && res.message !== 'success'
+            ? res.message
+            : t('Payment request failed')
+        )
+      }
+    } catch {
+      toast.error(t('Payment request failed'))
     } finally {
       setUpgrading(false)
     }
@@ -266,7 +424,7 @@ export function SubscriptionUpgradeDialog(props: Props) {
                     <span>{formatQuota(userQuota)}</span>
                   </div>
                   {insufficientBalance && (
-                    <Alert variant='destructive'>
+                    <Alert variant='default'>
                       <AlertDescription>
                         {t('Insufficient balance')}
                       </AlertDescription>
@@ -274,11 +432,93 @@ export function SubscriptionUpgradeDialog(props: Props) {
                   )}
                   <Button
                     onClick={handleUpgrade}
-                    disabled={upgrading || insufficientBalance || balanceCost <= 0}
+                    disabled={upgrading || balanceCost <= 0}
                   >
                     {t('Pay Difference & Upgrade')}
                   </Button>
                 </div>
+
+                {(() => {
+                  const selPlan = selectedPlan.plan
+                  const upgradeHasStripe = props.enableStripe && !!selPlan.stripe_price_id
+                  const upgradeHasCreem = props.enableCreem && !!selPlan.creem_product_id
+                  const upgradeHasWaffoPancake = props.enableWaffoPancake && !!selPlan.waffo_pancake_product_id
+                  const upgradeHasEpay = props.enableOnlineTopUp && (props.epayMethods || []).length > 0
+                  const upgradeHasAnyPayment = upgradeHasStripe || upgradeHasCreem || upgradeHasWaffoPancake || upgradeHasEpay
+                  if (!upgradeHasAnyPayment) return null
+                  return (
+                    <div className='space-y-3'>
+                      <p className='text-muted-foreground text-xs'>
+                        {t('Select payment method')}
+                      </p>
+                      {(upgradeHasStripe || upgradeHasCreem || upgradeHasWaffoPancake) && (
+                        <div className='grid grid-cols-2 gap-2 sm:flex'>
+                          {upgradeHasStripe && (
+                            <Button
+                              variant='outline'
+                              className='flex-1'
+                              onClick={handlePayStripeUpgrade}
+                              disabled={upgrading}
+                            >
+                              Stripe
+                            </Button>
+                          )}
+                          {upgradeHasCreem && (
+                            <Button
+                              variant='outline'
+                              className='flex-1'
+                              onClick={handlePayCreemUpgrade}
+                              disabled={upgrading}
+                            >
+                              Creem
+                            </Button>
+                          )}
+                          {upgradeHasWaffoPancake && (
+                            <Button
+                              variant='outline'
+                              className='flex-1'
+                              onClick={handlePayWaffoPancakeUpgrade}
+                              disabled={upgrading}
+                            >
+                              Waffo Pancake
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {upgradeHasEpay && (
+                        <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
+                          <Select
+                            items={(props.epayMethods || []).map((m) => ({
+                              value: m.type,
+                              label: m.name || m.type,
+                            }))}
+                            value={selectedEpayMethod}
+                            onValueChange={(v) => v !== null && setSelectedEpayMethod(v)}
+                          >
+                            <SelectTrigger className='flex-1'>
+                              <SelectValue>{selectedEpayMethod || t('Select payment method')}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent alignItemWithTrigger={false}>
+                              <SelectGroup>
+                                {(props.epayMethods || []).map((m) => (
+                                  <SelectItem key={m.type} value={m.type}>
+                                    {m.name || m.type}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            onClick={handlePayEpayUpgrade}
+                            disabled={upgrading || !selectedEpayMethod}
+                          >
+                            {t('Pay')}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </>
             )}
 

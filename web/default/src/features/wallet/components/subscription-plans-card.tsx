@@ -725,6 +725,11 @@ export function SubscriptionPlansCard({
         sourcePlanTitle={upgradeSource?.title || ''}
         sourcePriceAmount={upgradeSource?.priceAmount || 0}
         plans={plans}
+        enableStripe={enableStripe}
+        enableCreem={enableCreem}
+        enableWaffoPancake={enableWaffoPancake}
+        enableOnlineTopUp={enableOnlineTopUp}
+        epayMethods={epayMethods}
         userQuota={userQuota}
         onUpgradeSuccess={async () => {
           await fetchSelfSubscription()

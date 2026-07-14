@@ -17,7 +17,8 @@ import (
 )
 
 type SubscriptionCreemPayRequest struct {
-	PlanId int `json:"plan_id"`
+	PlanId               int `json:"plan_id"`
+	SourceSubscriptionId int `json:"source_subscription_id"`
 }
 
 func SubscriptionRequestCreemPay(c *gin.Context) {
@@ -87,14 +88,15 @@ func SubscriptionRequestCreemPay(c *gin.Context) {
 
 	// create pending order first
 	order := &model.SubscriptionOrder{
-		UserId:          userId,
-		PlanId:          plan.Id,
-		Money:           plan.PriceAmount,
-		TradeNo:         referenceId,
-		PaymentMethod:   model.PaymentMethodCreem,
-		PaymentProvider: model.PaymentProviderCreem,
-		CreateTime:      time.Now().Unix(),
-		Status:          common.TopUpStatusPending,
+		UserId:                 userId,
+		PlanId:                 plan.Id,
+		Money:                  plan.PriceAmount,
+		TradeNo:                referenceId,
+		PaymentMethod:          model.PaymentMethodCreem,
+		PaymentProvider:        model.PaymentProviderCreem,
+		CreateTime:             time.Now().Unix(),
+		Status:                 common.TopUpStatusPending,
+		UpgradeSubscriptionId:  req.SourceSubscriptionId,
 	}
 	if err := order.Insert(); err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "创建订单失败"})
