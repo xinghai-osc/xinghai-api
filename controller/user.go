@@ -1468,6 +1468,46 @@ type UpdateUserSettingRequest struct {
 }
 
 func UpdateUserSetting(c *gin.Context) {
+	updateUserSetting(c, c.GetInt("id"), false)
+}
+
+func GetUserSettingByAdmin(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	target, err := model.GetUserById(id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if !canManageTargetRole(c.GetInt("role"), target.Role) {
+		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+	common.ApiSuccess(c, target.GetSetting())
+}
+
+func UpdateUserSettingByAdmin(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	target, err := model.GetUserById(id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if !canManageTargetRole(c.GetInt("role"), target.Role) {
+		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+	updateUserSetting(c, id, true)
+}
+
+func updateUserSetting(c *gin.Context, userId int, adminUpdate bool) {
 	var req UpdateUserSettingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
@@ -1561,7 +1601,6 @@ func UpdateUserSetting(c *gin.Context) {
 		}
 	}
 
-	userId := c.GetInt("id")
 	user, err := model.GetUserById(userId, true)
 	if err != nil {
 		common.ApiError(c, err)
@@ -1570,7 +1609,7 @@ func UpdateUserSetting(c *gin.Context) {
 	existingSettings := user.GetSetting()
 	upstreamModelUpdateNotifyEnabled := existingSettings.UpstreamModelUpdateNotifyEnabled
 	upstreamTimeoutPromptEnabled := existingSettings.UpstreamTimeoutPromptEnabled
-	if user.Role >= common.RoleAdminUser && req.UpstreamModelUpdateNotifyEnabled != nil {
+	if (adminUpdate || user.Role >= common.RoleAdminUser) && req.UpstreamModelUpdateNotifyEnabled != nil {
 		upstreamModelUpdateNotifyEnabled = *req.UpstreamModelUpdateNotifyEnabled
 	}
 	if req.UpstreamTimeoutPromptEnabled != nil {

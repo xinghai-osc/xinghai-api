@@ -23,6 +23,7 @@ import type {
   UserProfile,
   UpdateUserRequest,
   UpdateUserSettingsRequest,
+  UserSettings,
   DeleteAccountRequest,
   CheckinStatusResponse,
   CheckinResponse,
@@ -56,9 +57,20 @@ export async function updateUserProfile(
  * Update user settings
  */
 export async function updateUserSettings(
-  data: UpdateUserSettingsRequest
+  data: UpdateUserSettingsRequest,
+  userId?: number
 ): Promise<ApiResponse> {
-  const res = await api.put('/api/user/setting', data)
+  const endpoint = userId
+    ? `/api/user/${userId}/setting`
+    : '/api/user/setting'
+  const res = await api.put(endpoint, data)
+  return res.data
+}
+
+export async function getAdminUserSettings(
+  userId: number
+): Promise<ApiResponse<UserSettings>> {
+  const res = await api.get(`/api/user/${userId}/setting`)
   return res.data
 }
 

@@ -62,11 +62,19 @@ function normalizeNotifyType(value: unknown): NotifyType {
 // ============================================================================
 
 interface NotificationTabProps {
-  profile: UserProfile | null
+  profile: Pick<
+    UserProfile,
+    'role' | 'setting' | 'avatar_url' | 'username' | 'display_name'
+  > | null
   onUpdate: () => void
+  userId?: number
 }
 
-export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
+export function NotificationTab({
+  profile,
+  onUpdate,
+  userId,
+}: NotificationTabProps) {
   const { t } = useTranslation()
   const isAdmin = (profile?.role ?? 0) >= ROLE.ADMIN
   const [loading, setLoading] = useState(false)
@@ -126,7 +134,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
   const handleSave = async () => {
     try {
       setLoading(true)
-      const response = await updateUserSettings(settings)
+      const response = await updateUserSettings(settings, userId)
 
       if (response.success) {
         toast.success(t('Settings updated successfully'))
