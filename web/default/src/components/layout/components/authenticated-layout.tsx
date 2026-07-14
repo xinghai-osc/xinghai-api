@@ -46,9 +46,9 @@ export function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
               className={cn(
                 '@container/content',
                 'bg-background/82 ring-border/40 backdrop-blur-[2px] md:ring-1',
-                'h-[calc(100svh-var(--app-header-height,0px))]',
+                'h-svh',
                 'min-h-0 overflow-hidden',
-                'peer-data-[variant=inset]:h-[calc(100svh-var(--app-header-height,0px)-(var(--spacing)*4))]'
+                'peer-data-[variant=inset]:h-[calc(100svh-(var(--spacing)*4))]'
               )}
             >
               {props.children ?? <AnimatedOutlet />}

@@ -25,7 +25,7 @@ export function Header({ className, children, ...props }: HeaderProps) {
   return (
     <header
       className={cn(
-        'border-border/60 bg-background/78 supports-[backdrop-filter]:bg-background/68 sticky top-2.5 z-40 mx-auto mt-2.5 h-[calc(var(--app-header-height,4rem)-0.625rem)] w-fit max-w-[calc(100%-1.25rem)] shrink-0 overflow-hidden rounded-2xl border shadow-[0_10px_30px_color-mix(in_oklch,var(--foreground)_8%,transparent)] backdrop-blur-xl sm:top-3 sm:mt-3 sm:h-[calc(var(--app-header-height,4rem)-0.75rem)] sm:max-w-[calc(100%-2rem)]',
+        'border-border/60 bg-background/78 supports-[backdrop-filter]:bg-background/68 fixed top-2.5 left-1/2 z-40 mx-auto h-[calc(var(--app-header-height,4rem)-0.625rem)] w-fit max-w-[calc(100%-1.25rem)] -translate-x-1/2 shrink-0 overflow-hidden rounded-2xl border shadow-[0_10px_30px_color-mix(in_oklch,var(--foreground)_8%,transparent)] backdrop-blur-xl sm:top-3 sm:h-[calc(var(--app-header-height,4rem)-0.75rem)] sm:max-w-[calc(100%-2rem)]',
         className
       )}
       {...props}
