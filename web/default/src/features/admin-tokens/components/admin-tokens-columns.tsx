@@ -39,6 +39,7 @@ import {
   AdminModelLimitsCell,
   AdminIpRestrictionsCell,
 } from './admin-tokens-cells'
+import { DataTableRowActions } from './data-table-row-actions'
 
 function getQuotaProgressColor(percentage: number): string {
   if (percentage <= 10) return '[&_[data-slot=progress-indicator]]:bg-rose-500'
@@ -301,6 +302,15 @@ export function useAdminTokensColumns(): ColumnDef<AdminApiKey>[] {
         )
       },
       size: 180,
+      meta: { mobileHidden: true },
+    },
+    {
+      id: 'actions',
+      header: t('Actions'),
+      cell: ({ row }) => <DataTableRowActions row={row} />,
+      size: 120,
+      enableSorting: false,
+      enableHiding: false,
       meta: { mobileHidden: true },
     },
   ]

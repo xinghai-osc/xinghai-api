@@ -51,6 +51,7 @@ import type { AdminApiKey } from '../types'
 import { AdminApiKeyCell } from './admin-tokens-cells'
 import { useAdminTokensColumns } from './admin-tokens-columns'
 import { useAdminTokens } from './admin-tokens-provider'
+import { DataTableRowActions } from './data-table-row-actions'
 
 const ADMIN_TOKENS_COLUMN_VISIBILITY_STORAGE_KEY =
   'admin-tokens:column-visibility'
@@ -162,6 +163,9 @@ function AdminTokensMobileList({
                   </span>
                 </span>
               )}
+            </div>
+            <div className='flex justify-end'>
+              <DataTableRowActions row={{ original: apiKey } as never} />
             </div>
           </div>
         )

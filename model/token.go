@@ -646,6 +646,35 @@ func GetTokenKeysByIdsForAdmin(ids []int) ([]Token, error) {
 	return tokens, err
 }
 
+// ResetTokenQuota resets a token's used_quota to 0 and adds it back to remain_quota.
+// Also resets status to Enabled if it was Exhausted.
+func ResetTokenQuota(id int) error {
+	var token Token
+	if err := DB.Where("id = ?", id).First(&token).Error; err != nil {
+		return err
+	}
+	usedQuota := token.UsedQuota
+	if usedQuota <= 0 {
+		return nil
+	}
+	err := DB.Model(&Token{}).Where("id = ?", id).Updates(
+		map[string]interface{}{
+			"remain_quota": gorm.Expr("remain_quota + ?", usedQuota),
+			"used_quota":   0,
+			"status":       common.TokenStatusEnabled,
+		},
+	).Error
+	if err == nil && common.RedisEnabled {
+		token.RemainQuota += usedQuota
+		token.UsedQuota = 0
+		token.Status = common.TokenStatusEnabled
+		gopool.Go(func() {
+			_ = cacheSetToken(token)
+		})
+	}
+	return err
+}
+
 // InvalidateUserTokensCache 清理指定用户所有令牌在 Redis 中的缓存，
 // 配合 InvalidateUserCache 使用，可在用户被禁用/删除时立即阻断其令牌的请求。
 // 下一次请求将从数据库重新加载令牌及用户状态，从而立即识别出被禁用的用户。

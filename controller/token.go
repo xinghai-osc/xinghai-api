@@ -571,6 +571,33 @@ func AdminDeleteTokenBatch(c *gin.Context) {
 	})
 }
 
+// AdminResetToken resets a token's used_quota to 0 (admin only).
+func AdminResetToken(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	token, err := model.GetTokenByIdForAdmin(id)
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgTokenGetInfoFailed)
+		return
+	}
+	if token.UsedQuota <= 0 {
+		common.ApiErrorI18n(c, i18n.MsgTokenNoUsedQuota)
+		return
+	}
+	err = model.ResetTokenQuota(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
 // AdminUpdateTokenGroupBatch batch-updates the group for multiple tokens.
 func AdminUpdateTokenGroupBatch(c *gin.Context) {
 	tokenGroupBatch := TokenGroupBatch{}

@@ -113,3 +113,11 @@ export async function updateAdminTokenGroupBatch(
   const res = await api.post('/api/admin/token/batch/group', { ids, group })
   return res.data
 }
+
+// Reset a token's used quota to 0 (admin, cross-user)
+export async function resetAdminToken(
+  id: number
+): Promise<ApiResponse> {
+  const res = await api.post(`/api/admin/token/${id}/reset`)
+  return res.data
+}
