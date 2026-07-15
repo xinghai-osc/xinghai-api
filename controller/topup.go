@@ -134,16 +134,8 @@ type AmountRequest struct {
 }
 
 func GetEpayClient(gatewayId string) *epay.Client {
-	gateway := operation_setting.GetEpayGatewayById(gatewayId)
+	gateway := operation_setting.GetConfiguredEpayGateway(gatewayId)
 	if gateway == nil {
-		// Fallback to first configured gateway (covers empty gatewayId and
-		// legacy orders whose GatewayId was never set).
-		gateway = operation_setting.GetFirstEpayGateway()
-	}
-	if gateway == nil {
-		return nil
-	}
-	if gateway.PayAddress == "" || gateway.EpayId == "" || gateway.EpayKey == "" {
 		return nil
 	}
 	withUrl, err := epay.NewClient(&epay.Config{
@@ -159,11 +151,8 @@ func GetEpayClient(gatewayId string) *epay.Client {
 // EpayQueryOrder 向易支付服务端查询订单状态，确认订单已支付。
 // 返回 trade_status 字符串（如 epay.StatusTradeSuccess）和是否查询成功。
 func EpayQueryOrder(gatewayId string, tradeNo string) (string, bool) {
-	gateway := operation_setting.GetEpayGatewayById(gatewayId)
+	gateway := operation_setting.GetConfiguredEpayGateway(gatewayId)
 	if gateway == nil {
-		gateway = operation_setting.GetFirstEpayGateway()
-	}
-	if gateway == nil || gateway.PayAddress == "" || gateway.EpayId == "" || gateway.EpayKey == "" {
 		return "", false
 	}
 
@@ -283,6 +272,9 @@ func RequestEpay(c *gin.Context) {
 	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
 	tradeNo = fmt.Sprintf("USR%dNO%s", id, tradeNo)
 	gatewayId := operation_setting.GetPayMethodGatewayId(req.PaymentMethod)
+	if gateway := operation_setting.GetConfiguredEpayGateway(gatewayId); gateway != nil {
+		gatewayId = gateway.Id
+	}
 	client := GetEpayClient(gatewayId)
 	if client == nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置支付信息"})

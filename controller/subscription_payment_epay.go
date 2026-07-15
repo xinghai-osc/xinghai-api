@@ -80,6 +80,9 @@ func SubscriptionRequestEpay(c *gin.Context) {
 	tradeNo = fmt.Sprintf("SUBUSR%dNO%s", userId, tradeNo)
 
 	gatewayId := operation_setting.GetPayMethodGatewayId(req.PaymentMethod)
+	if gateway := operation_setting.GetConfiguredEpayGateway(gatewayId); gateway != nil {
+		gatewayId = gateway.Id
+	}
 	client := GetEpayClient(gatewayId)
 	if client == nil {
 		common.ApiErrorMsg(c, "当前管理员未配置支付信息")
@@ -87,16 +90,16 @@ func SubscriptionRequestEpay(c *gin.Context) {
 	}
 
 	order := &model.SubscriptionOrder{
-		UserId:                 userId,
-		PlanId:                 plan.Id,
-		Money:                  plan.PriceAmount,
-		TradeNo:                tradeNo,
-		PaymentMethod:          req.PaymentMethod,
-		PaymentProvider:        model.PaymentProviderEpay,
-		GatewayId:              gatewayId,
-		CreateTime:             time.Now().Unix(),
-		Status:                 common.TopUpStatusPending,
-		UpgradeSubscriptionId:  req.SourceSubscriptionId,
+		UserId:                userId,
+		PlanId:                plan.Id,
+		Money:                 plan.PriceAmount,
+		TradeNo:               tradeNo,
+		PaymentMethod:         req.PaymentMethod,
+		PaymentProvider:       model.PaymentProviderEpay,
+		GatewayId:             gatewayId,
+		CreateTime:            time.Now().Unix(),
+		Status:                common.TopUpStatusPending,
+		UpgradeSubscriptionId: req.SourceSubscriptionId,
 	}
 	if err := order.Insert(); err != nil {
 		common.ApiErrorMsg(c, "创建订单失败")

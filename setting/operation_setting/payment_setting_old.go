@@ -92,6 +92,26 @@ func GetFirstEpayGateway() *EpayGateway {
 	return &EpayGateways[0]
 }
 
+// GetConfiguredEpayGateway returns the requested gateway when it is complete,
+// otherwise it falls back to the first complete gateway.
+func GetConfiguredEpayGateway(id string) *EpayGateway {
+	if gateway := GetEpayGatewayById(id); gateway != nil && gatewayConfigured(gateway) {
+		return gateway
+	}
+	for i := range EpayGateways {
+		if gatewayConfigured(&EpayGateways[i]) {
+			return &EpayGateways[i]
+		}
+	}
+	return nil
+}
+
+func gatewayConfigured(gateway *EpayGateway) bool {
+	return strings.TrimSpace(gateway.PayAddress) != "" &&
+		strings.TrimSpace(gateway.EpayId) != "" &&
+		strings.TrimSpace(gateway.EpayKey) != ""
+}
+
 // GetPayMethodGatewayId returns the gateway_id associated with the given
 // payment method type. Returns "" if not specified or method not found.
 func GetPayMethodGatewayId(method string) string {
