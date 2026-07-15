@@ -7,6 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 func seedUpgradeSub(t *testing.T, sub *UserSubscription) {
@@ -115,4 +116,35 @@ func TestUpgradeSubscriptionWithBalanceChargesProratedDifference(t *testing.T) {
 	expectedCharged := int(decimal.NewFromFloat(25).
 		Mul(decimal.NewFromFloat(common.QuotaPerUnit)).Ceil().IntPart())
 	assert.Equal(t, before-int64(expectedCharged), after)
+}
+
+func TestSyncActiveSubscriptionGroupsTxUpdatesExistingUsers(t *testing.T) {
+	truncateTables(t)
+
+	now := GetDBTimestamp()
+	user := &User{Id: 711, Group: "default", Status: 1}
+	require.NoError(t, DB.Create(user).Error)
+	seedUpgradeSub(t, &UserSubscription{
+		Id: 9911, UserId: user.Id, PlanId: 9912, UpgradeGroup: "vip",
+		PrevUserGroup: "default", DowngradeGroup: "default", Status: "active",
+		StartTime: now - 3600, EndTime: now + 3600,
+	})
+	require.NoError(t, DB.Model(&User{}).Where("id = ?", user.Id).Update("group", "default,vip").Error)
+
+	var affected []int
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var err error
+		affected, err = SyncActiveSubscriptionGroupsTx(tx, 9912, "pro", "default", now)
+		return err
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []int{user.Id}, affected)
+
+	var updated User
+	require.NoError(t, DB.First(&updated, user.Id).Error)
+	assert.Equal(t, "default,pro", updated.Group)
+	var sub UserSubscription
+	require.NoError(t, DB.First(&sub, 9911).Error)
+	assert.Equal(t, "pro", sub.UpgradeGroup)
+	assert.Equal(t, "default", sub.PrevUserGroup)
 }

@@ -514,6 +514,93 @@ func downgradeUserGroupForSubscriptionTx(tx *gorm.DB, sub *UserSubscription, now
 	return target, nil
 }
 
+// SyncActiveSubscriptionGroupsTx applies a plan's changed group settings to its active subscribers.
+func SyncActiveSubscriptionGroupsTx(tx *gorm.DB, planId int, upgradeGroup string, downgradeGroup string, now int64) ([]int, error) {
+	if tx == nil || planId <= 0 {
+		return nil, errors.New("invalid subscription group sync args")
+	}
+	upgradeGroup = strings.TrimSpace(upgradeGroup)
+	downgradeGroup = strings.TrimSpace(downgradeGroup)
+
+	var subscriptions []UserSubscription
+	if err := tx.Where("plan_id = ? AND status = ? AND end_time > ?", planId, "active", now).
+		Order("id asc").Find(&subscriptions).Error; err != nil {
+		return nil, err
+	}
+	userSubscriptions := make(map[int][]UserSubscription)
+	userIds := make([]int, 0)
+	for _, sub := range subscriptions {
+		if _, exists := userSubscriptions[sub.UserId]; !exists {
+			userIds = append(userIds, sub.UserId)
+		}
+		userSubscriptions[sub.UserId] = append(userSubscriptions[sub.UserId], sub)
+	}
+
+	for _, userId := range userIds {
+		currentGroup, err := getUserGroupByIdTx(tx, userId)
+		if err != nil {
+			return nil, err
+		}
+		first := userSubscriptions[userId][0]
+		oldUpgradeGroup := strings.TrimSpace(first.UpgradeGroup)
+		previousGroup := strings.TrimSpace(first.PrevUserGroup)
+		currentGroups := splitUserGroups(currentGroup)
+		oldWasApplied := oldUpgradeGroup != "" && containsUserGroup(currentGroups, oldUpgradeGroup) &&
+			!containsUserGroup(splitUserGroups(previousGroup), oldUpgradeGroup)
+		if oldWasApplied {
+			currentGroups = removeUserGroup(currentGroups, oldUpgradeGroup)
+			currentGroup = strings.Join(currentGroups, ",")
+		} else {
+			previousGroup = currentGroup
+		}
+		if !containsUserGroup(currentGroups, upgradeGroup) && upgradeGroup != "" {
+			currentGroups = append(currentGroups, upgradeGroup)
+		}
+		newGroup := strings.Join(currentGroups, ",")
+		if newGroup == "" {
+			newGroup = "default"
+		}
+		if newGroup != currentGroup {
+			if err := tx.Model(&User{}).Where("id = ?", userId).Update("group", newGroup).Error; err != nil {
+				return nil, err
+			}
+		}
+		for _, sub := range userSubscriptions[userId] {
+			updates := map[string]interface{}{
+				"upgrade_group":   upgradeGroup,
+				"downgrade_group": downgradeGroup,
+				"prev_user_group": previousGroup,
+			}
+			if err := tx.Model(&UserSubscription{}).Where("id = ?", sub.Id).Updates(updates).Error; err != nil {
+				return nil, err
+			}
+		}
+	}
+	return userIds, nil
+}
+
+func containsUserGroup(groups []string, target string) bool {
+	if target == "" {
+		return false
+	}
+	for _, group := range groups {
+		if group == target {
+			return true
+		}
+	}
+	return false
+}
+
+func removeUserGroup(groups []string, target string) []string {
+	filtered := make([]string, 0, len(groups))
+	for _, group := range groups {
+		if group != target {
+			filtered = append(filtered, group)
+		}
+	}
+	return filtered
+}
+
 func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *SubscriptionPlan, source string) (*UserSubscription, error) {
 	if tx == nil {
 		return nil, errors.New("tx is nil")

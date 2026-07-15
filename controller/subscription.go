@@ -329,6 +329,7 @@ func AdminUpdateSubscriptionPlan(c *gin.Context) {
 		return
 	}
 
+	var affectedUserIds []int
 	err := model.DB.Transaction(func(tx *gorm.DB) error {
 		// update plan (allow zero values updates with map)
 		updateMap := map[string]interface{}{
@@ -361,13 +362,20 @@ func AdminUpdateSubscriptionPlan(c *gin.Context) {
 		if err := tx.Model(&model.SubscriptionPlan{}).Where("id = ?", id).Updates(updateMap).Error; err != nil {
 			return err
 		}
-		return nil
+		var err error
+		affectedUserIds, err = model.SyncActiveSubscriptionGroupsTx(tx, id, req.Plan.UpgradeGroup, req.Plan.DowngradeGroup, common.GetTimestamp())
+		return err
 	})
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 	model.InvalidateSubscriptionPlanCache(id)
+	for _, userId := range affectedUserIds {
+		if group, err := model.GetUserGroup(userId, true); err == nil && group != "" {
+			_ = model.UpdateUserGroupCache(userId, group)
+		}
+	}
 	common.ApiSuccess(c, nil)
 }
 
