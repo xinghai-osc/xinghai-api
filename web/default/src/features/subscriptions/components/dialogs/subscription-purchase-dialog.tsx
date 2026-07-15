@@ -20,6 +20,7 @@ import { Crown, CalendarClock, Package } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { useNavigate } from '@tanstack/react-router'
 
 import { Dialog } from '@/components/dialog'
 import { GroupBadge } from '@/components/group-badge'
@@ -72,6 +73,7 @@ interface Props {
 export function SubscriptionPurchaseDialog(props: Props) {
   const { t } = useTranslation()
   const { currency } = useSystemConfig()
+  const navigate = useNavigate()
   const [paying, setPaying] = useState(false)
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('')
 
@@ -256,6 +258,11 @@ export function SubscriptionPurchaseDialog(props: Props) {
     }
   }
 
+  const handleGoToRecharge = () => {
+    props.onOpenChange(false)
+    void navigate({ to: '/wallet' })
+  }
+
   return (
     <Dialog
       open={props.open}
@@ -356,16 +363,21 @@ export function SubscriptionPurchaseDialog(props: Props) {
           <Button
             variant='outline'
             onClick={handlePayBalance}
-            disabled={paying || limitReached}
+            disabled={paying || limitReached || insufficientBalance}
           >
             {t('Pay with Balance')}
           </Button>
+          {insufficientBalance && (
+            <Button onClick={handleGoToRecharge} disabled={paying}>
+              {t('Recharge Balance')}
+            </Button>
+          )}
         </div>
 
         {hasAnyPayment && (
           <div className='space-y-3'>
             <p className='text-muted-foreground text-xs'>
-              {t('Select payment method')}
+              {t('Third-party payment')}
             </p>
             {(hasStripe || hasCreem || hasWaffoPancake) && (
               <div className='grid grid-cols-2 gap-2 sm:flex'>

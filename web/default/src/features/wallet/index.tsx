@@ -18,8 +18,10 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 
 import { SectionPageLayout } from '@/components/layout'
+import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
@@ -75,6 +77,7 @@ export function Wallet(props: WalletProps) {
   const [selectedCreemProduct, setSelectedCreemProduct] =
     useState<CreemProduct | null>(null)
   const [showSubscriptionPanel, setShowSubscriptionPanel] = useState(true)
+  const [billingRefreshKey, setBillingRefreshKey] = useState(0)
 
   const { status } = useStatus()
   const { currency } = useSystemConfig()
@@ -259,10 +262,23 @@ export function Wallet(props: WalletProps) {
     []
   )
 
+  const refreshWalletState = useCallback(async () => {
+    await fetchUser()
+    setBillingRefreshKey((value) => value + 1)
+  }, [fetchUser])
+
   return (
     <>
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
+        <SectionPageLayout.Actions>
+          <Button variant='outline' render={<a href='#wallet-add-funds' />}>
+            {t('Recharge Balance')}
+          </Button>
+          <Button render={<Link to='/subscriptions/purchase' />}>
+            {t('Purchase Subscription')}
+          </Button>
+        </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
             <WalletStatsCard user={user} loading={userLoading} />
@@ -312,7 +328,8 @@ export function Wallet(props: WalletProps) {
                 topupInfo={topupInfo}
                 onAvailabilityChange={handleSubscriptionAvailabilityChange}
                 userQuota={user?.quota}
-                onPurchaseSuccess={fetchUser}
+                compact
+                onPurchaseSuccess={refreshWalletState}
               />
             </div>
 
@@ -351,6 +368,7 @@ export function Wallet(props: WalletProps) {
       />
 
       <BillingHistoryDialog
+        refreshKey={billingRefreshKey}
         open={billingDialogOpen}
         onOpenChange={setBillingDialogOpen}
       />

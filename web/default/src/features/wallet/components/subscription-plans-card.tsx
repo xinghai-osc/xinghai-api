@@ -58,15 +58,18 @@ import type {
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 import { formatQuota } from '@/lib/format'
+import { formatLocalCurrencyAmount } from '@/lib/currency'
 import { cn } from '@/lib/utils'
 
 import type { PaymentMethod, TopupInfo } from '../types'
+import { Link } from '@tanstack/react-router'
 
 interface SubscriptionPlansCardProps {
   topupInfo: TopupInfo | null
   onAvailabilityChange?: (available: boolean) => void
   userQuota?: number
   onPurchaseSuccess?: () => void | Promise<void>
+  compact?: boolean
 }
 
 function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
@@ -98,6 +101,7 @@ export function SubscriptionPlansCard({
   onAvailabilityChange,
   userQuota,
   onPurchaseSuccess,
+  compact = false,
 }: SubscriptionPlansCardProps) {
   const { t } = useTranslation()
 
@@ -228,6 +232,8 @@ export function SubscriptionPlansCard({
     }
     return map
   }, [plans])
+
+  const displayedPlans = compact ? plans.slice(0, 2) : plans
 
   const getRemainingDays = (sub: UserSubscriptionRecord) => {
     const endTime = sub?.subscription?.end_time || 0
@@ -575,12 +581,12 @@ export function SubscriptionPlansCard({
         {/* Available plans grid */}
         {plans.length > 0 ? (
           <div className='grid grid-cols-1 gap-3 2xl:grid-cols-2 2xl:gap-4'>
-            {plans.map((p, index) => {
+            {displayedPlans.map((p, index) => {
               const plan = p?.plan
               if (!plan) return null
               const totalAmount = Number(plan.total_amount || 0)
-              const price = Number(plan.price_amount || 0).toFixed(2)
-              const isPopular = index === 0 && plans.length > 1
+              const price = formatLocalCurrencyAmount(plan.price_amount)
+              const isPopular = index === 0 && displayedPlans.length > 1
               const limit = Number(plan.max_purchase_per_user || 0)
               const count = planPurchaseCountMap.get(plan.id) || 0
               const reached = limit > 0 && count >= limit
@@ -682,6 +688,15 @@ export function SubscriptionPlansCard({
             {t('No plans available')}
           </p>
         )}
+        {compact && plans.length > displayedPlans.length && (
+          <Button
+            variant='outline'
+            className='w-full'
+            render={<Link to='/subscriptions/purchase' />}
+          >
+            {t('View all subscription plans')}
+          </Button>
+        )}
       </TitledCard>
 
       <SubscriptionPurchaseDialog
@@ -690,6 +705,7 @@ export function SubscriptionPlansCard({
           setPurchaseOpen(open)
           if (!open) {
             fetchSelfSubscription()
+            void onPurchaseSuccess?.()
           }
         }}
         plan={selectedPlan}
@@ -719,6 +735,7 @@ export function SubscriptionPlansCard({
           if (!open) {
             setUpgradeSource(null)
             fetchSelfSubscription()
+            void onPurchaseSuccess?.()
           }
         }}
         sourceSubscriptionId={upgradeSource?.id || 0}

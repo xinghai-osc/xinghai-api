@@ -11,6 +11,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/pkg/cachex"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/types"
@@ -719,11 +720,25 @@ func GetPreferredChannelByAffinity(c *gin.Context, modelName string, usingGroup 
 			return 0, false
 		}
 		if found {
+			if IsChannelAffinityDisabled(channelID) {
+				return 0, false
+			}
 			return channelID, true
 		}
 		return 0, false
 	}
 	return 0, false
+}
+
+func IsChannelAffinityDisabled(channelID int) bool {
+	if channelID <= 0 {
+		return false
+	}
+	channel, err := model.CacheGetChannel(channelID)
+	if err != nil || channel == nil {
+		return false
+	}
+	return channel.GetOtherSettings().DisableChannelAffinity
 }
 
 func ShouldSkipRetryAfterChannelAffinityFailure(c *gin.Context) bool {
@@ -815,6 +830,9 @@ func AppendChannelAffinityAdminInfo(c *gin.Context, adminInfo map[string]interfa
 
 func RecordChannelAffinity(c *gin.Context, channelID int) {
 	if channelID <= 0 {
+		return
+	}
+	if IsChannelAffinityDisabled(channelID) {
 		return
 	}
 	setting := operation_setting.GetChannelAffinitySetting()

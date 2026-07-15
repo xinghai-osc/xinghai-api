@@ -18,8 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 import { getSelf } from '@/lib/api'
 import { SectionPageLayout } from '@/components/layout'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { formatQuota } from '@/lib/format'
 import { SubscriptionPlansCard } from './subscription-plans-card'
 import { useTopupInfo } from '../hooks'
 import type { UserWalletData } from '../types'
@@ -43,8 +47,28 @@ export function SubscriptionPurchasePage() {
   return (
     <SectionPageLayout>
       <SectionPageLayout.Title>{t('Purchase Subscription')}</SectionPageLayout.Title>
+      <SectionPageLayout.Actions>
+        <Button variant='outline' render={<Link to='/wallet' />}>
+          {t('Recharge Balance')}
+        </Button>
+      </SectionPageLayout.Actions>
       <SectionPageLayout.Content>
         <div className='mx-auto w-full max-w-5xl'>
+          <Card className='mb-4'>
+            <CardContent className='flex flex-wrap items-center justify-between gap-3 p-4'>
+              <div>
+                <p className='text-muted-foreground text-xs'>
+                  {t('Available Balance')}
+                </p>
+                <p className='mt-1 text-xl font-semibold'>
+                  {formatQuota(user?.quota ?? 0)}
+                </p>
+              </div>
+              <Button variant='outline' render={<Link to='/wallet' />}>
+                {t('Recharge Balance')}
+              </Button>
+            </CardContent>
+          </Card>
           <SubscriptionPlansCard
             topupInfo={topupInfo}
             userQuota={user?.quota}
