@@ -48,6 +48,7 @@ export function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
                 'bg-background/82 ring-border/40 backdrop-blur-[2px] md:ring-1',
                 'h-svh',
                 'min-h-0 overflow-hidden',
+                'pt-16 md:pt-0',
                 'peer-data-[variant=inset]:h-[calc(100svh-(var(--spacing)*4))]'
               )}
             >
