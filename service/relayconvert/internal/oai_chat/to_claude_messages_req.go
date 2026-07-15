@@ -269,10 +269,12 @@ func OpenAIChatRequestToClaudeMessages(c *gin.Context, textRequest dto.GeneralOp
 			} else {
 				for _, ctx := range message.ParseContent() {
 					if ctx.Type == "text" && ctx.Text != "" {
-						systemMessages = append(systemMessages, dto.ClaudeMediaMessage{
+						claudeMessage := dto.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](ctx.Text),
-						})
+						}
+						claudeMessage.CacheControl = ctx.CacheControl
+						systemMessages = append(systemMessages, claudeMessage)
 					}
 				}
 			}
@@ -338,10 +340,12 @@ func OpenAIChatRequestToClaudeMessages(c *gin.Context, textRequest dto.GeneralOp
 				switch mediaMessage.Type {
 				case "text":
 					if mediaMessage.Text != "" {
-						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+						claudeMessage := dto.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](mediaMessage.Text),
-						})
+						}
+						claudeMessage.CacheControl = mediaMessage.CacheControl
+						claudeMediaMessages = append(claudeMediaMessages, claudeMessage)
 					}
 				default:
 					source := mediaMessage.ToFileSource()

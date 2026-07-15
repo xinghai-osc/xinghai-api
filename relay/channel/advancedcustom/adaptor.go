@@ -443,14 +443,12 @@ func (a *Adaptor) resolve(c *gin.Context, info *relaycommon.RelayInfo) error {
 }
 
 func incomingRequestPath(c *gin.Context, info *relaycommon.RelayInfo) string {
-	// Prefer info.RequestURLPath which is already normalized from /pg/ to /v1/
-	// by genBaseRelayInfo. This ensures Advanced Custom route matching works
-	// for playground requests (e.g., /pg/chat/completions → /v1/chat/completions).
-	if info != nil && info.RequestURLPath != "" {
-		return strings.Split(info.RequestURLPath, "?")[0]
-	}
 	if c != nil && c.Request != nil && c.Request.URL != nil {
 		return c.Request.URL.Path
+	}
+	if info != nil && info.RequestURLPath != "" {
+		// RequestURLPath is normalized from /pg/ to /v1/ by genBaseRelayInfo.
+		return strings.Split(info.RequestURLPath, "?")[0]
 	}
 	return ""
 }

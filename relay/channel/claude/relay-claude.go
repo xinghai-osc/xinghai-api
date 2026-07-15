@@ -83,6 +83,11 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 	return relayconvert.FormatClaudeResponseInfo(claudeResponse, oaiResponse, claudeInfo)
 }
 
+// RequestOpenAI2ClaudeMessage preserves the legacy package-level conversion API.
+func RequestOpenAI2ClaudeMessage(c *gin.Context, request dto.GeneralOpenAIRequest) (*dto.ClaudeRequest, error) {
+	return relayconvert.OpenAIChatRequestToClaudeMessages(c, request)
+}
+
 func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *types.NewAPIError {
 	var claudeResponse dto.ClaudeResponse
 	err := common.UnmarshalJsonStr(data, &claudeResponse)
